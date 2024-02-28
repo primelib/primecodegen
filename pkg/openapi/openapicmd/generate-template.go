@@ -41,22 +41,9 @@ func GenerateTemplateCmd() *cobra.Command {
 			}
 
 			// patch document
-			for _, t := range openapipatch.V3Patchers {
-				log.Debug().Str("id", t.ID).Msg("applying spec patches")
-				patchErr := t.Func(v3doc)
-				if patchErr != nil {
-					log.Fatal().Err(patchErr).Str("id", t.ID).Msg("failed to patch document")
-				}
-
-				// reload document
-				_, doc, _, errs = doc.RenderAndReload()
-				if len(errs) > 0 {
-					log.Fatal().Errs("spec", errs).Msgf("failed to reload document after patching")
-				}
-				v3doc, errs = doc.BuildV3Model()
-				if len(errs) > 0 {
-					log.Fatal().Errs("spec", errs).Msgf("failed to build v3 high level model")
-				}
+			doc, v3doc, err = openapipatch.PatchV3(generatorPatches, doc, v3doc)
+			if err != nil {
+				log.Fatal().Err(err).Msg("failed to patch document")
 			}
 
 			// run generator
