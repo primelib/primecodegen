@@ -2,6 +2,8 @@ package openapicmd
 
 import (
 	"fmt"
+	"os"
+	"text/tabwriter"
 
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/openapi/openapipatch"
@@ -18,15 +20,23 @@ func PatchCmd() *cobra.Command {
 		Short:   "Patch OpenAPI Specification for Code Generation",
 		Long:    "Transform an OpenAPI Specification to be compatible with code generation tools and clean up common issues",
 		Run: func(cmd *cobra.Command, args []string) {
+			// list patches
+			list, _ := cmd.Flags().GetBool("list")
+			if list {
+				listPatches()
+				return
+			}
+
 			// validate input
 			in, _ := cmd.Flags().GetString("input")
 			out, _ := cmd.Flags().GetString("output")
+			patches, _ := cmd.Flags().GetStringSlice("patch")
 			in = util.ResolvePath(in)
 			out = util.ResolvePath(out)
 			if in == "" {
 				log.Fatal().Msg("input specification is required")
 			}
-			log.Info().Str("input", in).Str("output", out).Msg("generating")
+			log.Info().Str("input", in).Strs("patch-ids", patches).Str("output-file", out).Msg("patching")
 
 			// open document
 			doc, err := openapidocument.OpenDocumentFile(in)
@@ -39,12 +49,9 @@ func PatchCmd() *cobra.Command {
 			}
 
 			// patch document
-			for _, t := range openapipatch.V3Patchers {
-				log.Debug().Str("id", t.ID).Msg("applying spec patches")
-				patchErr := t.Func(v3doc)
-				if patchErr != nil {
-					log.Fatal().Err(patchErr).Str("id", t.ID).Msg("failed to patch document")
-				}
+			doc, v3doc, err = openapipatch.PatchV3(patches, doc, v3doc)
+			if err != nil {
+				log.Fatal().Err(err).Msg("failed to patch document")
 			}
 
 			// write document
@@ -62,11 +69,19 @@ func PatchCmd() *cobra.Command {
 			}
 		},
 	}
-	cmd.Flags().Bool("dry-run", false, "Perform a dry run without making any changes")
 	cmd.Flags().StringP("input", "i", "", "Input Specification")
-	cmd.Flags().StringP("output", "o", "", "Output Directory")
+	cmd.Flags().StringP("output", "o", "", "Output File")
+	cmd.Flags().StringSliceP("patch", "p", []string{"generateOperationIds", "missingSchemaTitle"}, "Patch IDs to apply")
+	cmd.Flags().BoolP("list", "l", false, "List available patches")
 
 	return cmd
 }
 
-// TODO: subcommand to list all options to patch the openapi specs
+func listPatches() {
+	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	fmt.Fprintf(w, "ID\tDescription\n")
+	for _, t := range openapipatch.V3Patchers {
+		fmt.Fprintf(w, "%s\t%s\n", t.ID, t.Description)
+	}
+	w.Flush()
+}

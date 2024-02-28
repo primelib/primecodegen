@@ -22,16 +22,38 @@ The CLI supports three use-cases:
 | Command                                                                                   | Description                                                   |
 |-------------------------------------------------------------------------------------------|---------------------------------------------------------------|
 | `primecodegen openapi-patch -i openapi.yaml -o patched.yaml`                              | apply automatic modifications and fixes to the openapi spec   |
+| `primecodegen openapi-patch -i openapi.yaml -p flattenSchemas -o patched.yaml`            | apply patch with id `flattenSchemas`                          |
+| `primecodegen openapi-patch -l`                                                           | list available patches                                        |
 | `primecodegen openapi-generate-template -i openapi.yaml -g go -t client`                  | generate go template data, stdout                             |
 | `primecodegen openapi-generate-template -i openapi.yaml -g go -t client -o template.yaml` | generate go template data, file output                        |
 | `primecodegen openapi-generate -i openapi.yaml -g go -t client -o /out`                   | run code generation with generator `go` and template `client` |
 
 ## OpenAPI Patch
 
-The `openapi-patch` command applies automatic modifications and fixes to the openapi spec.
+The `openapi-patch` command applies modifications and fixes to the openapi spec.
 
-- pruneOperationTags - Remove all tags from operations
-- generateOperationIds - Generate operationIds for all operations and overwrite existing ones
+**pruneOperationTags**
+
+Removes all tags from operations.
+
+**pruneCommonOperationIdPrefix**
+
+Removes common prefixes from operation IDs. If you have a spec where all operationIds start with e.g. `API_`, this patch will remove that prefix from all operationIds.
+If you have a lot of bad operationIds, using `generateOperationIds` might be a better option.
+
+**generateOperationIds**
+
+Generates operationIds for all operations and overwrites existing ones. The operationId is generated based on the HTTP method and the path.
+
+**flattenSchema**
+
+Flattens inline request bodies and response schemas into the components section of the document.
+
+**missingSchemaTitle**
+
+Adds a title to all schemas that are missing a title.
+
+> Note: The patches are applied in the order you specify them in.
 
 ## OpenAPI Generate Template
 
