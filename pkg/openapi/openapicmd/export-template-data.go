@@ -15,9 +15,10 @@ import (
 
 func GenerateTemplateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "openapi-generate-template",
+		Use:     "openapi-export-template-data",
 		Aliases: []string{},
 		GroupID: "openapi",
+		Short:   "Exports the template data usually passed to the code generator to render templates",
 		Run: func(cmd *cobra.Command, args []string) {
 			// validate input
 			in, _ := cmd.Flags().GetString("input")
