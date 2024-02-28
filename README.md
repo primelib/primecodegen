@@ -19,14 +19,14 @@ The CLI supports three use-cases:
 - generate template data for custom external code generators
 - generate code using built in templates
 
-| Command                                                                                   | Description                                                   |
-|-------------------------------------------------------------------------------------------|---------------------------------------------------------------|
-| `primecodegen openapi-patch -i openapi.yaml -o patched.yaml`                              | apply automatic modifications and fixes to the openapi spec   |
-| `primecodegen openapi-patch -i openapi.yaml -p flattenSchemas -o patched.yaml`            | apply patch with id `flattenSchemas`                          |
-| `primecodegen openapi-patch -l`                                                           | list available patches                                        |
-| `primecodegen openapi-generate-template -i openapi.yaml -g go -t client`                  | generate go template data, stdout                             |
-| `primecodegen openapi-generate-template -i openapi.yaml -g go -t client -o template.yaml` | generate go template data, file output                        |
-| `primecodegen openapi-generate -i openapi.yaml -g go -t client -o /out`                   | run code generation with generator `go` and template `client` |
+| Command                                                                                      | Description                                                   |
+|----------------------------------------------------------------------------------------------|---------------------------------------------------------------|
+| `primecodegen openapi-patch -i openapi.yaml -o patched.yaml`                                 | apply automatic modifications and fixes to the openapi spec   |
+| `primecodegen openapi-patch -i openapi.yaml -p flattenSchemas -o patched.yaml`               | apply patch with id `flattenSchemas`                          |
+| `primecodegen openapi-patch -l`                                                              | list available patches                                        |
+| `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client`                  | generate go template data, stdout                             |
+| `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client -o template.yaml` | generate go template data, file output                        |
+| `primecodegen openapi-generate -i openapi.yaml -g go -t client -o /out`                      | run code generation with generator `go` and template `client` |
 
 ## OpenAPI Patch
 
@@ -55,9 +55,9 @@ Adds a title to all schemas that are missing a title.
 
 > Note: The patches are applied in the order you specify them in.
 
-## OpenAPI Generate Template
+## OpenAPI Template Data
 
-The `openapi-generate-template` command generates template data that can be used to build your own code generator templates without having to deal with most of the complexity of the openapi spec.
+The `openapi-generate-template` command can be used to pre-process the openapi spec and pass the resulting template data to an external code generator.
 
 TODO: documentation
 

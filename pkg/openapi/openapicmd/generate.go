@@ -20,6 +20,7 @@ func GenerateCmd() *cobra.Command {
 		Use:     "openapi-generate",
 		Aliases: []string{},
 		GroupID: "openapi",
+		Short:   "Generates code based on the requested generator and template",
 		Run: func(cmd *cobra.Command, args []string) {
 			// validate input
 			in, _ := cmd.Flags().GetString("input")
