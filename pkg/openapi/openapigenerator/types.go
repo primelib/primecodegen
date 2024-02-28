@@ -19,6 +19,7 @@ type Operation struct {
 
 type Parameter struct {
 	Name             string       `yaml:"name,omitempty"`
+	FieldName        string       `yaml:"fieldName,omitempty"` // FieldName is the original name of the parameter
 	In               string       `yaml:"in,omitempty"`
 	Description      string       `yaml:"description,omitempty"`
 	Kind             PropertyKind `yaml:"kind,omitempty"`
@@ -37,9 +38,11 @@ type Model struct {
 }
 
 type Property struct {
-	Name          string       `yaml:"name" required:"true"` // Name is the parameter name
-	Title         string       `yaml:"title,omitempty"`      // Title is the human-readable name of the parameter
-	Kind          PropertyKind `yaml:"kind,omitempty"`       // Kind is the type of the parameter
+	Name          string       `yaml:"name" required:"true"`  // Name is the parameter name
+	FieldName     string       `yaml:"fieldName,omitempty"`   // FieldName is the original name of the parameter
+	Title         string       `yaml:"title,omitempty"`       // Title is the human-readable name of the parameter
+	Description   string       `yaml:"description,omitempty"` // Description is the human-readable description of the parameter
+	Kind          PropertyKind `yaml:"kind,omitempty"`        // Kind is the type of the parameter
 	Type          string       `yaml:"type,omitempty"`
 	Nullable      bool         `yaml:"nullable,omitempty"`
 	AllowedValues []string     `yaml:"allowedValues,omitempty"`

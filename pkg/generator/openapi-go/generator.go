@@ -8,6 +8,9 @@ import (
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
+	"github.com/primelib/primecodegen/pkg/template"
+	"github.com/primelib/primecodegen/pkg/util"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -43,9 +46,19 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 	bytes, _ := yaml.Marshal(templateData)
 	fmt.Print(string(bytes))
 
-	// TODO: select template for go / limit generated files via options
-
-	// TODO: iterate over all operations and models and generate the files
+	// generate files
+	files, err := openapigenerator.GenerateFiles(fmt.Sprintf("openapi-%s-%s", g.Id(), opts.TemplateId), opts.OutputDir, templateData, template.RenderOpts{
+		DryRun:      opts.DryRun,
+		Scopes:      nil,
+		IgnoreFiles: nil,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to generate files: %w", err)
+	}
+	for _, f := range files {
+		log.Debug().Str("file", f.File).Str("template-file", f.TemplateFile).Str("state", string(f.State)).Msg("Generated file")
+	}
+	log.Info().Msgf("Generated %d files", len(files))
 
 	return nil
 }
@@ -55,6 +68,9 @@ func (g *GoGenerator) TemplateData(doc *libopenapi.DocumentModel[v3.Document]) (
 }
 
 func (g *GoGenerator) ToClassName(name string) string {
+	// uppercase first letter and remove special characters
+	name = util.CapitalizeAfterChars(name, []int32{'-', '_'}, true)
+
 	if slices.Contains(g.reservedWords, name) {
 		return name + "Model"
 	}
@@ -62,13 +78,23 @@ func (g *GoGenerator) ToClassName(name string) string {
 }
 
 func (g *GoGenerator) ToPropertyName(name string) string {
+	// uppercase first letter and remove special characters
+	name = util.CapitalizeAfterChars(name, []int32{'-', '_'}, true)
+
 	if slices.Contains(g.reservedWords, name) {
 		return name + "Prop"
 	}
+
 	return name
 }
 
 func (g *GoGenerator) ToCodeType(schema *base.Schema) (string, error) {
+	// multiple types
+	if util.CountExcluding(schema.Type, "null") > 1 {
+		return "interface{}", nil
+	}
+
+	// normal types
 	if slices.Contains(schema.Type, "string") && schema.Format == "" {
 		return "string", nil
 	}

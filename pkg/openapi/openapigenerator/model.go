@@ -75,7 +75,8 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					allowedValues = append(allowedValues, e.Value)
 				}
 				operation.Parameters = append(operation.Parameters, Parameter{
-					Name:          param.Name,
+					Name:          param.Name, // TODO: require ToParameterName
+					FieldName:     param.Name,
 					In:            param.In,
 					Description:   param.Description,
 					Kind:          pKind,
@@ -145,7 +146,9 @@ func BuildModels(opts ModelOpts) ([]Model, error) {
 					allowedValues = append(allowedValues, e.Value)
 				}
 				add.Properties = append(add.Properties, Property{
-					Name:          p.Key,
+					Name:          opts.Generator.ToPropertyName(p.Key),
+					FieldName:     p.Key,
+					Description:   pSchema.Description,
 					Kind:          pKind,
 					Title:         pSchema.Title,
 					Type:          pType,
