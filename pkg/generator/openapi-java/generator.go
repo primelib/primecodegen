@@ -1,4 +1,4 @@
-package openapi_go
+package openapi_java
 
 import (
 	"fmt"
@@ -14,19 +14,19 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type GoGenerator struct {
+type JavaGenerator struct {
 	reservedWords []string
 }
 
-func (g *GoGenerator) Id() string {
-	return "go"
+func (g *JavaGenerator) Id() string {
+	return "java"
 }
 
-func (g *GoGenerator) Description() string {
-	return "Generates Go client code"
+func (g *JavaGenerator) Description() string {
+	return "Generates Java client code"
 }
 
-func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
+func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 	// check opts
 	if opts.Doc == nil {
 		return fmt.Errorf("document is required")
@@ -63,11 +63,11 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 	return nil
 }
 
-func (g *GoGenerator) TemplateData(doc *libopenapi.DocumentModel[v3.Document]) (openapigenerator.DocumentModel, error) {
+func (g *JavaGenerator) TemplateData(doc *libopenapi.DocumentModel[v3.Document]) (openapigenerator.DocumentModel, error) {
 	return openapigenerator.BuildTemplateData(doc, g)
 }
 
-func (g *GoGenerator) ToClassName(name string) string {
+func (g *JavaGenerator) ToClassName(name string) string {
 	// uppercase first letter and remove special characters
 	name = util.CapitalizeAfterChars(name, []int32{'-', '_'}, true)
 
@@ -77,7 +77,7 @@ func (g *GoGenerator) ToClassName(name string) string {
 	return name
 }
 
-func (g *GoGenerator) ToPropertyName(name string) string {
+func (g *JavaGenerator) ToPropertyName(name string) string {
 	// uppercase first letter and remove special characters
 	name = util.CapitalizeAfterChars(name, []int32{'-', '_'}, true)
 
@@ -88,7 +88,7 @@ func (g *GoGenerator) ToPropertyName(name string) string {
 	return name
 }
 
-func (g *GoGenerator) ToParameterName(name string) string {
+func (g *JavaGenerator) ToParameterName(name string) string {
 	// uppercase first letter and remove special characters
 	name = util.CapitalizeAfterChars(name, []int32{'-', '_'}, false)
 
@@ -99,55 +99,55 @@ func (g *GoGenerator) ToParameterName(name string) string {
 	return name
 }
 
-func (g *GoGenerator) ToCodeType(schema *base.Schema) (string, error) {
+func (g *JavaGenerator) ToCodeType(schema *base.Schema) (string, error) {
 	// multiple types
 	if util.CountExcluding(schema.Type, "null") > 1 {
-		return "interface{}", nil
+		return "Object", nil
 	}
 
 	// normal types
 	if slices.Contains(schema.Type, "string") && schema.Format == "" {
-		return "string", nil
+		return "String", nil
 	}
 	if slices.Contains(schema.Type, "string") && schema.Format == "uri" {
-		return "string", nil
+		return "String", nil
 	}
 	if slices.Contains(schema.Type, "string") && schema.Format == "binary" {
-		return "[]byte", nil
+		return "byte[]", nil
 	}
 	if slices.Contains(schema.Type, "string") && schema.Format == "byte" {
-		return "[]byte", nil
+		return "byte[]", nil
 	}
 	if slices.Contains(schema.Type, "string") && schema.Format == "date" {
-		return "time.Time", nil
+		return "Timestamp", nil
 	}
 	if slices.Contains(schema.Type, "string") && schema.Format == "date-time" {
-		return "time.Time", nil
+		return "Timestamp", nil
 	}
 	if slices.Contains(schema.Type, "boolean") {
-		return "bool", nil
+		return "boolean", nil
 	}
 	if slices.Contains(schema.Type, "integer") && schema.Format == "" {
-		return "int32", nil
+		return "int", nil
 	}
 	if slices.Contains(schema.Type, "integer") && schema.Format == "int32" {
-		return "int32", nil
+		return "int", nil
 	}
 	if slices.Contains(schema.Type, "integer") && schema.Format == "int64" {
-		return "int64", nil
+		return "long", nil
 	}
 	if slices.Contains(schema.Type, "number") && schema.Format == "float" {
-		return "float32", nil
+		return "float", nil
 	}
 	if slices.Contains(schema.Type, "number") && schema.Format == "double" {
-		return "float64", nil
+		return "double", nil
 	}
 	if slices.Contains(schema.Type, "array") {
 		arrayType, err := g.ToCodeType(schema.Items.A.Schema())
 		if err != nil {
 			return "", fmt.Errorf("unhandled array type. schema: %s, format: %s", schema.Type, schema.Format)
 		}
-		return "[]" + arrayType, nil
+		return "List<" + arrayType + ">", nil
 	}
 	if slices.Contains(schema.Type, "object") {
 		if schema.Title == "" {
@@ -160,56 +160,65 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema) (string, error) {
 	return "", fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
 }
 
-func NewGenerator() *GoGenerator {
+func NewGenerator() *JavaGenerator {
 	// references: https://openapi-generator.tech/docs/generators/go
-	return &GoGenerator{
+	return &JavaGenerator{
 		reservedWords: []string{
-			"bool",
+			"abstract",
+			"assert",
+			"boolean",
 			"break",
 			"byte",
 			"case",
-			"chan",
-			"complex128",
-			"complex64",
+			"catch",
+			"char",
+			"class",
 			"const",
 			"continue",
 			"default",
-			"defer",
+			"do",
+			"double",
 			"else",
-			"error",
-			"fallthrough",
-			"float32",
-			"float64",
+			"enum",
+			"extends",
+			"final",
+			"finally",
+			"float",
 			"for",
-			"func",
-			"go",
 			"goto",
 			"if",
+			"implements",
 			"import",
+			"instanceof",
 			"int",
-			"int16",
-			"int32",
-			"int64",
-			"int8",
 			"interface",
-			"map",
-			"nil",
+			"list",
+			"long",
+			"native",
+			"new",
+			"null",
+			"object",
+			"offsetdatetime",
 			"package",
-			"range",
+			"private",
+			"protected",
+			"public",
 			"return",
-			"rune",
-			"select",
-			"string",
-			"struct",
+			"short",
+			"static",
+			"strictfp",
+			"stringutil",
+			"super",
 			"switch",
-			"type",
-			"uint",
-			"uint16",
-			"uint32",
-			"uint64",
-			"uint8",
-			"uintptr",
-			"var",
+			"synchronized",
+			"this",
+			"throw",
+			"throws",
+			"transient",
+			"try",
+			"void",
+			"volatile",
+			"while",
 		},
 	}
 }

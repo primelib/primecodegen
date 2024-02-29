@@ -2,6 +2,7 @@ package openapicmd
 
 import (
 	openapi_go "github.com/primelib/primecodegen/pkg/generator/openapi-go"
+	openapi_java "github.com/primelib/primecodegen/pkg/generator/openapi-java"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
 	"github.com/primelib/primecodegen/pkg/openapi/openapipatch"
@@ -11,7 +12,8 @@ import (
 )
 
 var generators = []openapigenerator.CodeGenerator{
-	openapi_go.NewGoGenerator(),
+	openapi_go.NewGenerator(),
+	openapi_java.NewGenerator(),
 }
 var generatorPatches = []string{"pruneOperationTags", "generateOperationIds", "flattenSchemas", "missingSchemaTitle"}
 

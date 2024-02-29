@@ -2,9 +2,9 @@ package openapipatch
 
 import (
 	"regexp"
-	"slices"
 	"strings"
-	"unicode"
+
+	"github.com/primelib/primecodegen/pkg/util"
 )
 
 func findPrefix(strs []string) string {
@@ -34,7 +34,7 @@ func toOperationId(method string, url string) string {
 	version := extractApiVersionVersionFromUrl(url)
 	operationID = strings.Replace(operationID, "/v"+version+"/", "", 1)
 
-	return strings.ToLower(method) + slashToCapitalize(operationID, []int32{'/', '-'}, true) + "V" + version
+	return strings.ToLower(method) + util.CapitalizeAfterChars(operationID, []int32{'/', '-'}, true) + "V" + version
 }
 
 func removePathParams(url string) string {
@@ -49,25 +49,6 @@ func extractApiVersionVersionFromUrl(url string) string {
 		return matches[1]
 	}
 	return "1"
-}
-
-func slashToCapitalize(input string, chars []int32, capitalizeFirst bool) string {
-	var modifiedURL strings.Builder
-	shouldCapitalize := capitalizeFirst
-	for _, char := range input {
-		if slices.Contains(chars, char) {
-			shouldCapitalize = true
-			continue
-		}
-		if shouldCapitalize {
-			modifiedURL.WriteRune(unicode.ToUpper(char))
-			shouldCapitalize = false
-		} else {
-			modifiedURL.WriteRune(char)
-		}
-	}
-
-	return modifiedURL.String()
 }
 
 func contentTypeToStr(input string) string {
