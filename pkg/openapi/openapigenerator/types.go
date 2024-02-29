@@ -15,6 +15,7 @@ type Operation struct {
 	Deprecated       bool        `yaml:"deprecated,omitempty"`
 	DeprecatedReason string      `yaml:"deprecatedReason,omitempty"`
 	Parameters       []Parameter `yaml:"parameters,omitempty"`
+	Imports          []string    `yaml:"imports,omitempty"`
 }
 
 type Parameter struct {
@@ -36,6 +37,7 @@ type Model struct {
 	Description string     `yaml:"description,omitempty"`
 	Parent      string     `yaml:"parent,omitempty"`
 	Properties  []Property `yaml:"properties,omitempty"`
+	Imports     []string   `yaml:"imports,omitempty"`
 }
 
 type Property struct {

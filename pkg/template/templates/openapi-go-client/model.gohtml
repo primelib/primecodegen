@@ -2,9 +2,13 @@
 {{- template "header-singleline" }}
 package {{ .Package }}
 
+{{ if .Model.Imports -}}
 import (
-    "time"
+{{- range .Model.Imports }}
+    "{{ . }}"
+{{ end -}}
 )
+{{- end }}
 
 {{ if .Model.Description -}}
 // {{ .Model.Name }} {{ .Model.Description }}
