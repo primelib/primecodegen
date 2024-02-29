@@ -26,6 +26,9 @@ type CodeGenerator interface {
 	// ToPropertyName converts a name to a language-specific property name
 	ToPropertyName(name string) string
 
+	// ToParameterName converts a name to a language-specific parameter name
+	ToParameterName(name string) string
+
 	// ToCodeType converts a schema to a language-specific type
 	ToCodeType(schema *base.Schema) (string, error)
 }

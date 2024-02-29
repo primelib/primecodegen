@@ -75,7 +75,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					allowedValues = append(allowedValues, e.Value)
 				}
 				operation.Parameters = append(operation.Parameters, Parameter{
-					Name:          param.Name, // TODO: require ToParameterName
+					Name:          opts.Generator.ToParameterName(param.Name),
 					FieldName:     param.Name,
 					In:            param.In,
 					Description:   param.Description,

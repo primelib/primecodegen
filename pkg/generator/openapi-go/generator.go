@@ -88,6 +88,17 @@ func (g *GoGenerator) ToPropertyName(name string) string {
 	return name
 }
 
+func (g *GoGenerator) ToParameterName(name string) string {
+	// uppercase first letter and remove special characters
+	name = util.CapitalizeAfterChars(name, []int32{'-', '_'}, false)
+
+	if slices.Contains(g.reservedWords, name) {
+		return name + "Prop"
+	}
+
+	return name
+}
+
 func (g *GoGenerator) ToCodeType(schema *base.Schema) (string, error) {
 	// multiple types
 	if util.CountExcluding(schema.Type, "null") > 1 {
@@ -149,7 +160,7 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema) (string, error) {
 	return "", fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
 }
 
-func NewGoGenerator() *GoGenerator {
+func NewGenerator() *GoGenerator {
 	// references: https://openapi-generator.tech/docs/generators/go
 	return &GoGenerator{
 		reservedWords: []string{
