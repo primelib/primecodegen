@@ -6,9 +6,11 @@ import (
     "time"
 )
 
-{{ if .Model.Description }}// {{ .Model.Name }} {{ .Model.Description }}{{ end }}
+{{ if .Model.Description -}}
+// {{ .Model.Name }} {{ .Model.Description }}
+{{ end -}}
 type {{ .Model.Name }} struct {
 {{- range .Model.Properties }}
-    {{ .Name }} *{{ .Type }} `json:"{{ .FieldName }}{{ if eq .Type "*bool" }},renderZero{{ end }}{{ if .Nullable }},omitempty{{ end }}"` {{ if .Description }}// {{ .Description }}{{ end }}
+    {{ .Name }} {{ if .IsPrimitiveType }}*{{ end }}{{ .Type }} `json:"{{ .FieldName }}{{ if eq .Type "*bool" }},renderZero{{ end }}{{ if .Nullable }},omitempty{{ end }}"` {{ if .Description }}// {{ .Description }}{{ end }}
 {{- end }}
 }

@@ -15,7 +15,8 @@ import (
 )
 
 type JavaGenerator struct {
-	reservedWords []string
+	reservedWords  []string
+	primitiveTypes []string
 }
 
 func (g *JavaGenerator) Id() string {
@@ -160,6 +161,10 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema) (string, error) {
 	return "", fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
 }
 
+func (g *JavaGenerator) IsPrimitiveType(input string) bool {
+	return slices.Contains(g.primitiveTypes, input)
+}
+
 func NewGenerator() *JavaGenerator {
 	// references: https://openapi-generator.tech/docs/generators/go
 	return &JavaGenerator{
@@ -219,6 +224,16 @@ func NewGenerator() *JavaGenerator {
 			"void",
 			"volatile",
 			"while",
+		},
+		primitiveTypes: []string{
+			"String",
+			"boolean",
+			"int",
+			"long",
+			"float",
+			"double",
+			"byte",
+			"char",
 		},
 	}
 }
