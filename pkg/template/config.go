@@ -1,6 +1,6 @@
 package template
 
-var defaultSnippets = []string{"snippets.gohtml"}
+var defaultSnippets = []string{"global-layout.gohtml"}
 
 var allTemplates = []Config{
 	{

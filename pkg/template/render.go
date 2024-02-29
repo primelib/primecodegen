@@ -101,48 +101,13 @@ func loadTemplate(templateId string, files []string) (*template.Template, error)
 		return nil, fmt.Errorf("no files provided")
 	}
 	name := files[0]
+	lookupTemplates := []string{templateId, "_global"}
+
 	tmpl := template.New(name)
-
-	// templates in PRIMECODEGEN_TEMPLATE_DIR have priority, allows to override embedded templates / provide custom templates
-	templateDir := os.Getenv("PRIMECODEGEN_TEMPLATE_DIR")
-	if templateDir != "" {
-		file := filepath.Join(templateDir, templateId, files[0])
-		if _, err := os.Stat(file); err == nil {
-			_, err = tmpl.ParseFiles(file)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse template file %s: %w", file, err)
-			}
-		}
-
-		// snippets
-		for _, snippet := range files[1:] {
-			snippetFile := filepath.Join(templateDir, templateId, snippet)
-			if _, err := os.Stat(snippetFile); err == nil {
-				_, err = tmpl.ParseFiles(snippetFile)
-				if err != nil {
-					return nil, fmt.Errorf("failed to parse snippet file %s: %w", snippetFile, err)
-				}
-			}
-		}
-	}
-
-	// embedded templates
-	embedFSFile := path.Join("templates", templateId, files[0])
-	if _, err := templateFS.ReadFile(embedFSFile); err == nil {
-		_, err = tmpl.ParseFS(templateFS, embedFSFile)
+	for _, f := range files {
+		err := loadTemplateById(tmpl, lookupTemplates, f)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse embedded template file %s: %w", files[0], err)
-		}
-
-		// snippets
-		for _, snippet := range files[1:] {
-			embedFSFile = path.Join("templates", templateId, snippet)
-			if _, err = templateFS.ReadFile(embedFSFile); err == nil {
-				_, err = tmpl.ParseFS(templateFS, embedFSFile)
-				if err != nil {
-					return nil, fmt.Errorf("failed to parse embedded snippet file %s: %w", snippet, err)
-				}
-			}
+			return nil, err
 		}
 	}
 
@@ -150,6 +115,37 @@ func loadTemplate(templateId string, files []string) (*template.Template, error)
 		return tmpl, nil
 	}
 	return nil, fmt.Errorf("neither embedded filesystem nor PRIMECODEGEN_TEMPLATE_DIR environment variable is set")
+}
+
+func loadTemplateById(tmpl *template.Template, lookupTemplates []string, templateFile string) error {
+	// local filesystem (PRIMECODEGEN_TEMPLATE_DIR has priority to allow easy customization of templates)
+	templateDir := os.Getenv("PRIMECODEGEN_TEMPLATE_DIR")
+	if templateDir != "" {
+		for _, currentTemplateId := range lookupTemplates {
+			file := filepath.Join(templateDir, currentTemplateId, templateFile)
+			if _, err := os.Stat(file); err == nil {
+				_, err = tmpl.ParseFiles(file)
+				if err != nil {
+					return fmt.Errorf("failed to parse template file %s: %w", file, err)
+				}
+				return nil
+			}
+		}
+	}
+
+	// embedded filesystem
+	for _, currentTemplateId := range lookupTemplates {
+		embedFSFile := path.Join("templates", currentTemplateId, templateFile)
+		if _, err := templateFS.ReadFile(embedFSFile); err == nil {
+			_, err = tmpl.ParseFS(templateFS, embedFSFile)
+			if err != nil {
+				return fmt.Errorf("failed to parse embedded template file %s: %w", templateFile, err)
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf("neither embedded filesystem nor PRIMECODEGEN_TEMPLATE_DIR provides template file %s", templateFile)
 }
 
 func resolveName(input string, data interface{}) (string, error) {
