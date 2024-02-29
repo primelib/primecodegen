@@ -17,6 +17,7 @@ import (
 type JavaGenerator struct {
 	reservedWords  []string
 	primitiveTypes []string
+	typeToImport   map[string]string
 }
 
 func (g *JavaGenerator) Id() string {
@@ -162,6 +163,14 @@ func (g *JavaGenerator) IsPrimitiveType(input string) bool {
 	return slices.Contains(g.primitiveTypes, input)
 }
 
+func (g *JavaGenerator) TypeToImport(typeName string) string {
+	if typeName == "" {
+		return ""
+	}
+
+	return g.typeToImport[typeName]
+}
+
 func NewGenerator() *JavaGenerator {
 	// references: https://openapi-generator.tech/docs/generators/go
 	return &JavaGenerator{
@@ -231,6 +240,9 @@ func NewGenerator() *JavaGenerator {
 			"double",
 			"byte",
 			"char",
+		},
+		typeToImport: map[string]string{
+			"OffsetDateTime": "java.time.OffsetDateTime",
 		},
 	}
 }

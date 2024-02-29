@@ -3,6 +3,7 @@ package openapi_go
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
@@ -17,6 +18,7 @@ import (
 type GoGenerator struct {
 	reservedWords  []string
 	primitiveTypes []string
+	typeToImport   map[string]string
 }
 
 func (g *GoGenerator) Id() string {
@@ -173,6 +175,15 @@ func (g *GoGenerator) IsPrimitiveType(input string) bool {
 	return slices.Contains(g.primitiveTypes, input)
 }
 
+func (g *GoGenerator) TypeToImport(typeName string) string {
+	if typeName == "" {
+		return ""
+	}
+	typeName = strings.Replace(typeName, "*", "", -1)
+
+	return g.typeToImport[typeName]
+}
+
 func NewGenerator() *GoGenerator {
 	// references: https://openapi-generator.tech/docs/generators/go
 	return &GoGenerator{
@@ -234,6 +245,9 @@ func NewGenerator() *GoGenerator {
 			"float64",
 			"byte",
 			"rune",
+		},
+		typeToImport: map[string]string{
+			"time.Time": "time",
 		},
 	}
 }

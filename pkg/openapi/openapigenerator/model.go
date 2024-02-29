@@ -92,6 +92,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					Deprecated:      param.Deprecated,
 					// DeprecatedReason: param.Value.Extensions.Get("x-deprecated"),
 				})
+				operation.Imports = append(operation.Imports, gen.TypeToImport(pType))
 			}
 
 			// request body
@@ -106,6 +107,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				})
 			}
 
+			operation.Imports = cleanImports(operation.Imports)
 			operations = append(operations, operation)
 		}
 	}
@@ -167,6 +169,7 @@ func BuildModels(opts ModelOpts) ([]Model, error) {
 					Nullable:        getBoolValue(pSchema.Nullable, slices.Contains(pSchema.Type, "null")), // 3.1 uses null type, 3.0 uses nullable
 					AllowedValues:   allowedValues,
 				})
+				add.Imports = append(add.Imports, gen.TypeToImport(pType))
 			}
 		} else if slices.Contains(s.Type, "array") {
 			mParent, err := gen.ToCodeType(s)
@@ -182,8 +185,10 @@ func BuildModels(opts ModelOpts) ([]Model, error) {
 			}
 
 			add.Parent = mType
+			add.Imports = append(add.Imports, gen.TypeToImport(add.Parent))
 		}
 
+		add.Imports = cleanImports(add.Imports)
 		models = append(models, add)
 
 	}

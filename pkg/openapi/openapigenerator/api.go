@@ -34,6 +34,9 @@ type CodeGenerator interface {
 
 	// IsPrimitiveType checks if a type is a primitive type
 	IsPrimitiveType(input string) bool
+
+	// TypeToImport returns the import path for a given type
+	TypeToImport(typeName string) string
 }
 
 type GenerateOpts struct {
