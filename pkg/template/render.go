@@ -112,6 +112,7 @@ func loadTemplate(templateId string, files []string) (*template.Template, error)
 	}
 
 	if len(tmpl.Templates()) > 0 {
+		tmpl.Funcs(templateFunctions)
 		return tmpl, nil
 	}
 	return nil, fmt.Errorf("neither embedded filesystem nor PRIMECODEGEN_TEMPLATE_DIR environment variable is set")
