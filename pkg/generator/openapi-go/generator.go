@@ -69,8 +69,7 @@ func (g *GoGenerator) TemplateData(doc *libopenapi.DocumentModel[v3.Document]) (
 }
 
 func (g *GoGenerator) ToClassName(name string) string {
-	// uppercase first letter and remove special characters
-	name = util.CapitalizeAfterChars(name, []int32{'-', '_'}, true)
+	name = util.ToPascalCase(name)
 
 	if slices.Contains(g.reservedWords, name) {
 		return name + "Model"
@@ -79,8 +78,7 @@ func (g *GoGenerator) ToClassName(name string) string {
 }
 
 func (g *GoGenerator) ToPropertyName(name string) string {
-	// uppercase first letter and remove special characters
-	name = util.CapitalizeAfterChars(name, []int32{'-', '_'}, true)
+	name = util.ToPascalCase(name)
 
 	if slices.Contains(g.reservedWords, name) {
 		return name + "Prop"
@@ -90,8 +88,7 @@ func (g *GoGenerator) ToPropertyName(name string) string {
 }
 
 func (g *GoGenerator) ToParameterName(name string) string {
-	// uppercase first letter and remove special characters
-	name = util.CapitalizeAfterChars(name, []int32{'-', '_'}, false)
+	name = util.ToCamelCase(name)
 
 	if slices.Contains(g.reservedWords, name) {
 		return name + "Prop"
