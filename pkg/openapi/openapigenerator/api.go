@@ -31,6 +31,9 @@ type CodeGenerator interface {
 
 	// ToCodeType converts a schema to a language-specific type
 	ToCodeType(schema *base.Schema) (string, error)
+
+	// IsPrimitiveType checks if a type is a primitive type
+	IsPrimitiveType(input string) bool
 }
 
 type GenerateOpts struct {

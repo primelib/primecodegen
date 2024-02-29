@@ -39,6 +39,7 @@ type OperationOpts struct {
 
 func BuildOperations(opts OperationOpts) ([]Operation, error) {
 	var operations []Operation
+	gen := opts.Generator
 
 	for path := opts.Doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
@@ -61,7 +62,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					return operations, fmt.Errorf("error building property schema: %w", err)
 				}
 
-				pType, err := opts.Generator.ToCodeType(param.Schema.Schema())
+				pType, err := gen.ToCodeType(param.Schema.Schema())
 				if err != nil {
 					return operations, fmt.Errorf("error converting type: %w", err)
 				}
@@ -70,20 +71,25 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				if len(pSchema.Enum) > 0 {
 					pKind = KindEnum
 				}
-				var allowedValues []string
+				allowedValues := make(map[string]AllowedValue)
 				for _, e := range pSchema.Enum {
-					allowedValues = append(allowedValues, e.Value)
+					allowedValues[e.Value] = AllowedValue{Value: e.Value}
+				}
+				allowedValues, err = extensionEnumDefinitions(pSchema, allowedValues)
+				if err != nil {
+					return operations, fmt.Errorf("error processing enum definitions: %w", err)
 				}
 				operation.Parameters = append(operation.Parameters, Parameter{
-					Name:          opts.Generator.ToParameterName(param.Name),
-					FieldName:     param.Name,
-					In:            param.In,
-					Description:   param.Description,
-					Kind:          pKind,
-					Type:          pType,
-					AllowedValues: allowedValues,
-					Required:      getBoolValue(param.Required, false),
-					Deprecated:    param.Deprecated,
+					Name:            gen.ToParameterName(param.Name),
+					FieldName:       param.Name,
+					In:              param.In,
+					Description:     param.Description,
+					Kind:            pKind,
+					Type:            pType,
+					IsPrimitiveType: gen.IsPrimitiveType(pType),
+					AllowedValues:   allowedValues,
+					Required:        getBoolValue(param.Required, false),
+					Deprecated:      param.Deprecated,
 					// DeprecatedReason: param.Value.Extensions.Get("x-deprecated"),
 				})
 			}
@@ -114,6 +120,7 @@ type ModelOpts struct {
 
 func BuildModels(opts ModelOpts) ([]Model, error) {
 	var models []Model
+	gen := opts.Generator
 
 	for schema := opts.Doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
 		s, err := schema.Value.BuildSchema()
@@ -122,7 +129,7 @@ func BuildModels(opts ModelOpts) ([]Model, error) {
 		}
 
 		add := Model{
-			Name:        opts.Generator.ToClassName(s.Title),
+			Name:        gen.ToClassName(s.Title),
 			Description: s.Description,
 		}
 		if slices.Contains(s.Type, "object") && s.Properties != nil {
@@ -132,7 +139,7 @@ func BuildModels(opts ModelOpts) ([]Model, error) {
 					return models, fmt.Errorf("error building property schema: %w", err)
 				}
 
-				pType, err := opts.Generator.ToCodeType(pSchema)
+				pType, err := gen.ToCodeType(pSchema)
 				if err != nil {
 					return models, fmt.Errorf("error converting type: %w", err)
 				}
@@ -141,30 +148,35 @@ func BuildModels(opts ModelOpts) ([]Model, error) {
 				if len(pSchema.Enum) > 0 {
 					pKind = KindEnum
 				}
-				var allowedValues []string
+				allowedValues := make(map[string]AllowedValue)
 				for _, e := range pSchema.Enum {
-					allowedValues = append(allowedValues, e.Value)
+					allowedValues[e.Value] = AllowedValue{Value: e.Value}
+				}
+				allowedValues, err = extensionEnumDefinitions(pSchema, allowedValues)
+				if err != nil {
+					return models, fmt.Errorf("error processing enum definitions: %w", err)
 				}
 				add.Properties = append(add.Properties, Property{
-					Name:          opts.Generator.ToPropertyName(p.Key),
-					FieldName:     p.Key,
-					Description:   pSchema.Description,
-					Kind:          pKind,
-					Title:         pSchema.Title,
-					Type:          pType,
-					Nullable:      getBoolValue(pSchema.Nullable, slices.Contains(pSchema.Type, "null")), // 3.1 uses null type, 3.0 uses nullable
-					AllowedValues: allowedValues,
+					Name:            gen.ToPropertyName(p.Key),
+					FieldName:       p.Key,
+					Description:     pSchema.Description,
+					Kind:            pKind,
+					Title:           pSchema.Title,
+					Type:            pType,
+					IsPrimitiveType: gen.IsPrimitiveType(pType),
+					Nullable:        getBoolValue(pSchema.Nullable, slices.Contains(pSchema.Type, "null")), // 3.1 uses null type, 3.0 uses nullable
+					AllowedValues:   allowedValues,
 				})
 			}
 		} else if slices.Contains(s.Type, "array") {
-			mParent, err := opts.Generator.ToCodeType(s)
+			mParent, err := gen.ToCodeType(s)
 			if err != nil {
 				return models, fmt.Errorf("error converting type: %w", err)
 			}
 
 			add.Parent = mParent
 		} else {
-			mType, err := opts.Generator.ToCodeType(s)
+			mType, err := gen.ToCodeType(s)
 			if err != nil {
 				return models, fmt.Errorf("error converting type: %w", err)
 			}

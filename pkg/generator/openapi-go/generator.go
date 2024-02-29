@@ -15,7 +15,8 @@ import (
 )
 
 type GoGenerator struct {
-	reservedWords []string
+	reservedWords  []string
+	primitiveTypes []string
 }
 
 func (g *GoGenerator) Id() string {
@@ -149,6 +150,17 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema) (string, error) {
 		}
 		return "[]" + arrayType, nil
 	}
+	if slices.Contains(schema.Type, "object") && schema.AdditionalProperties == nil && schema.Properties == nil {
+		return "interface{}", nil
+	}
+	if slices.Contains(schema.Type, "object") && schema.AdditionalProperties != nil {
+		additionalProperties, err := g.ToCodeType(schema.AdditionalProperties.A.Schema())
+		if err != nil {
+			return "", fmt.Errorf("unhandled additional properties type. schema: %s, format: %s", schema.Type, schema.Format)
+		}
+
+		return "map[string]" + additionalProperties, nil
+	}
 	if slices.Contains(schema.Type, "object") {
 		if schema.Title == "" {
 			// TODO: ensure all schemas have a title
@@ -158,6 +170,10 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema) (string, error) {
 	}
 
 	return "", fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
+}
+
+func (g *GoGenerator) IsPrimitiveType(input string) bool {
+	return slices.Contains(g.primitiveTypes, input)
 }
 
 func NewGenerator() *GoGenerator {
@@ -210,6 +226,17 @@ func NewGenerator() *GoGenerator {
 			"uint8",
 			"uintptr",
 			"var",
+		},
+		primitiveTypes: []string{
+			"string",
+			"bool",
+			"int",
+			"int32",
+			"int64",
+			"float32",
+			"float64",
+			"byte",
+			"rune",
 		},
 	}
 }
