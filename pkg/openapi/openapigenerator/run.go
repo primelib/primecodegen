@@ -19,41 +19,54 @@ func GeneratorById(id string, allGenerators []CodeGenerator) (CodeGenerator, err
 func GenerateFiles(templateId string, outputDir string, templateData DocumentModel, renderOpts template.RenderOpts) ([]template.RenderedFile, error) {
 	var files []template.RenderedFile
 
-	// support files
-	suppFiles, err := template.RenderTemplateById(templateId, outputDir, template.ScopeSupport, SupportOnceTemplate{
+	var data []interface{}
+	data = append(data, SupportOnceTemplate{
 		GoModule: "github.com/primelib/primecodegen", // TODO: configurable
-	}, renderOpts)
-	if err != nil {
-		return nil, fmt.Errorf("failed to render template: %w", err)
-	}
-	files = append(files, suppFiles...)
-
-	// operations
+	})
 	for _, op := range templateData.Operations {
-		data := OperationEachTemplate{
+		data = append(data, OperationEachTemplate{
 			Package:   "operations", // TODO: need this from the generator
 			Name:      op.OperationId,
 			Operation: op,
-		}
-		opFiles, err := template.RenderTemplateById(templateId, outputDir, template.ScopeOperation, data, renderOpts)
-		if err != nil {
-			return nil, fmt.Errorf("failed to render template: %w", err)
-		}
-		files = append(files, opFiles...)
+		})
 	}
-
-	// models
 	for _, model := range templateData.Models {
-		data := ModelEachTemplate{
+		data = append(data, ModelEachTemplate{
 			Package: "types", // TODO: need this from the generator
 			Name:    model.Name,
 			Model:   model,
+		})
+	}
+	for _, enum := range templateData.Enums {
+		data = append(data, EnumEachTemplate{
+			Package: "types", // TODO: need this from the generator
+			Name:    enum.Name,
+			Enum:    enum,
+		})
+	}
+
+	// render files
+	for _, d := range data {
+		var renderedFiles []template.RenderedFile
+		var renderErr error
+
+		if _, ok := d.(SupportOnceTemplate); ok {
+			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeSupportOnce, d, renderOpts)
 		}
-		modelFiles, err := template.RenderTemplateById(templateId, outputDir, template.ScopeModel, data, renderOpts)
-		if err != nil {
-			return nil, fmt.Errorf("failed to render template: %w", err)
+		if _, ok := d.(OperationEachTemplate); ok {
+			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeOperationEach, d, renderOpts)
 		}
-		files = append(files, modelFiles...)
+		if _, ok := d.(ModelEachTemplate); ok {
+			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeModelEach, d, renderOpts)
+		}
+		if _, ok := d.(EnumEachTemplate); ok {
+			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeEnumEach, d, renderOpts)
+		}
+
+		if renderErr != nil {
+			return nil, fmt.Errorf("failed to render template: %w", renderErr)
+		}
+		files = append(files, renderedFiles...)
 	}
 
 	return files, nil

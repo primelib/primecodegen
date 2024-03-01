@@ -1,0 +1,20 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.EnumEachTemplate*/ -}}
+{{- template "header-singleline" }}
+package {{ .Package }}
+
+{{ if .Model.Imports -}}
+import (
+{{- range .Model.Imports }}
+    "{{ . }}"
+{{ end -}}
+)
+{{- end }}
+
+{{ if .Model.Description -}}
+// {{ .Model.Name }} {{ .Model.Description }}
+{{ end -}}
+type {{ .Model.Name }} struct {
+{{- range .Model.Properties }}
+    {{ .Name }} {{ if .IsPrimitiveType }}*{{ end }}{{ .Type }} `json:"{{ .FieldName }}{{ if eq .Type "*bool" }},renderZero{{ end }}{{ if .Nullable }},omitempty{{ end }}"` {{ if .Description }}// {{ .Description }}{{ end }}
+{{- end }}
+}

@@ -2,7 +2,7 @@ package template
 
 type RenderOpts struct {
 	DryRun      bool     // DryRun will not write any files to disk
-	Scopes      []Scope  // Scopes is a list of scopes that should be rendered (empty means all)
+	Types       []Type   // Types can be used to only render files of specific types
 	IgnoreFiles []string // IgnoreFiles is a list of file names that should not be rendered
 }
 
@@ -33,25 +33,17 @@ type File struct {
 	Snippets        []string // Snippets is a list of paths to files that contain snippets that can be used in the template
 	TargetDirectory string   // TargetDirectory is the directory where the rendered file will be saved
 	TargetFileName  string   // TargetFileName contains the template for the file name
-	Scope           Scope    // Scope can be used as filter to only render files with a given scope
-	Iterator        Iterator // Iterator can be used to render the same template multiple times with different data
+	Type            Type     // Type is the type of the template
 	// TODO: allow to filter or transform template data per file
 }
 
-type Scope string
+type Type string
 
 const (
-	ScopeAPI       Scope = "api"
-	ScopeOperation Scope = "operation"
-	ScopeModel     Scope = "model"
-	ScopeSupport   Scope = "support"
-)
-
-type Iterator string
-
-const (
-	IteratorOnce          Iterator = "once"
-	IteratorEachAPI       Iterator = "each_api"
-	IteratorEachOperation Iterator = "each_operation"
-	IteratorEachModel     Iterator = "each_model"
+	TypeSupportOnce   Type = "support_once"
+	TypeAPIOnce       Type = "api_once"
+	TypeAPIEach       Type = "api_each"
+	TypeOperationEach Type = "operation_each"
+	TypeModelEach     Type = "model_each"
+	TypeEnumEach      Type = "enum_each"
 )
