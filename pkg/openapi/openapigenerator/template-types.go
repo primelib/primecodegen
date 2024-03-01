@@ -23,3 +23,9 @@ type ModelEachTemplate struct {
 type ModelsOnceTemplate struct {
 	Models []Model
 }
+
+type EnumEachTemplate struct {
+	Package string
+	Name    string
+	Enum    Enum
+}

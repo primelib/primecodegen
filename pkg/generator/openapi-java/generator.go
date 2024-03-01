@@ -51,7 +51,7 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 	// generate files
 	files, err := openapigenerator.GenerateFiles(fmt.Sprintf("openapi-%s-%s", g.Id(), opts.TemplateId), opts.OutputDir, templateData, template.RenderOpts{
 		DryRun:      opts.DryRun,
-		Scopes:      nil,
+		Types:       nil,
 		IgnoreFiles: nil,
 	})
 	if err != nil {
@@ -74,6 +74,15 @@ func (g *JavaGenerator) ToClassName(name string) string {
 
 	if slices.Contains(g.reservedWords, name) {
 		return name + "Model"
+	}
+	return name
+}
+
+func (g *JavaGenerator) ToFunctionName(name string) string {
+	name = util.ToCamelCase(name)
+
+	if slices.Contains(g.reservedWords, name) {
+		return name + "Func"
 	}
 	return name
 }

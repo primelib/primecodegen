@@ -23,6 +23,9 @@ type CodeGenerator interface {
 	// ToClassName converts a name to a language-specific class name
 	ToClassName(name string) string
 
+	// ToFunctionName converts a name to a language-specific function name
+	ToFunctionName(name string) string
+
 	// ToPropertyName converts a name to a language-specific property name
 	ToPropertyName(name string) string
 

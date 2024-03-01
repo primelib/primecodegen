@@ -6,6 +6,7 @@ import (
 
 	"github.com/pb33f/libopenapi"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 )
 
 func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator CodeGenerator) (DocumentModel, error) {
@@ -29,6 +30,15 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 	}
 	template.Models = models
 
+	enums, err := BuildEnums(ModelOpts{
+		Generator: generator,
+		Doc:       doc,
+	})
+	if err != nil {
+		return template, err
+	}
+	template.Enums = enums
+
 	return template, nil
 }
 
@@ -50,7 +60,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				Summary:     op.Value.Summary,
 				Description: op.Value.Description,
 				Tags:        op.Value.Tags,
-				OperationId: op.Value.OperationId,
+				OperationId: gen.ToFunctionName(op.Value.OperationId),
 				Deprecated:  getBoolValue(op.Value.Deprecated, false),
 				// DeprecatedReason: op.Value.Extensions.Get("x-deprecated"),
 			}
@@ -71,11 +81,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				if len(pSchema.Enum) > 0 {
 					pKind = KindEnum
 				}
-				allowedValues := make(map[string]AllowedValue)
-				for _, e := range pSchema.Enum {
-					allowedValues[e.Value] = AllowedValue{Value: e.Value}
-				}
-				allowedValues, err = extensionEnumDefinitions(pSchema, allowedValues)
+				allowedValues, err := openapidocument.EnumToAllowedValues(pSchema)
 				if err != nil {
 					return operations, fmt.Errorf("error processing enum definitions: %w", err)
 				}
@@ -130,6 +136,10 @@ func BuildModels(opts ModelOpts) ([]Model, error) {
 			return models, fmt.Errorf("error building component schema: %w", err)
 		}
 
+		if openapidocument.IsEnumSchema(s) {
+			continue
+		}
+
 		add := Model{
 			Name:        gen.ToClassName(s.Title),
 			Description: s.Description,
@@ -150,11 +160,7 @@ func BuildModels(opts ModelOpts) ([]Model, error) {
 				if len(pSchema.Enum) > 0 {
 					pKind = KindEnum
 				}
-				allowedValues := make(map[string]AllowedValue)
-				for _, e := range pSchema.Enum {
-					allowedValues[e.Value] = AllowedValue{Value: e.Value}
-				}
-				allowedValues, err = extensionEnumDefinitions(pSchema, allowedValues)
+				allowedValues, err := openapidocument.EnumToAllowedValues(pSchema)
 				if err != nil {
 					return models, fmt.Errorf("error processing enum definitions: %w", err)
 				}
@@ -194,4 +200,35 @@ func BuildModels(opts ModelOpts) ([]Model, error) {
 	}
 
 	return models, nil
+}
+
+func BuildEnums(opts ModelOpts) ([]Enum, error) {
+	var enums []Enum
+	gen := opts.Generator
+
+	for schema := opts.Doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
+		s, err := schema.Value.BuildSchema()
+		if err != nil {
+			return enums, fmt.Errorf("error building component schema: %w", err)
+		}
+
+		if !openapidocument.IsEnumSchema(s) {
+			continue
+		}
+
+		add := Enum{
+			Name:        gen.ToClassName(s.Title),
+			Description: s.Description,
+		}
+		allowedValues, err := openapidocument.EnumToAllowedValues(s)
+		if err != nil {
+			return enums, fmt.Errorf("error building enum definitions: %w", err)
+		}
+		add.AllowedValues = allowedValues
+
+		add.Imports = cleanImports(add.Imports)
+		enums = append(enums, add)
+	}
+
+	return enums, nil
 }

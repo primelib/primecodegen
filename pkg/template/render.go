@@ -14,10 +14,10 @@ import (
 //go:embed templates/*
 var templateFS embed.FS
 
-func RenderTemplateById(templateId string, outputDir string, scope Scope, data interface{}, opts RenderOpts) ([]RenderedFile, error) {
+func RenderTemplateById(templateId string, outputDir string, templateType Type, data interface{}, opts RenderOpts) ([]RenderedFile, error) {
 	for _, t := range allTemplates {
 		if t.ID == templateId {
-			return RenderTemplate(t, outputDir, scope, data, opts)
+			return RenderTemplate(t, outputDir, templateType, data, opts)
 		}
 	}
 
@@ -25,7 +25,7 @@ func RenderTemplateById(templateId string, outputDir string, scope Scope, data i
 }
 
 // RenderTemplate renders the template with the provided data and returns the rendered files
-func RenderTemplate(config Config, outputDir string, scope Scope, data interface{}, opts RenderOpts) ([]RenderedFile, error) {
+func RenderTemplate(config Config, outputDir string, templateType Type, data interface{}, opts RenderOpts) ([]RenderedFile, error) {
 	var files []RenderedFile
 
 	// pre-load all template files
@@ -41,7 +41,7 @@ func RenderTemplate(config Config, outputDir string, scope Scope, data interface
 	// render templates
 	// TODO: concurrency
 	for _, file := range config.Files {
-		if file.Scope != scope {
+		if file.Type != templateType {
 			continue
 		}
 
@@ -68,7 +68,7 @@ func RenderTemplate(config Config, outputDir string, scope Scope, data interface
 		// TODO: allow variables in target file name
 		targetDir := filepath.Join(outputDir, resolvedDir)
 		targetFile := filepath.Join(targetDir, resolvedFile)
-		skippedByScope := len(opts.Scopes) > 0 && !slices.Contains(opts.Scopes, file.Scope)
+		skippedByScope := len(opts.Types) > 0 && !slices.Contains(opts.Types, file.Type)
 		skippedByName := slices.Contains(opts.IgnoreFiles, file.TargetFileName)
 
 		var state FileState
