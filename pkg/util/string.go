@@ -1,9 +1,7 @@
 package util
 
 import (
-	"slices"
 	"strings"
-	"unicode"
 )
 
 // FirstNonEmptyString returns the first non-empty string from the input strings
@@ -44,62 +42,21 @@ func TrimNonASCII(input string) string {
 	}, input)
 }
 
-// CapitalizeAfterChars removes the characters in the chars slice and capitalizes the next character
-func CapitalizeAfterChars(input string, chars []int32, capitalizeFirst bool) string {
-	var strBuilder strings.Builder
-	shouldCapitalize := capitalizeFirst
-	for _, char := range input {
-		if slices.Contains(chars, char) {
-			shouldCapitalize = true
-			continue
-		}
-		if shouldCapitalize {
-			strBuilder.WriteRune(unicode.ToUpper(char))
-			shouldCapitalize = false
-		} else {
-			strBuilder.WriteRune(char)
+// FindCommonStrPrefix returns the common prefix of all provided strings if any
+func FindCommonStrPrefix(values []string) string {
+	if len(values) <= 1 {
+		return ""
+	}
+
+	prefix := values[0]
+	for _, str := range values[1:] {
+		for !strings.HasPrefix(str, prefix) {
+			prefix = prefix[:len(prefix)-1]
+			if prefix == "" {
+				return "" // If the prefix becomes empty, there's no common prefix
+			}
 		}
 	}
 
-	return strBuilder.String()
-}
-
-var replaceChars = []int32{'-', '_', ':'}
-
-func ToPascalCase(input string) string {
-	return CapitalizeAfterChars(input, replaceChars, true)
-}
-
-func ToSnakeCase(input string) string {
-	var strBuilder strings.Builder
-	for i, char := range input {
-		if slices.Contains(replaceChars, char) {
-			strBuilder.WriteRune('_')
-			continue
-		}
-		if i > 0 && unicode.IsUpper(char) {
-			strBuilder.WriteRune('_')
-		}
-		strBuilder.WriteRune(unicode.ToLower(char))
-	}
-	return strBuilder.String()
-}
-
-func ToKebabCase(input string) string {
-	var strBuilder strings.Builder
-	for i, char := range input {
-		if slices.Contains(replaceChars, char) {
-			strBuilder.WriteRune('-')
-			continue
-		}
-		if i > 0 && unicode.IsUpper(char) {
-			strBuilder.WriteRune('-')
-		}
-		strBuilder.WriteRune(unicode.ToLower(char))
-	}
-	return strBuilder.String()
-}
-
-func ToCamelCase(input string) string {
-	return LowerCaseFirstLetter(ToPascalCase(input))
+	return prefix
 }

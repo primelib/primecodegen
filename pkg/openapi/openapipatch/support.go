@@ -7,6 +7,7 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 )
 
@@ -14,6 +15,18 @@ func PruneOperationTags(doc *libopenapi.DocumentModel[v3.Document]) error {
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 			op.Value.Tags = nil
+		}
+	}
+
+	return nil
+}
+
+func PruneOperationTagsExceptFirst(doc *libopenapi.DocumentModel[v3.Document]) error {
+	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
+		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
+			if len(op.Value.Tags) > 1 {
+				op.Value.Tags = op.Value.Tags[:1]
+			}
 		}
 	}
 
@@ -32,7 +45,7 @@ func PruneCommonOperationIdPrefix(doc *libopenapi.DocumentModel[v3.Document]) er
 	}
 
 	// detect common prefix
-	commonPrefix := findPrefix(operationIds)
+	commonPrefix := util.FindCommonStrPrefix(operationIds)
 	if commonPrefix != "" {
 		log.Debug().Str("prefix", commonPrefix).Msg("found common operation id prefix, removing it from all operation IDs")
 		for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
@@ -49,7 +62,7 @@ func GenerateOperationIds(doc *libopenapi.DocumentModel[v3.Document]) error {
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		url := path.Key
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
-			op.Value.OperationId = toOperationId(op.Key, url)
+			op.Value.OperationId = util.ToOperationId(op.Key, url)
 			log.Trace().Str("path", strings.ToUpper(op.Key)+" "+url).Str("operation-id", op.Value.OperationId).Msg("replacing operation id with generated id")
 		}
 	}
@@ -72,7 +85,7 @@ func FlattenSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 					}
 
 					// move schema to components and replace with reference
-					key := op.Value.OperationId + "B" + strings.ToUpper(contentTypeToStr(rb.Key))
+					key := op.Value.OperationId + "B" + strings.ToUpper(util.ContentTypeToShortName(rb.Key))
 					log.Trace().Msg("moving request schema to components: " + key)
 					if ref, err := moveSchemaIntoComponents(doc, key, rb.Value.Schema); err != nil {
 						return fmt.Errorf("error moving schema to components: %w", err)
