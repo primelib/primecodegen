@@ -21,6 +21,13 @@ var V3Patchers = map[string]V3Config{
 		CodeGeneration: false,
 		Func:           PruneOperationTags,
 	},
+	"pruneOperationTagsExceptFirst": {
+		ID:             "pruneOperationTagsExceptOne",
+		Description:    "Removes all tags from operations except the first one",
+		Enabled:        false,
+		CodeGeneration: false,
+		Func:           PruneOperationTagsExceptFirst,
+	},
 	"pruneCommonOperationIdPrefix": {
 		ID:             "pruneCommonOperationIdPrefix",
 		Description:    "Removes common prefixes from operation IDs",

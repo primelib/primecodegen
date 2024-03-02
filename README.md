@@ -32,28 +32,16 @@ The CLI supports three use-cases:
 
 The `openapi-patch` command applies modifications and fixes to the openapi spec.
 
-**pruneOperationTags**
+| Patch                           | Default | Description                                                                                             |
+|---------------------------------|---------|---------------------------------------------------------------------------------------------------------|
+| `pruneOperationTags`            | true    | Removes all tags from operations.                                                                       |
+| `pruneOperationTagsExceptFirst` | false   | Removes all tags from operations except the first one.                                                  |
+| `pruneCommonOperationIdPrefix`  | false   | Removes common operation id prefixes (e. g. all operationIds start with `API_`)                         |
+| `generateOperationIds`          | false   | Generates operationIds for all operations based on the HTTP path and method, overwriting existing ones. |
+| `flattenSchema`                 | true    | Flattens inline request bodies and response schemas into the components section of the document.        |
+| `missingSchemaTitle`            | true    | Adds a title to all schemas that are missing a title.                                                   |
 
-Removes all tags from operations.
-
-**pruneCommonOperationIdPrefix**
-
-Removes common prefixes from operation IDs. If you have a spec where all operationIds start with e.g. `API_`, this patch will remove that prefix from all operationIds.
-If you have a lot of bad operationIds, using `generateOperationIds` might be a better option.
-
-**generateOperationIds**
-
-Generates operationIds for all operations and overwrites existing ones. The operationId is generated based on the HTTP method and the path.
-
-**flattenSchema**
-
-Flattens inline request bodies and response schemas into the components section of the document.
-
-**missingSchemaTitle**
-
-Adds a title to all schemas that are missing a title.
-
-> Note: The patches are applied in the order you specify them in.
+> Note: The patches are applied in the order you specify them in. If none are specified, patched flagged as `Default` are applied.
 
 ## OpenAPI Template Data
 
