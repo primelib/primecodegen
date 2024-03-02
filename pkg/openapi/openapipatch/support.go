@@ -73,7 +73,7 @@ func FlattenSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 
 					// move schema to components and replace with reference
 					key := op.Value.OperationId + "B" + strings.ToUpper(contentTypeToStr(rb.Key))
-					log.Trace().Msg("moving schema to components: " + key)
+					log.Trace().Msg("moving request schema to components: " + key)
 					if ref, err := moveSchemaIntoComponents(doc, key, rb.Value.Schema); err != nil {
 						return fmt.Errorf("error moving schema to components: %w", err)
 					} else if ref != nil {
@@ -101,6 +101,14 @@ func FlattenSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 
 				responseCount := op.Value.Responses.Codes.Len()
 				for rb := resp.Value.Content.Oldest(); rb != nil; rb = rb.Next() {
+					// fix for raw responses without schema (e.g. plain text, yaml)
+					if rb.Value.Schema == nil {
+						rb.Value.Schema = base.CreateSchemaProxy(&base.Schema{
+							Type:        []string{"string"},
+							Description: "Shemaless response",
+						})
+					}
+
 					if rb.Value.Schema.IsReference() { // skip references
 						continue
 					}
@@ -110,7 +118,7 @@ func FlattenSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 					if responseCount > 1 { // if there are multiple responses, append response code to key
 						key = key + "R" + resp.Key
 					}
-					log.Trace().Msg("moving schema to components: " + key)
+					log.Trace().Msg("moving response schema to components: " + key)
 					if ref, err := moveSchemaIntoComponents(doc, key, rb.Value.Schema); err != nil {
 						return fmt.Errorf("error moving schema to components: %w", err)
 					} else if ref != nil {

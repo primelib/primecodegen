@@ -64,7 +64,7 @@ func CapitalizeAfterChars(input string, chars []int32, capitalizeFirst bool) str
 	return strBuilder.String()
 }
 
-var replaceChars = []int32{'-', '_'}
+var replaceChars = []int32{'-', '_', ':'}
 
 func ToPascalCase(input string) string {
 	return CapitalizeAfterChars(input, replaceChars, true)

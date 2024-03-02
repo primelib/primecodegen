@@ -34,7 +34,7 @@ func toOperationId(method string, url string) string {
 	version := extractApiVersionVersionFromUrl(url)
 	operationID = strings.Replace(operationID, "/v"+version+"/", "", 1)
 
-	return strings.ToLower(method) + util.CapitalizeAfterChars(operationID, []int32{'/', '-'}, true) + "V" + version
+	return strings.ToLower(method) + util.CapitalizeAfterChars(operationID, []int32{'/', '-', ':'}, true) + "V" + version
 }
 
 func removePathParams(url string) string {
