@@ -74,7 +74,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 
 				pType, err := gen.ToCodeType(param.Schema.Schema())
 				if err != nil {
-					return operations, fmt.Errorf("error converting type: %w", err)
+					return operations, fmt.Errorf("error converting type of [%s:%s:parameter:%s]: %w", path.Key, op.Key, param.Name, err)
 				}
 
 				pKind := KindVar
@@ -153,7 +153,7 @@ func BuildModels(opts ModelOpts) ([]Model, error) {
 
 				pType, err := gen.ToCodeType(pSchema)
 				if err != nil {
-					return models, fmt.Errorf("error converting type: %w", err)
+					return models, fmt.Errorf("error converting type of [%s:object:%s]: %w", schema.Key, p.Key, err)
 				}
 
 				pKind := KindVar
@@ -180,14 +180,14 @@ func BuildModels(opts ModelOpts) ([]Model, error) {
 		} else if slices.Contains(s.Type, "array") {
 			mParent, err := gen.ToCodeType(s)
 			if err != nil {
-				return models, fmt.Errorf("error converting type: %w", err)
+				return models, fmt.Errorf("error converting type of [%s:array]: %w", schema.Key, err)
 			}
 
 			add.Parent = mParent
 		} else {
 			mType, err := gen.ToCodeType(s)
 			if err != nil {
-				return models, fmt.Errorf("error converting type: %w", err)
+				return models, fmt.Errorf("error converting type of [%s]: %w", schema.Key, err)
 			}
 
 			add.Parent = mType
