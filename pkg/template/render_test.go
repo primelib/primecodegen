@@ -16,16 +16,15 @@ func TestRenderTemplateDryRun(t *testing.T) {
 			{
 				Description:     "model file",
 				SourceTemplate:  "model.gohtml",
-				Snippets:        []string{"snippet1.gohtml"},
+				Snippets:        defaultSnippets,
 				TargetDirectory: "models",
 				TargetFileName:  "model.go",
-				Scope:           ScopeAPI,
-				Iterator:        IteratorEachAPI,
+				Type:            TypeModelEach,
 			},
 		},
 	}
 
-	files, err := RenderTemplate(config, "", ScopeModel, map[string]string{
+	files, err := RenderTemplate(config, "", TypeModelEach, map[string]string{
 		"model": "User",
 	}, RenderOpts{DryRun: true})
 	assert.NoError(t, err)
@@ -48,16 +47,15 @@ func TestRenderTemplateFile(t *testing.T) {
 			{
 				Description:     "model file",
 				SourceTemplate:  "model.gohtml",
-				Snippets:        []string{"snippet1.gohtml"},
+				Snippets:        defaultSnippets,
 				TargetDirectory: "models",
 				TargetFileName:  "model.go",
-				Scope:           ScopeAPI,
-				Iterator:        IteratorEachAPI,
+				Type:            TypeModelEach,
 			},
 		},
 	}
 
-	files, err := RenderTemplate(config, outputDir, ScopeModel, map[string]string{
+	files, err := RenderTemplate(config, outputDir, TypeModelEach, map[string]string{
 		"model": "User",
 	}, RenderOpts{DryRun: false})
 	assert.NoError(t, err)

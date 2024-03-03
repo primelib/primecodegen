@@ -10,9 +10,9 @@ func TestCommentSingleLine(t *testing.T) {
 		output string
 	}{
 		{"", ""},
-		{"foo", "// foo"},
-		{"foo\nbar", "// foo bar"},
-		{"foo\nbar\nbaz", "// foo bar baz"},
+		{"foo", "foo"},
+		{"foo\nbar", "foo bar"},
+		{"foo\nbar\nbaz", "foo bar baz"},
 	}
 
 	for _, test := range tests {

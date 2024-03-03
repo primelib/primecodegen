@@ -1,7 +1,7 @@
 package template
 
 import (
-	"html/template"
+	"text/template"
 
 	"github.com/primelib/primecodegen/pkg/util"
 )
@@ -31,8 +31,8 @@ var templateFunctions = template.FuncMap{
 	"camelCase": func(input string) string {
 		return util.ToCamelCase(input)
 	},
-	"commentSingleLine": func(comment string) string {
-		return util.CommentSingleLine(comment)
+	"commentSingleLine": func(input string) string {
+		return util.CommentSingleLine(input)
 	},
 	"conditionalValue": func(condition bool, trueValue, falseValue interface{}) interface{} {
 		return util.ConditionalValue(condition, trueValue, falseValue)

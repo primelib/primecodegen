@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
-	"html/template"
 	"os"
 	"path"
 	"path/filepath"
 	"slices"
+	"text/template"
 )
 
 //go:embed templates/*
@@ -104,6 +104,7 @@ func loadTemplate(templateId string, files []string) (*template.Template, error)
 	lookupTemplates := []string{templateId, "_global"}
 
 	tmpl := template.New(name)
+	tmpl.Funcs(templateFunctions)
 	for _, f := range files {
 		err := loadTemplateById(tmpl, lookupTemplates, f)
 		if err != nil {
@@ -112,7 +113,6 @@ func loadTemplate(templateId string, files []string) (*template.Template, error)
 	}
 
 	if len(tmpl.Templates()) > 0 {
-		tmpl.Funcs(templateFunctions)
 		return tmpl, nil
 	}
 	return nil, fmt.Errorf("neither embedded filesystem nor PRIMECODEGEN_TEMPLATE_DIR environment variable is set")

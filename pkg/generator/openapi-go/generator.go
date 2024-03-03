@@ -163,12 +163,14 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema) (string, error) {
 		return "interface{}", nil
 	}
 	if slices.Contains(schema.Type, "object") && schema.AdditionalProperties != nil {
+		keyType := "string"
+
 		additionalProperties, err := g.ToCodeType(schema.AdditionalProperties.A.Schema())
 		if err != nil {
-			return "", fmt.Errorf("unhandled additional properties type. schema: %s, format: %s", schema.Type, schema.Format)
+			return "", fmt.Errorf("unhandled additional properties type. schema: %s, format: %s: %w", schema.Type, schema.Format, err)
 		}
 
-		return "map[string]" + additionalProperties, nil
+		return "map[" + keyType + "]" + additionalProperties, nil
 	}
 	if slices.Contains(schema.Type, "object") {
 		if schema.Title == "" {

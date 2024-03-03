@@ -28,7 +28,6 @@ type Parameter struct {
 	FieldName        string                                  `yaml:"fieldName,omitempty"` // FieldName is the original name of the parameter
 	In               string                                  `yaml:"in,omitempty"`
 	Description      string                                  `yaml:"description,omitempty"`
-	Kind             PropertyKind                            `yaml:"kind,omitempty"`
 	Type             string                                  `yaml:"type,omitempty"`
 	IsPrimitiveType  bool                                    `yaml:"isPrimitiveType,omitempty"`
 	Required         bool                                    `yaml:"required,omitempty"`
@@ -49,6 +48,7 @@ type Enum struct {
 	Name          string                                  `yaml:"name"`
 	Description   string                                  `yaml:"description,omitempty"`
 	Parent        string                                  `yaml:"parent,omitempty"`
+	ValueType     string                                  `yaml:"ValueType,omitempty"`
 	AllowedValues map[string]openapidocument.AllowedValue `yaml:"allowedValues,omitempty"`
 	Imports       []string                                `yaml:"imports,omitempty"`
 }
@@ -58,17 +58,9 @@ type Property struct {
 	FieldName       string                                  `yaml:"fieldName,omitempty"`   // FieldName is the original name of the parameter
 	Title           string                                  `yaml:"title,omitempty"`       // Title is the human-readable name of the parameter
 	Description     string                                  `yaml:"description,omitempty"` // Description is the human-readable description of the parameter
-	Kind            PropertyKind                            `yaml:"kind,omitempty"`        // Kind is the type of the parameter
 	Type            string                                  `yaml:"type,omitempty"`
 	IsPrimitiveType bool                                    `yaml:"isPrimitiveType,omitempty"`
 	Nullable        bool                                    `yaml:"nullable,omitempty"`
 	AllowedValues   map[string]openapidocument.AllowedValue `yaml:"allowedValues,omitempty"`
 	Items           []Property                              `yaml:"items,omitempty"`
 }
-
-type PropertyKind string
-
-const (
-	KindVar  PropertyKind = "var"
-	KindEnum PropertyKind = "enum"
-)

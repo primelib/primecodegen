@@ -2,19 +2,22 @@
 {{- template "header-singleline" }}
 package {{ .Package }}
 
-{{ if .Model.Imports -}}
+{{ if .Enum.Imports -}}
 import (
-{{- range .Model.Imports }}
+{{- range .Enum.Imports }}
     "{{ . }}"
 {{ end -}}
 )
 {{- end }}
 
-{{ if .Model.Description -}}
-// {{ .Model.Name }} {{ .Model.Description }}
+{{ if .Enum.Description -}}
+// {{ .Enum.Name }} {{ .Enum.Description | commentSingleLine }}
 {{ end -}}
-type {{ .Model.Name }} struct {
-{{- range .Model.Properties }}
-    {{ .Name }} {{ if .IsPrimitiveType }}*{{ end }}{{ .Type }} `json:"{{ .FieldName }}{{ if eq .Type "*bool" }},renderZero{{ end }}{{ if .Nullable }},omitempty{{ end }}"` {{ if .Description }}// {{ .Description }}{{ end }}
+{{- $root := . -}}
+type {{ .Enum.Name }} {{ .Enum.ValueType }}
+
+const (
+{{- range $value := .Enum.AllowedValues }}
+    {{ $root.Enum.Name }}{{ $value.Name }} {{ $root.Enum.Name }} = "{{ $value.Value }}"{{ if $value.Description }} // {{ $value.Description | commentSingleLine }}{{ end }}
 {{- end }}
-}
+)
