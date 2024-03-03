@@ -11,10 +11,10 @@ import (
 {{- end }}
 
 {{ if .Model.Description -}}
-// {{ .Model.Name }} {{ .Model.Description }}
+// {{ .Model.Name }} {{ .Model.Description | commentSingleLine }}
 {{ end -}}
 type {{ .Model.Name }} struct {
 {{- range .Model.Properties }}
-    {{ .Name }} {{ if .IsPrimitiveType }}*{{ end }}{{ .Type }} `json:"{{ .FieldName }}{{ if eq .Type "*bool" }},renderZero{{ end }}{{ if .Nullable }},omitempty{{ end }}"` {{ if .Description }}// {{ .Description }}{{ end }}
+    {{ .Name }} {{ if .IsPrimitiveType }}*{{ end }}{{ .Type }} `json:"{{ .FieldName }}{{ if eq .Type "*bool" }},renderZero{{ end }}{{ if .Nullable }},omitempty{{ end }}"` {{ if .Description }}// {{ .Description | commentSingleLine }}{{ end }}
 {{- end }}
 }

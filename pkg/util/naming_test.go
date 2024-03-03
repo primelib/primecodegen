@@ -34,6 +34,8 @@ func TestToPascalCase(t *testing.T) {
 		{"hello-world", "HelloWorld"},
 		{"helloWorld", "HelloWorld"},
 		{"HelloWorld", "HelloWorld"},
+		{"plain text", "PlainText"},
+		{"PLAIN TEXT", "PlainText"},
 		{"", ""},
 	}
 

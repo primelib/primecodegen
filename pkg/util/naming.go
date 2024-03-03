@@ -4,9 +4,17 @@ import (
 	"slices"
 	"strings"
 	"unicode"
+
+	"github.com/iancoleman/strcase"
 )
 
-var replaceChars = []int32{'-', '_', ':'}
+var replaceChars = []int32{'-', '_', ':', ' '}
+
+func init() {
+	// configure acronyms
+	strcase.ConfigureAcronym("API", "api")
+	strcase.ConfigureAcronym("HTML", "html")
+}
 
 // CapitalizeAfterChars removes the characters in the chars slice and capitalizes the next character
 func CapitalizeAfterChars(input string, chars []int32, capitalizeFirst bool) string {
@@ -29,39 +37,17 @@ func CapitalizeAfterChars(input string, chars []int32, capitalizeFirst bool) str
 }
 
 func ToPascalCase(input string) string {
-	return CapitalizeAfterChars(input, replaceChars, true)
+	return strcase.ToCamel(input)
 }
 
 func ToSnakeCase(input string) string {
-	var strBuilder strings.Builder
-	for i, char := range input {
-		if slices.Contains(replaceChars, char) {
-			strBuilder.WriteRune('_')
-			continue
-		}
-		if i > 0 && unicode.IsUpper(char) {
-			strBuilder.WriteRune('_')
-		}
-		strBuilder.WriteRune(unicode.ToLower(char))
-	}
-	return strBuilder.String()
+	return strcase.ToSnake(input)
 }
 
 func ToKebabCase(input string) string {
-	var strBuilder strings.Builder
-	for i, char := range input {
-		if slices.Contains(replaceChars, char) {
-			strBuilder.WriteRune('-')
-			continue
-		}
-		if i > 0 && unicode.IsUpper(char) {
-			strBuilder.WriteRune('-')
-		}
-		strBuilder.WriteRune(unicode.ToLower(char))
-	}
-	return strBuilder.String()
+	return strcase.ToKebab(input)
 }
 
 func ToCamelCase(input string) string {
-	return LowerCaseFirstLetter(ToPascalCase(input))
+	return strcase.ToLowerCamel(input)
 }

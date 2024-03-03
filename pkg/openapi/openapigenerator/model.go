@@ -19,16 +19,16 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 	if err != nil {
 		return template, err
 	}
-	template.Operations = operations
+	template.Operations = append(template.Operations, operations...)
 
-	models, err := BuildModels(ModelOpts{
+	models, err := BuildComponentModels(ModelOpts{
 		Generator: generator,
 		Doc:       doc,
 	})
 	if err != nil {
 		return template, err
 	}
-	template.Models = models
+	template.Models = append(template.Models, models...)
 
 	enums, err := BuildEnums(ModelOpts{
 		Generator: generator,
@@ -37,7 +37,7 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 	if err != nil {
 		return template, err
 	}
-	template.Enums = enums
+	template.Enums = append(template.Enums, enums...)
 
 	return template, nil
 }
@@ -77,10 +77,6 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					return operations, fmt.Errorf("error converting type of [%s:%s:parameter:%s]: %w", path.Key, op.Key, param.Name, err)
 				}
 
-				pKind := KindVar
-				if len(pSchema.Enum) > 0 {
-					pKind = KindEnum
-				}
 				allowedValues, err := openapidocument.EnumToAllowedValues(pSchema)
 				if err != nil {
 					return operations, fmt.Errorf("error processing enum definitions: %w", err)
@@ -90,7 +86,6 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					FieldName:       param.Name,
 					In:              param.In,
 					Description:     param.Description,
-					Kind:            pKind,
 					Type:            pType,
 					IsPrimitiveType: gen.IsPrimitiveType(pType),
 					AllowedValues:   allowedValues,
@@ -108,7 +103,6 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					Name:        "payload",
 					In:          "body",
 					Description: rb.Description,
-					Kind:        KindVar,
 					Type:        "string",
 				})
 			}
@@ -126,7 +120,7 @@ type ModelOpts struct {
 	Doc       *libopenapi.DocumentModel[v3.Document]
 }
 
-func BuildModels(opts ModelOpts) ([]Model, error) {
+func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 	var models []Model
 	gen := opts.Generator
 
@@ -156,10 +150,6 @@ func BuildModels(opts ModelOpts) ([]Model, error) {
 					return models, fmt.Errorf("error converting type of [%s:object:%s]: %w", schema.Key, p.Key, err)
 				}
 
-				pKind := KindVar
-				if len(pSchema.Enum) > 0 {
-					pKind = KindEnum
-				}
 				allowedValues, err := openapidocument.EnumToAllowedValues(pSchema)
 				if err != nil {
 					return models, fmt.Errorf("error processing enum definitions: %w", err)
@@ -168,7 +158,6 @@ func BuildModels(opts ModelOpts) ([]Model, error) {
 					Name:            gen.ToPropertyName(p.Key),
 					FieldName:       p.Key,
 					Description:     pSchema.Description,
-					Kind:            pKind,
 					Title:           pSchema.Title,
 					Type:            pType,
 					IsPrimitiveType: gen.IsPrimitiveType(pType),
@@ -216,16 +205,25 @@ func BuildEnums(opts ModelOpts) ([]Enum, error) {
 			continue
 		}
 
+		vType, err := gen.ToCodeType(s)
+		if err != nil {
+			return enums, fmt.Errorf("error converting type of [%s]: %w", schema.Key, err)
+		}
+
 		add := Enum{
-			Name:        gen.ToClassName(s.Title),
-			Description: s.Description,
+			Name:          gen.ToClassName(s.Title),
+			Description:   s.Description,
+			ValueType:     vType,
+			AllowedValues: make(map[string]openapidocument.AllowedValue),
 		}
 		allowedValues, err := openapidocument.EnumToAllowedValues(s)
 		if err != nil {
 			return enums, fmt.Errorf("error building enum definitions: %w", err)
 		}
-		add.AllowedValues = allowedValues
-
+		for k, v := range allowedValues {
+			v.Name = gen.ToPropertyName(v.Name)
+			add.AllowedValues[k] = v
+		}
 		add.Imports = cleanImports(add.Imports)
 		enums = append(enums, add)
 	}
