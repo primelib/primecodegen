@@ -138,13 +138,16 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema) (string, error) {
 		return "bool", nil
 	}
 	if slices.Contains(schema.Type, "integer") && schema.Format == "" {
-		return "int32", nil
+		return "int64", nil
 	}
 	if slices.Contains(schema.Type, "integer") && schema.Format == "int32" {
 		return "int32", nil
 	}
 	if slices.Contains(schema.Type, "integer") && schema.Format == "int64" {
 		return "int64", nil
+	}
+	if slices.Contains(schema.Type, "number") && schema.Format == "" {
+		return "float64", nil
 	}
 	if slices.Contains(schema.Type, "number") && schema.Format == "float" {
 		return "float32", nil

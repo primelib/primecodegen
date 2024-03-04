@@ -144,6 +144,9 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema) (string, error) {
 	if slices.Contains(schema.Type, "integer") && schema.Format == "int64" {
 		return "long", nil
 	}
+	if slices.Contains(schema.Type, "number") && schema.Format == "" {
+		return "double", nil
+	}
 	if slices.Contains(schema.Type, "number") && schema.Format == "float" {
 		return "float", nil
 	}
