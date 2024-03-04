@@ -7,6 +7,7 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 )
@@ -149,9 +150,11 @@ func FlattenSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 		}
 
 		for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
-			// TODO: flatten inner schemas
-			// out, _ := p.Value.Render()
-			// fmt.Println(string(out))
+			// simplify polymorphism
+			_, err := openapidocument.SimplifyPolymorphism(p.Value)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

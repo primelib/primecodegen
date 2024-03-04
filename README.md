@@ -58,6 +58,7 @@ TODO: documentation
 ## Roadmap
 
 - [ ] Add support for AsyncAPI
+- [ ] Add support for Protobuf
 
 ## Credits
 
