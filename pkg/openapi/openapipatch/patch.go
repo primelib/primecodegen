@@ -32,7 +32,6 @@ func PatchV3(patchIds []string, doc libopenapi.Document, v3doc *libopenapi.Docum
 		} else {
 			return doc, v3doc, fmt.Errorf("patch with given id not found: %s", patchId)
 		}
-
 	}
 
 	return doc, v3doc, nil
