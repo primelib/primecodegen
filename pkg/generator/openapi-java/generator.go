@@ -165,7 +165,7 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema) (string, error) {
 			// TODO: ensure all schemas have a title
 			// return "", fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
 		}
-		return schema.Title, nil
+		return g.ToClassName(schema.Title), nil
 	}
 
 	return "", fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)

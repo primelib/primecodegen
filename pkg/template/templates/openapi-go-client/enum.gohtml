@@ -21,3 +21,7 @@ const (
     {{ $root.Enum.Name }}{{ $value.Name }} {{ $root.Enum.Name }} = "{{ $value.Value }}"{{ if $value.Description }} // {{ $value.Description | commentSingleLine }}{{ end }}
 {{- end }}
 )
+
+func (e {{ .Enum.Name }}) ToPointer() *{{ .Enum.Name }} {
+    return &e
+}
