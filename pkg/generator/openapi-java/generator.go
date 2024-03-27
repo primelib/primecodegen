@@ -62,6 +62,12 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 	}
 	log.Info().Msgf("Generated %d files", len(files))
 
+	// post-processing (formatting)
+	err = g.PostProcessing(opts.OutputDir)
+	if err != nil {
+		return fmt.Errorf("failed to run post-processing: %w", err)
+	}
+
 	return nil
 }
 
@@ -181,6 +187,10 @@ func (g *JavaGenerator) TypeToImport(typeName string) string {
 	}
 
 	return g.typeToImport[typeName]
+}
+
+func (g *JavaGenerator) PostProcessing(outputDir string) error {
+	return nil
 }
 
 func NewGenerator() *JavaGenerator {
