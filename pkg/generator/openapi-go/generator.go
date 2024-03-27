@@ -2,6 +2,7 @@ package openapi_go
 
 import (
 	"fmt"
+	"os/exec"
 	"slices"
 	"strings"
 
@@ -62,6 +63,12 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		log.Debug().Str("file", f.File).Str("template-file", f.TemplateFile).Str("state", string(f.State)).Msg("Generated file")
 	}
 	log.Info().Msgf("Generated %d files", len(files))
+
+	// post-processing (formatting)
+	err = g.PostProcessing(opts.OutputDir)
+	if err != nil {
+		return fmt.Errorf("failed to run post-processing: %w", err)
+	}
 
 	return nil
 }
@@ -198,6 +205,17 @@ func (g *GoGenerator) TypeToImport(typeName string) string {
 	typeName = strings.Replace(typeName, "*", "", -1)
 
 	return g.typeToImport[typeName]
+}
+
+func (g *GoGenerator) PostProcessing(outputDir string) error {
+	// run gofmt
+	cmd := exec.Command("gofmt", "-s", "-w", outputDir)
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error running gofmt: %v", err)
+	}
+
+	return nil
 }
 
 func NewGenerator() *GoGenerator {
