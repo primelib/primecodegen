@@ -8,10 +8,26 @@ var allTemplates = []Config{
 		Description: "OpenAPI Client for Go",
 		Files: []File{
 			{
+				Description:     "client",
+				SourceTemplate:  "client.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "",
+				TargetFileName:  "client.go",
+				Type:            TypeAPIOnce,
+			},
+			{
+				Description:     "service per tag with all operations",
+				SourceTemplate:  "service.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "",
+				TargetFileName:  "service-{{ .TagName }}.go",
+				Type:            TypeAPIEach,
+			},
+			{
 				Description:     "model file",
 				SourceTemplate:  "model.gohtml",
 				Snippets:        defaultSnippets,
-				TargetDirectory: "models",
+				TargetDirectory: "pkgs/models",
 				TargetFileName:  "{{ .Name }}.go",
 				Type:            TypeModelEach,
 			},
@@ -19,9 +35,17 @@ var allTemplates = []Config{
 				Description:     "model file",
 				SourceTemplate:  "enum.gohtml",
 				Snippets:        defaultSnippets,
-				TargetDirectory: "models",
+				TargetDirectory: "pkgs/models",
 				TargetFileName:  "{{ .Name }}.go",
 				Type:            TypeEnumEach,
+			},
+			{
+				Description:     "operation",
+				SourceTemplate:  "operation.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "pkgs/operations",
+				TargetFileName:  "{{ .Name }}.go",
+				Type:            TypeOperationEach,
 			},
 			// support files
 			{

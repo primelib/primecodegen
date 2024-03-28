@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/cidverse/go-ptr"
 	"github.com/pb33f/libopenapi"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
@@ -12,6 +13,7 @@ import (
 func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator CodeGenerator) (DocumentModel, error) {
 	var template = DocumentModel{}
 
+	// all operations
 	operations, err := BuildOperations(OperationOpts{
 		Generator: generator,
 		Doc:       doc,
@@ -21,6 +23,13 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 	}
 	template.Operations = append(template.Operations, operations...)
 
+	// operations by tag
+	template.OperationsByTag = make(map[string][]Operation)
+	for _, op := range operations {
+		template.OperationsByTag[op.Tag] = append(template.OperationsByTag[op.Tag], op)
+	}
+
+	// models
 	models, err := BuildComponentModels(ModelOpts{
 		Generator: generator,
 		Doc:       doc,
@@ -30,6 +39,7 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 	}
 	template.Models = append(template.Models, models...)
 
+	// enums
 	enums, err := BuildEnums(ModelOpts{
 		Generator: generator,
 		Doc:       doc,
@@ -59,10 +69,23 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				Method:      op.Key,
 				Summary:     op.Value.Summary,
 				Description: op.Value.Description,
+				Tag:         "default",
 				Tags:        op.Value.Tags,
 				OperationId: gen.ToFunctionName(op.Value.OperationId),
 				Deprecated:  getBoolValue(op.Value.Deprecated, false),
 				// DeprecatedReason: op.Value.Extensions.Get("x-deprecated"),
+				Documentation: make([]Documentation, 0),
+			}
+			if len(op.Value.Tags) > 0 {
+				operation.Tag = op.Value.Tags[0]
+			}
+
+			// external docs
+			if op.Value.ExternalDocs != nil {
+				operation.Documentation = append(operation.Documentation, Documentation{
+					Title: op.Value.ExternalDocs.Description,
+					URL:   op.Value.ExternalDocs.URL,
+				})
 			}
 
 			// operation parameters
@@ -72,7 +95,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					return operations, fmt.Errorf("error building property schema: %w", err)
 				}
 
-				pType, err := gen.ToCodeType(param.Schema.Schema())
+				pType, err := gen.ToCodeType(param.Schema.Schema(), ptr.Value(param.Required))
 				if err != nil {
 					return operations, fmt.Errorf("error converting type of [%s:%s:parameter:%s]: %w", path.Key, op.Key, param.Name, err)
 				}
@@ -81,7 +104,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				if err != nil {
 					return operations, fmt.Errorf("error processing enum definitions: %w", err)
 				}
-				operation.Parameters = append(operation.Parameters, Parameter{
+				p := Parameter{
 					Name:            gen.ToParameterName(param.Name),
 					FieldName:       param.Name,
 					In:              param.In,
@@ -92,7 +115,17 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					Required:        getBoolValue(param.Required, false),
 					Deprecated:      param.Deprecated,
 					// DeprecatedReason: param.Value.Extensions.Get("x-deprecated"),
-				})
+				}
+				operation.Parameters = append(operation.Parameters, p)
+				if p.In == "path" {
+					operation.PathParameters = append(operation.PathParameters, p)
+				} else if p.In == "query" {
+					operation.QueryParameters = append(operation.QueryParameters, p)
+				} else if p.In == "header" {
+					operation.HeaderParameters = append(operation.HeaderParameters, p)
+				} else if p.In == "cookie" {
+					operation.CookieParameters = append(operation.CookieParameters, p)
+				}
 				operation.Imports = append(operation.Imports, gen.TypeToImport(pType))
 			}
 
@@ -145,7 +178,7 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 					return models, fmt.Errorf("error building property schema: %w", err)
 				}
 
-				pType, err := gen.ToCodeType(pSchema)
+				pType, err := gen.ToCodeType(pSchema, false)
 				if err != nil {
 					return models, fmt.Errorf("error converting type of [%s:object:%s]: %w", schema.Key, p.Key, err)
 				}
@@ -167,14 +200,14 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 				add.Imports = append(add.Imports, gen.TypeToImport(pType))
 			}
 		} else if slices.Contains(s.Type, "array") {
-			mParent, err := gen.ToCodeType(s)
+			mParent, err := gen.ToCodeType(s, false)
 			if err != nil {
 				return models, fmt.Errorf("error converting type of [%s:array]: %w", schema.Key, err)
 			}
 
 			add.Parent = mParent
 		} else {
-			mType, err := gen.ToCodeType(s)
+			mType, err := gen.ToCodeType(s, false)
 			if err != nil {
 				return models, fmt.Errorf("error converting type of [%s]: %w", schema.Key, err)
 			}
@@ -205,7 +238,7 @@ func BuildEnums(opts ModelOpts) ([]Enum, error) {
 			continue
 		}
 
-		vType, err := gen.ToCodeType(s)
+		vType, err := gen.ToCodeType(s, true)
 		if err != nil {
 			return enums, fmt.Errorf("error converting type of [%s]: %w", schema.Key, err)
 		}

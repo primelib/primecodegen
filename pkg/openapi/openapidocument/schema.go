@@ -8,6 +8,7 @@ import (
 
 type SchemaMatchFunc func(schema *base.Schema) bool
 
+// AllSchemasMatch returns true if the given function returns true for all input schemas
 func AllSchemasMatch(schemas []*base.SchemaProxy, f SchemaMatchFunc) bool {
 	for _, schemaProxy := range schemas {
 		if !f(schemaProxy.Schema()) {
@@ -18,6 +19,7 @@ func AllSchemasMatch(schemas []*base.SchemaProxy, f SchemaMatchFunc) bool {
 	return true
 }
 
+// IsEnumSchema returns true if the schema is an enum schema
 func IsEnumSchema(s *base.Schema) bool {
 	// 3.0 enum
 	if len(s.Enum) > 0 {
@@ -31,6 +33,22 @@ func IsEnumSchema(s *base.Schema) bool {
 		}) {
 			return true
 		}
+	}
+
+	return false
+}
+
+// IsPolypmorphicSchema returns true if the schema is a polymorphic schema (oneOf, anyOf)
+func IsPolypmorphicSchema(s *base.Schema) bool {
+	if IsEnumSchema(s) {
+		return false
+	}
+
+	if s.OneOf != nil && len(s.OneOf) > 1 {
+		return true
+	}
+	if s.AnyOf != nil && len(s.AnyOf) > 1 {
+		return true
 	}
 
 	return false

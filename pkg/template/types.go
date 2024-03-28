@@ -1,9 +1,10 @@
 package template
 
 type RenderOpts struct {
-	DryRun      bool     // DryRun will not write any files to disk
-	Types       []Type   // Types can be used to only render files of specific types
-	IgnoreFiles []string // IgnoreFiles is a list of file names that should not be rendered
+	DryRun      bool              // DryRun will not write any files to disk
+	Types       []Type            // Types can be used to only render files of specific types
+	IgnoreFiles []string          // IgnoreFiles is a list of file names that should not be rendered
+	Properties  map[string]string // User-defined properties that can be used in the templates
 }
 
 type RenderedFile struct {
@@ -40,10 +41,10 @@ type File struct {
 type Type string
 
 const (
-	TypeSupportOnce   Type = "support_once"
 	TypeAPIOnce       Type = "api_once"
 	TypeAPIEach       Type = "api_each"
 	TypeOperationEach Type = "operation_each"
 	TypeModelEach     Type = "model_each"
 	TypeEnumEach      Type = "enum_each"
+	TypeSupportOnce   Type = "support_once"
 )

@@ -21,27 +21,50 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 
 	var data []interface{}
 	data = append(data, SupportOnceTemplate{
-		GoModule: "github.com/primelib/primecodegen", // TODO: configurable
+		ProjectName: renderOpts.Properties["projectName"],
+		GoModule:    renderOpts.Properties["goModule"],
 	})
+	data = append(data, APIOnceTemplate{
+		ProjectName: renderOpts.Properties["projectName"],
+		Package:     "clients",
+		Operations:  templateData.Operations,
+	})
+	for tag, ops := range templateData.OperationsByTag {
+		tagDescription := ""
+		if tagData, ok := templateData.Tags[tag]; ok {
+			tagDescription = tagData.Description
+		}
+
+		data = append(data, APIEachTemplate{
+			ProjectName:    renderOpts.Properties["projectName"],
+			Package:        "clients",
+			TagName:        tag,
+			TagDescription: tagDescription,
+			Operations:     ops,
+		})
+	}
 	for _, op := range templateData.Operations {
 		data = append(data, OperationEachTemplate{
-			Package:   "operations", // TODO: need this from the generator
-			Name:      op.OperationId,
-			Operation: op,
+			ProjectName: renderOpts.Properties["projectName"],
+			Package:     "operations", // TODO: need this from the generator
+			Name:        op.OperationId,
+			Operation:   op,
 		})
 	}
 	for _, model := range templateData.Models {
 		data = append(data, ModelEachTemplate{
-			Package: "types", // TODO: need this from the generator
-			Name:    model.Name,
-			Model:   model,
+			ProjectName: renderOpts.Properties["projectName"],
+			Package:     "types", // TODO: need this from the generator
+			Name:        model.Name,
+			Model:       model,
 		})
 	}
 	for _, enum := range templateData.Enums {
 		data = append(data, EnumEachTemplate{
-			Package: "types", // TODO: need this from the generator
-			Name:    enum.Name,
-			Enum:    enum,
+			ProjectName: renderOpts.Properties["projectName"],
+			Package:     "types", // TODO: need this from the generator
+			Name:        enum.Name,
+			Enum:        enum,
 		})
 	}
 
@@ -52,6 +75,12 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 
 		if _, ok := d.(SupportOnceTemplate); ok {
 			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeSupportOnce, d, renderOpts)
+		}
+		if _, ok := d.(APIOnceTemplate); ok {
+			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeAPIOnce, d, renderOpts)
+		}
+		if _, ok := d.(APIEachTemplate); ok {
+			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeAPIEach, d, renderOpts)
 		}
 		if _, ok := d.(OperationEachTemplate); ok {
 			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeOperationEach, d, renderOpts)

@@ -1,0 +1,26 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+package {{ .Package }}
+
+import (
+    "time"
+
+    "github.com/imroc/req/v3"
+)
+
+type GithubClient struct {
+    *req.Client
+
+    // Services used for talking to different parts of the GitHub API.
+    Default *DefaultService
+}
+
+func NewClient() {
+    client := req.C().
+      SetUserAgent("my-custom-client").
+      SetTimeout(5 * time.Second)
+}
+
+type service struct {
+    client *Client
+}

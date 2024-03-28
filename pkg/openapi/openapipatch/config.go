@@ -49,6 +49,13 @@ var V3Patchers = map[string]V3Config{
 		CodeGeneration: true,
 		Func:           FlattenSchemas,
 	},
+	"mergePolymorphicSchemas": {
+		ID:             "mergePolymorphicSchemas",
+		Description:    "Merges polymorphic schemas (oneOf, anyOf, allOf) into a single schema",
+		Enabled:        true,
+		CodeGeneration: true,
+		Func:           MergePolymorphicSchemas,
+	},
 	"missingSchemaTitle": {
 		ID:             "missingSchemaTitle",
 		Description:    "Adds a title to all schemas that are missing a title",

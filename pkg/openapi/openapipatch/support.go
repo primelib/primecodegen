@@ -2,6 +2,7 @@ package openapipatch
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/pb33f/libopenapi"
@@ -71,89 +72,23 @@ func GenerateOperationIds(doc *libopenapi.DocumentModel[v3.Document]) error {
 	return nil
 }
 
-func FlattenSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
-	// flatten inline requests bodies
-	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
-		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
-			if op.Value.OperationId == "" {
-				return fmt.Errorf("operation id is required for operation [%s], you can use generateOperationId to ensure all operations have a id", op.Key)
-			}
-
-			if op.Value.RequestBody != nil {
-				for rb := op.Value.RequestBody.Content.Oldest(); rb != nil; rb = rb.Next() {
-					if rb.Value.Schema.IsReference() { // skip references
-						continue
-					}
-
-					// move schema to components and replace with reference
-					key := op.Value.OperationId + "B" + strings.ToUpper(util.ContentTypeToShortName(rb.Key))
-					log.Trace().Msg("moving request schema to components: " + key)
-					if ref, err := moveSchemaIntoComponents(doc, key, rb.Value.Schema); err != nil {
-						return fmt.Errorf("error moving schema to components: %w", err)
-					} else if ref != nil {
-						rb.Value.Schema = ref
-					}
-				}
-			}
-		}
-	}
-
-	// flatten inline responses
-	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
-		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
-			if op.Value.Responses.Codes == nil {
-				continue
-			}
-			if op.Value.OperationId == "" {
-				return fmt.Errorf("operation id is required for operation [%s], you can use generateOperationId to ensure all operations have a id", op.Key)
-			}
-
-			for resp := op.Value.Responses.Codes.Oldest(); resp != nil; resp = resp.Next() {
-				if resp.Value.Content == nil {
-					continue
-				}
-
-				responseCount := op.Value.Responses.Codes.Len()
-				for rb := resp.Value.Content.Oldest(); rb != nil; rb = rb.Next() {
-					// fix for raw responses without schema (e.g. plain text, yaml)
-					if rb.Value.Schema == nil {
-						rb.Value.Schema = base.CreateSchemaProxy(&base.Schema{
-							Type:        []string{"string"},
-							Description: "Shemaless response",
-						})
-					}
-
-					if rb.Value.Schema.IsReference() { // skip references
-						continue
-					}
-
-					// move schema to components and replace with reference
-					key := op.Value.OperationId
-					if responseCount > 1 { // if there are multiple responses, append response code to key
-						key = key + "R" + resp.Key
-					}
-					log.Trace().Msg("moving response schema to components: " + key)
-					if ref, err := moveSchemaIntoComponents(doc, key, rb.Value.Schema); err != nil {
-						return fmt.Errorf("error moving schema to components: %w", err)
-					} else if ref != nil {
-						rb.Value.Schema = ref
-					}
-				}
-			}
-		}
-	}
-
-	// flatten inner schemas inside of components
+// MergePolymorphicSchemas merges polymorphic schemas (anyOf, oneOf, allOf) into a single flat schema
+func MergePolymorphicSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
+	// component schemas
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-		if schema.Value.Schema().Properties == nil {
-			continue
+		log.Warn().Str("schema", schema.Key).Msg("merging components.schema")
+
+		_, err := openapidocument.SimplifyPolymorphism(schema.Value)
+		if err != nil {
+			return err
 		}
 
-		for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
-			// simplify polymorphism
-			_, err := openapidocument.SimplifyPolymorphism(p.Value)
-			if err != nil {
-				return err
+		if schema.Value.Schema().Properties != nil {
+			for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
+				_, propErr := openapidocument.SimplifyPolymorphism(p.Value)
+				if propErr != nil {
+					return propErr
+				}
 			}
 		}
 	}
@@ -167,6 +102,27 @@ func MissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document]) error {
 		if schema.Value.Schema().Title == "" {
 			schema.Value.Schema().Title = schema.Key
 			log.Trace().Str("schema", schema.Key).Msg("missing schema title, setting to schema key")
+		}
+	}
+
+	return nil
+}
+
+// InvalidMaxValue fixes integers and longs, where the maximum value is out of bounds for the type
+func InvalidMaxValue(doc *libopenapi.DocumentModel[v3.Document]) error {
+	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
+		if schema.Value.Schema().Properties == nil {
+			continue
+		}
+
+		for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
+			s := p.Value.Schema()
+			if slices.Contains(s.Type, "integer") && p.Value.Schema().Maximum != nil {
+				if *p.Value.Schema().Maximum > 2147483647 {
+					// p.Value.Schema().Maximum = float64(2147483647)
+					log.Trace().Str("schema", schema.Key).Str("property", p.Key).Msg("fixing maximum value for integer")
+				}
+			}
 		}
 	}
 

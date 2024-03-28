@@ -1,0 +1,25 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.OperationEachTemplate*/ -}}
+{{- template "header-singleline" }}
+package {{ .Package }}
+
+import (
+	"net/http"
+)
+
+type {{ .Name }}Request struct {
+{{- range .Operation.PathParameters }}
+	{{ .Name | pascalCase }} {{ .Type }} `pathParam:"style=simple,explode=false,name={{ .FieldName }}"` {{ if .Description }}// {{ .Description | commentSingleLine }}{{ end }}
+{{- end }}
+{{- range .Operation.QueryParameters }}
+	{{ .Name | pascalCase }} {{ .Type }} `queryParam:"style=simple,explode=false,name={{ .FieldName }}"` {{ if .Description }}// {{ .Description | commentSingleLine }}{{ end }}
+{{- end }}
+}
+
+type {{ .Name }}Response struct {
+	// Success response
+	// Error response
+	// HTTP response status code for this operation
+	StatusCode int
+	// Raw HTTP response; suitable for custom response parsing
+	RawResponse *http.Response
+}

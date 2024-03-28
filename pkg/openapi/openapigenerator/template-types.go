@@ -1,31 +1,51 @@
 package openapigenerator
 
 type SupportOnceTemplate struct {
-	GoModule string
+	ProjectName string // Name of the project
+	GoModule    string
+}
+
+type APIOnceTemplate struct {
+	ProjectName string // Name of the project
+	Package     string
+	Operations  []Operation
+}
+
+type APIEachTemplate struct {
+	ProjectName    string // Name of the project
+	Package        string
+	TagName        string // Name of the operation tag
+	TagDescription string // Description of the operation tag
+	Operations     []Operation
 }
 
 type OperationEachTemplate struct {
-	Package   string
-	Name      string
-	Operation Operation
+	ProjectName string // Name of the project
+	Package     string
+	Name        string
+	Operation   Operation
 }
 
 type OperationsOnceTemplate struct {
-	Operations []Operation
+	ProjectName string // Name of the project
+	Operations  []Operation
 }
 
 type ModelEachTemplate struct {
-	Package string
-	Name    string
-	Model   Model
+	ProjectName string // Name of the project
+	Package     string
+	Name        string
+	Model       Model
 }
 
 type ModelsOnceTemplate struct {
-	Models []Model
+	ProjectName string // Name of the project
+	Models      []Model
 }
 
 type EnumEachTemplate struct {
-	Package string
-	Name    string
-	Enum    Enum
+	ProjectName string // Name of the project
+	Package     string
+	Name        string
+	Enum        Enum
 }
