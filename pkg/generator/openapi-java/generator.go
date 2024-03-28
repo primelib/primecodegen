@@ -53,6 +53,7 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		DryRun:      opts.DryRun,
 		Types:       nil,
 		IgnoreFiles: nil,
+		Properties:  map[string]string{},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
@@ -113,7 +114,7 @@ func (g *JavaGenerator) ToParameterName(name string) string {
 	return name
 }
 
-func (g *JavaGenerator) ToCodeType(schema *base.Schema) (string, error) {
+func (g *JavaGenerator) ToCodeType(schema *base.Schema, required bool) (string, error) {
 	// multiple types
 	if util.CountExcluding(schema.Type, "null") > 1 {
 		return "Object", nil
@@ -160,7 +161,7 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema) (string, error) {
 		return "double", nil
 	}
 	if slices.Contains(schema.Type, "array") {
-		arrayType, err := g.ToCodeType(schema.Items.A.Schema())
+		arrayType, err := g.ToCodeType(schema.Items.A.Schema(), true)
 		if err != nil {
 			return "", fmt.Errorf("unhandled array type. schema: %s, format: %s", schema.Type, schema.Format)
 		}

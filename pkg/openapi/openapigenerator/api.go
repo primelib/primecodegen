@@ -33,7 +33,7 @@ type CodeGenerator interface {
 	ToParameterName(name string) string
 
 	// ToCodeType converts a schema to a language-specific type
-	ToCodeType(schema *base.Schema) (string, error)
+	ToCodeType(schema *base.Schema, required bool) (string, error)
 
 	// IsPrimitiveType checks if a type is a primitive type
 	IsPrimitiveType(input string) bool

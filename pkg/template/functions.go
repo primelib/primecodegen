@@ -1,19 +1,28 @@
 package template
 
 import (
+	"encoding/json"
+	"strings"
 	"text/template"
 
 	"github.com/primelib/primecodegen/pkg/util"
+	"gopkg.in/yaml.v3"
 )
 
 var templateFunctions = template.FuncMap{
 	"firstNonEmpty": func(values ...string) string {
 		return util.FirstNonEmptyString(values...)
 	},
-	"toLower": func(input string) string {
+	"lowerCase": func(input string) string {
+		return strings.ToLower(input)
+	},
+	"upperCase": func(input string) string {
+		return strings.ToUpper(input)
+	},
+	"lowerCaseFirstLetter": func(input string) string {
 		return util.LowerCaseFirstLetter(input)
 	},
-	"toUpper": func(input string) string {
+	"upperCaseFirstLetter": func(input string) string {
 		return util.UpperCaseFirstLetter(input)
 	},
 	"trimNonASCII": func(input string) string {
@@ -35,6 +44,14 @@ var templateFunctions = template.FuncMap{
 		return util.CommentSingleLine(input)
 	},
 	"conditionalValue": func(condition bool, trueValue, falseValue interface{}) interface{} {
-		return util.ConditionalValue(condition, trueValue, falseValue)
+		return util.Ternary(condition, trueValue, falseValue)
+	},
+	"marshalJSON": func(input interface{}) string {
+		a, _ := json.Marshal(input)
+		return string(a)
+	},
+	"marshalYAML": func(input interface{}) string {
+		a, _ := yaml.Marshal(input)
+		return string(a)
 	},
 }

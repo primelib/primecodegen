@@ -1,0 +1,25 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIEachTemplate*/ -}}
+{{- template "header-singleline" }}
+package {{ .Package }}
+
+import (
+    "context"
+    "fmt"
+)
+
+{{ $serviceName := printf "%sService" (.TagName | pascalCase) }}
+// {{ .TagName | pascalCase }}
+// {{ .TagDescription | commentSingleLine}}
+type {{ $serviceName }} service
+
+{{- range $op := .Operations }}
+// {{ $op.OperationId }}: {{ $op.Description | commentSingleLine }}
+//
+{{- range $doc := $op.Documentation }}
+// {{ $doc.Title }}: {{ $doc.URL }}
+{{ end }}
+//
+//meta:operation {{ $op.Method | upperCase }} {{ $op.Path }}
+
+
+{{- end }}

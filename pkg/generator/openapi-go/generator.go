@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/cidverse/go-ptr"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
@@ -55,6 +56,10 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		DryRun:      opts.DryRun,
 		Types:       nil,
 		IgnoreFiles: nil,
+		Properties: map[string]string{
+			"projectName": opts.Doc.Model.Info.Title,
+			"goModule":    "github.com/primelib/generated",
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
@@ -116,82 +121,77 @@ func (g *GoGenerator) ToParameterName(name string) string {
 	return name
 }
 
-func (g *GoGenerator) ToCodeType(schema *base.Schema) (string, error) {
+func (g *GoGenerator) ToCodeType(schema *base.Schema, required bool) (string, error) {
 	// multiple types
 	if util.CountExcluding(schema.Type, "null") > 1 {
 		return "interface{}", nil
 	}
 
 	// normal types
-	if slices.Contains(schema.Type, "string") && schema.Format == "" {
-		return "string", nil
-	}
-	if slices.Contains(schema.Type, "string") && schema.Format == "uri" {
-		return "string", nil
-	}
-	if slices.Contains(schema.Type, "string") && schema.Format == "binary" {
-		return "[]byte", nil
-	}
-	if slices.Contains(schema.Type, "string") && schema.Format == "byte" {
-		return "[]byte", nil
-	}
-	if slices.Contains(schema.Type, "string") && schema.Format == "date" {
-		return "time.Time", nil
-	}
-	if slices.Contains(schema.Type, "string") && schema.Format == "date-time" {
-		return "time.Time", nil
-	}
-	if slices.Contains(schema.Type, "boolean") {
-		return "bool", nil
-	}
-	if slices.Contains(schema.Type, "integer") && schema.Format == "" {
-		return "int64", nil
-	}
-	if slices.Contains(schema.Type, "integer") && schema.Format == "int32" {
-		return "int32", nil
-	}
-	if slices.Contains(schema.Type, "integer") && schema.Format == "int64" {
-		return "int64", nil
-	}
-	if slices.Contains(schema.Type, "number") && schema.Format == "" {
-		return "float64", nil
-	}
-	if slices.Contains(schema.Type, "number") && schema.Format == "float" {
-		return "float32", nil
-	}
-	if slices.Contains(schema.Type, "number") && schema.Format == "double" {
-		return "float64", nil
-	}
-	if slices.Contains(schema.Type, "array") {
-		arrayType, err := g.ToCodeType(schema.Items.A.Schema())
+	var codeType string
+	switch {
+	case slices.Contains(schema.Type, "string"):
+		switch schema.Format {
+		case "uri", "binary", "byte":
+			codeType = "string"
+		case "date", "date-time":
+			codeType = "string"
+		default:
+			codeType = "string"
+		}
+	case slices.Contains(schema.Type, "boolean"):
+		codeType = "bool"
+	case slices.Contains(schema.Type, "integer"):
+		switch schema.Format {
+		case "int32":
+			codeType = "int32"
+		case "int64":
+			codeType = "int64"
+		default:
+			codeType = "int64"
+		}
+	case slices.Contains(schema.Type, "number"):
+		switch schema.Format {
+		case "float":
+			codeType = "float32"
+		case "double":
+			codeType = "float64"
+		default:
+			codeType = "float64"
+		}
+	case slices.Contains(schema.Type, "array"):
+		arrayType, err := g.ToCodeType(schema.Items.A.Schema(), true)
 		if err != nil {
-			return "", fmt.Errorf("unhandled array type. schema: %s, format: %s", schema.Type, schema.Format)
+			return "", fmt.Errorf("unhandled array type. schema: %s, format: %s, message: %w", schema.Type, schema.Format, err)
 		}
-		return "[]" + arrayType, nil
-	}
-	if slices.Contains(schema.Type, "object") && schema.AdditionalProperties == nil && schema.Properties == nil {
-		return "interface{}", nil
-	}
-	if slices.Contains(schema.Type, "object") && schema.AdditionalProperties != nil {
-		keyType := "string"
-
-		additionalProperties, err := g.ToCodeType(schema.AdditionalProperties.A.Schema())
-		if err != nil {
-			return "", fmt.Errorf("unhandled additional properties type. schema: %s, format: %s: %w", schema.Type, schema.Format, err)
+		codeType = "[]" + arrayType
+	case slices.Contains(schema.Type, "object"):
+		if schema.AdditionalProperties != nil {
+			keyType := "string"
+			additionalProperties, err := g.ToCodeType(schema.AdditionalProperties.A.Schema(), true)
+			if err != nil {
+				return "", fmt.Errorf("unhandled additional properties type. schema: %s, format: %s: %w", schema.Type, schema.Format, err)
+			}
+			codeType = "map[" + keyType + "]" + additionalProperties
+		} else if schema.AdditionalProperties == nil && schema.Properties == nil {
+			codeType = "interface{}"
+		} else {
+			if schema.Title == "" {
+				// TODO: ensure all schemas have a title
+				// return "", fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
+			}
+			codeType = g.ToClassName(schema.Title)
 		}
-
-		return "map[" + keyType + "]" + additionalProperties, nil
-	}
-	if slices.Contains(schema.Type, "object") {
-		if schema.Title == "" {
-			// TODO: ensure all schemas have a title
-			// return "", fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
-		}
-
-		return g.ToClassName(schema.Title), nil
+	default:
+		return "", fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
 	}
 
-	return "", fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
+	// pointer
+	if !required && !strings.HasPrefix(codeType, "[]") && !strings.HasPrefix(codeType, "map[") && ptr.ValueOrDefault(schema.Nullable, true) == true {
+		codeType = "*" + codeType
+	}
+
+	return codeType, nil
 }
 
 func (g *GoGenerator) IsPrimitiveType(input string) bool {
@@ -279,6 +279,7 @@ func NewGenerator() *GoGenerator {
 			"float64",
 			"byte",
 			"rune",
+			"time.Time",
 		},
 		typeToImport: map[string]string{
 			"time.Time": "time",

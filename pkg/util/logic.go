@@ -1,10 +1,10 @@
 package util
 
-// ConditionalValue evaluates a conditional expression and returns one of two values based on the condition.
-func ConditionalValue(condition bool, left interface{}, right interface{}) interface{} {
+// Ternary evaluates a boolean and returns one of two values based on the condition.
+func Ternary[T any](condition bool, trueValue T, falseValue T) T {
 	if condition {
-		return left
+		return trueValue
 	}
 
-	return right
+	return falseValue
 }

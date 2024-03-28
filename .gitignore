@@ -7,3 +7,6 @@
 
 # output dir
 output/*
+
+# test files
+openapi.*.yaml
