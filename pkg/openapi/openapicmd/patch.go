@@ -2,9 +2,9 @@ package openapicmd
 
 import (
 	"fmt"
-	"os"
-	"text/tabwriter"
 
+	"github.com/primelib/primecodegen/pkg/commonmerge"
+	"github.com/primelib/primecodegen/pkg/commonpatch"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/openapi/openapipatch"
 	"github.com/primelib/primecodegen/pkg/util"
@@ -20,26 +20,39 @@ func PatchCmd() *cobra.Command {
 		Short:   "Patch OpenAPI Specification for Code Generation",
 		Long:    "Transform an OpenAPI Specification to be compatible with code generation tools and clean up common issues",
 		Run: func(cmd *cobra.Command, args []string) {
-			// list patches
-			list, _ := cmd.Flags().GetBool("list")
-			if list {
-				listPatches()
-				return
-			}
-
 			// validate input
-			in, _ := cmd.Flags().GetString("input")
-			out, _ := cmd.Flags().GetString("output")
-			patches, _ := cmd.Flags().GetStringSlice("patch")
-			in = util.ResolvePath(in)
-			out = util.ResolvePath(out)
-			if in == "" {
+			inputFiles, _ := cmd.Flags().GetStringSlice("input")
+			if len(inputFiles) == 0 {
 				log.Fatal().Msg("input specification is required")
 			}
-			log.Info().Str("input", in).Strs("patch-ids", patches).Str("output-file", out).Msg("patching")
+			for i, v := range inputFiles {
+				inputFiles[i] = util.ResolvePath(v)
+			}
+			out, _ := cmd.Flags().GetString("output")
+			out = util.ResolvePath(out)
 
-			// open document
-			doc, err := openapidocument.OpenDocumentFile(in)
+			patches, _ := cmd.Flags().GetStringSlice("patch")
+			patchFiles, _ := cmd.Flags().GetStringSlice("patch-file")
+			log.Info().Strs("input", inputFiles).Strs("patch-ids", patches).Str("output-file", out).Msg("patching")
+
+			// read and merge documents
+			bytes, err := commonmerge.ReadAndMergeFiles(inputFiles)
+			if err != nil {
+				log.Fatal().Err(err).Msg("failed to merge documents")
+			}
+
+			// patch document (external files)
+			for _, patchFile := range patchFiles {
+				patchedBytes, patchErr := commonpatch.ApplyPatchFile(bytes, patchFile)
+				if patchErr != nil {
+					log.Fatal().Err(patchErr).Msg("failed to apply patch file")
+				}
+
+				bytes = patchedBytes
+			}
+
+			// parse document
+			doc, err := openapidocument.OpenDocument(bytes)
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to open document")
 			}
@@ -48,7 +61,7 @@ func PatchCmd() *cobra.Command {
 				log.Fatal().Errs("spec", errs).Msgf("failed to build v3 high level model")
 			}
 
-			// patch document
+			// patch document (built-in)
 			doc, v3doc, err = openapipatch.PatchV3(patches, doc, v3doc)
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to patch document")
@@ -61,27 +74,19 @@ func PatchCmd() *cobra.Command {
 					log.Fatal().Err(writeErr).Msg("failed to write document")
 				}
 			} else {
-				bytes, err := openapidocument.RenderDocument(doc)
-				if err != nil {
-					log.Fatal().Err(err).Msg("failed to render document")
+				outBytes, outErr := openapidocument.RenderDocument(doc)
+				if outErr != nil {
+					log.Fatal().Err(outErr).Msg("failed to render document")
 				}
-				fmt.Print(string(bytes))
+				fmt.Print(string(outBytes))
 			}
 		},
 	}
-	cmd.Flags().StringP("input", "i", "", "Input Specification")
+	cmd.Flags().StringSliceP("input", "i", []string{}, "Input Specification(s) (YAML or JSON)")
 	cmd.Flags().StringP("output", "o", "", "Output File")
 	cmd.Flags().StringSliceP("patch", "p", []string{"generateOperationIds", "missingSchemaTitle"}, "Patch IDs to apply")
-	cmd.Flags().BoolP("list", "l", false, "List available patches")
+	cmd.Flags().StringSliceP("patch-file", "f", []string{}, "Patch files to apply (.patch, .jsonpatch)")
+	cmd.AddCommand(PatchListCmd())
 
 	return cmd
-}
-
-func listPatches() {
-	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	fmt.Fprintf(w, "ID\tDescription\n")
-	for _, t := range openapipatch.V3Patchers {
-		fmt.Fprintf(w, "%s\t%s\n", t.ID, t.Description)
-	}
-	w.Flush()
 }

@@ -58,7 +58,7 @@ func IsPolypmorphicSchema(s *base.Schema) bool {
 func MergeSchema(baseSP *base.SchemaProxy, overwriteSP *base.SchemaProxy) error {
 	result, err := baseSP.BuildSchema()
 	if err != nil {
-		return fmt.Errorf("error building a schema: %w", err)
+		return fmt.Errorf("error building schema: %w", err)
 	}
 	override, err := overwriteSP.BuildSchema()
 	if err != nil {
@@ -87,17 +87,15 @@ func MergeSchema(baseSP *base.SchemaProxy, overwriteSP *base.SchemaProxy) error 
 			}
 		}
 	}
-	/*
-		if len(override.Required) > 0 {
-			if result.Required == nil {
-				result.Required = override.Required
-			} else {
-				for _, s := range override.Required {
-					result.Required = append(result.Required, s)
-				}
+	if len(override.Required) > 0 {
+		if result.Required == nil {
+			result.Required = override.Required
+		} else {
+			for _, s := range override.Required {
+				result.Required = append(result.Required, s)
 			}
 		}
-	*/
+	}
 
 	return nil
 }
