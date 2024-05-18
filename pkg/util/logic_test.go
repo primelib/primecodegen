@@ -24,7 +24,7 @@ func TestConditionalValue(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := ConditionalValue(test.cond, test.left, test.right)
+		result := Ternary(test.cond, test.left, test.right)
 		if result != test.expected {
 			t.Errorf("ConditionalValue(%t, %v, %v) returned %v, expected %v", test.cond, test.left, test.right, result, test.expected)
 		}

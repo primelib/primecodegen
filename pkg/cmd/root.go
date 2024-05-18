@@ -83,6 +83,7 @@ func rootCmd() *cobra.Command {
 	cmd.AddCommand(openapicmd.GenerateCmd())
 	cmd.AddCommand(openapicmd.GenerateTemplateCmd())
 	cmd.AddCommand(openapicmd.PatchCmd())
+	cmd.AddCommand(openapicmd.PatchListCmd())
 
 	return cmd
 }

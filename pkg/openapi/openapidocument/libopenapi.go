@@ -35,10 +35,15 @@ func OpenDocumentFile(file string) (libopenapi.Document, error) {
 }
 
 func OpenDocument(input []byte) (libopenapi.Document, error) {
+	return OpenDocumentWithBaseDir(input, "")
+}
+
+func OpenDocumentWithBaseDir(input []byte, baseDir string) (libopenapi.Document, error) {
 	// config
 	conf := datamodel.DocumentConfiguration{
 		AllowFileReferences:   true,
 		AllowRemoteReferences: true,
+		BasePath:              baseDir,
 	}
 
 	// create a new document from specification bytes
