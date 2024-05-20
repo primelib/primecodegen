@@ -24,8 +24,8 @@ var (
 
 func rootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   `primelib-app`,
-		Short: `primelib-app is a application to automate code-generation for the primelib organization`,
+		Use:   `primecodegen`,
+		Short: `PrimeCodeGen is a code generator for API specifications.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// log format
 			if !slices.Contains(validLogFormats, cfg.LogFormat) {
@@ -83,7 +83,6 @@ func rootCmd() *cobra.Command {
 	cmd.AddCommand(openapicmd.GenerateCmd())
 	cmd.AddCommand(openapicmd.GenerateTemplateCmd())
 	cmd.AddCommand(openapicmd.PatchCmd())
-	cmd.AddCommand(openapicmd.PatchListCmd())
 
 	return cmd
 }

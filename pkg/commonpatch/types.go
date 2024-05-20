@@ -1,9 +1,14 @@
 package commonpatch
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
+)
+
+var (
+	ErrUnsupportedPatchType = fmt.Errorf("unsupported patch type")
 )
 
 type PatchType string
@@ -22,7 +27,7 @@ func ApplyPatch(patchType PatchType, input []byte, patchContent []byte) ([]byte,
 	case PatchTypeGitPatch:
 		return ApplyGitPatch(input, patchContent)
 	default:
-		return nil, fmt.Errorf("unsupported patch type: %s", patchType)
+		return nil, errors.Join(ErrUnsupportedPatchType, fmt.Errorf("type: %s", patchType))
 	}
 }
 
@@ -40,5 +45,5 @@ func ApplyPatchFile(input []byte, patchFile string) ([]byte, error) {
 		return ApplyPatch(PatchTypeJSONPatch, input, content)
 	}
 
-	return nil, fmt.Errorf("unsupported patch file type: %s", patchFile)
+	return nil, errors.Join(ErrUnsupportedPatchType, fmt.Errorf("file: %s", patchFile))
 }

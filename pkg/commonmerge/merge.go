@@ -2,26 +2,32 @@ package commonmerge
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/primelib/primecodegen/pkg/util"
 	"gopkg.in/yaml.v3"
 )
 
 // ReadAndMergeFiles reads all files (yaml and json) and merges them into a single document
 func ReadAndMergeFiles(files []string) ([]byte, error) {
 	if len(files) == 0 {
-		return nil, fmt.Errorf("no files provided")
+		return nil, util.ErrNoFilesSpecified
 	}
 	if len(files) == 1 {
+		if _, err := os.Stat(files[0]); os.IsNotExist(err) {
+			return nil, errors.Join(util.ErrFileMissing, err)
+		}
+
 		return os.ReadFile(files[0])
 	}
 
 	var result map[string]interface{}
 	for _, file := range files {
 		if _, err := os.Stat(file); os.IsNotExist(err) {
-			return nil, fmt.Errorf("file %s does not exist", file)
+			return nil, errors.Join(util.ErrFileMissing, err)
 		}
 
 		var data map[string]interface{}
@@ -43,7 +49,7 @@ func ReadAndMergeFiles(files []string) ([]byte, error) {
 
 	resultBytes, err := json.Marshal(result)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal merged data: %w", err)
+		return nil, errors.Join(util.ErrJSONMarshal, err)
 	}
 
 	return resultBytes, nil

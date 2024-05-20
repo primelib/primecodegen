@@ -11,17 +11,23 @@ This project is a collection of tools to help with merging, patching, and genera
 
 TODO: add installation instructions
 
-## OpenAPI Generate
+## OpenAPI Code Generator
 
 The `openapi-generate` command can be used to generate code from an OpenAPI specification, using a built-in or custom template.
-You can also use the `openapi-generate-template` command to generate template data for custom external code generators.
+
+| Command                                                                                      | Description                                                      |
+|----------------------------------------------------------------------------------------------|------------------------------------------------------------------|
+| `primecodegen openapi-generate -i openapi.yaml -g go -t client -o /out`                      | run code generation with generator `go` and template `client`    |
+
+## OpenAPI Template Data
+
+The `openapi-generate-template` command can be used to pre-process the openapi spec and pass the resulting template data to an external code generator.
 The command supports the following options:
 
 | Command                                                                                      | Description                                                      |
 |----------------------------------------------------------------------------------------------|------------------------------------------------------------------|
 | `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client`                  | generate go template data, stdout                                |
 | `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client -o template.yaml` | generate go template data, file output                           |
-| `primecodegen openapi-generate -i openapi.yaml -g go -t client -o /out`                      | run code generation with generator `go` and template `client`    |
 
 ## OpenAPI Patch
 
@@ -50,18 +56,6 @@ The following built-in patches are available:
 | `missingSchemaTitle`            | true    | Adds a title to all schemas that are missing a title.                                                   |
 
 > Note: The patches are applied in the order you specify them in. If none are specified, the patches flagged as `default` are applied.
-
-## OpenAPI Template Data
-
-The `openapi-generate-template` command can be used to pre-process the openapi spec and pass the resulting template data to an external code generator.
-
-TODO: documentation
-
-## OpenAPI Code Generator
-
-The `openapi-generate` command runs the code generation process.
-
-TODO: documentation
 
 ## Roadmap
 
