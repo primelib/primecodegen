@@ -12,6 +12,7 @@ import (
 )
 
 // ReadAndMergeFiles reads all files (yaml and json) and merges them into a single document
+// The output format is determined by the first file's format
 func ReadAndMergeFiles(files []string) ([]byte, error) {
 	if len(files) == 0 {
 		return nil, util.ErrNoFilesSpecified
@@ -25,6 +26,7 @@ func ReadAndMergeFiles(files []string) ([]byte, error) {
 	}
 
 	var result map[string]interface{}
+	var outputFormat string
 	for _, file := range files {
 		if _, err := os.Stat(file); os.IsNotExist(err) {
 			return nil, errors.Join(util.ErrFileMissing, err)
@@ -35,8 +37,14 @@ func ReadAndMergeFiles(files []string) ([]byte, error) {
 		switch {
 		case strings.HasSuffix(file, ".json"):
 			data, err = readJSON(file)
+			if outputFormat == "" {
+				outputFormat = "json"
+			}
 		case strings.HasSuffix(file, ".yaml"), strings.HasSuffix(file, ".yml"):
 			data, err = readYAML(file)
+			if outputFormat == "" {
+				outputFormat = "yaml"
+			}
 		default:
 			return nil, fmt.Errorf("unsupported file format: %s", file)
 		}
@@ -47,7 +55,13 @@ func ReadAndMergeFiles(files []string) ([]byte, error) {
 		result = deepMerge(result, data)
 	}
 
-	resultBytes, err := json.Marshal(result)
+	var resultBytes []byte
+	var err error
+	if outputFormat == "json" {
+		resultBytes, err = json.Marshal(result)
+	} else if outputFormat == "yaml" {
+		resultBytes, err = yaml.Marshal(result)
+	}
 	if err != nil {
 		return nil, errors.Join(util.ErrJSONMarshal, err)
 	}
