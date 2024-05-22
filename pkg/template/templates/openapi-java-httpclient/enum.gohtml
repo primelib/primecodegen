@@ -1,0 +1,45 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.EnumEachTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Package }};
+
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
+import org.jetbrains.annotations.ApiStatus;
+
+import javax.annotation.processing.Generated;
+import java.util.function.Consumer;
+
+/**
+ * {{ .Enum.Name }}
+{{ if .Enum.Description }}
+ * <p>
+ * {{ .Enum.Description }}
+{{ end }}
+ *
+{{ if .Enum.Deprecated }} * @deprecated{{ if .Enum.DeprecatedDescription }} {{ .Enum.DeprecatedDescription }}{{ end }}{{ end }}
+ */
+@AllArgsConstructor
+@JsonTypeName("{{.Enum.Name}}")
+{{- if .Enum.Deprecated }}
+@Deprecated
+{{ end }}
+@Generated(value = "io.github.primelib.primecodegen")
+public enum {{.Enum.Name}}{{if .Enum.Parent}} extends {{.Enum.Parent}}{{end}} {
+{{- range $i, $p := .Enum.AllowedValues }}
+    {{ $p.Name }}({{$p.Value}}){{ if notLast $.Enum.AllowedValues $i }},{{ else }};{{ end }}
+{{ end }}
+
+    private final {{ .Enum.ValueType }} value;
+}

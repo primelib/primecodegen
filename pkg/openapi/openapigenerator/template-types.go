@@ -1,51 +1,75 @@
 package openapigenerator
 
+type GlobalTemplate struct {
+	GeneratorProperties map[string]string
+	Auth                Auth
+	Packages            CommonPackages
+	Operations          []Operation
+	Models              []Model
+	Enums               []Enum
+}
+
+func (g GlobalTemplate) HasParametersWithType(paramType string) bool {
+	for _, o := range g.Operations {
+		if o.HasParametersWithType(paramType) {
+			return true
+		}
+	}
+
+	return false
+}
+
 type SupportOnceTemplate struct {
-	ProjectName string // Name of the project
-	GoModule    string
+	Metadata Metadata       // Metadata for the template, e.g. artifact group, ID, etc.
+	Common   GlobalTemplate // Common template data, e.g. API name, project name, etc.
 }
 
 type APIOnceTemplate struct {
-	ProjectName string // Name of the project
-	Package     string
-	Operations  []Operation
+	Metadata Metadata // Metadata for the template, like artifact group and ID
+	Common   GlobalTemplate
+	Package  string
 }
 
 type APIEachTemplate struct {
-	ProjectName    string // Name of the project
+	Metadata       Metadata // Metadata for the template, like artifact group and ID
+	Common         GlobalTemplate
 	Package        string
 	TagName        string // Name of the operation tag
 	TagDescription string // Description of the operation tag
-	Operations     []Operation
+	TagOperations  []Operation
 }
 
 type OperationEachTemplate struct {
-	ProjectName string // Name of the project
-	Package     string
-	Name        string
-	Operation   Operation
+	Metadata  Metadata // Metadata for the template, like artifact group and ID
+	Common    GlobalTemplate
+	Package   string
+	Name      string
+	Operation Operation
 }
 
 type OperationsOnceTemplate struct {
-	ProjectName string // Name of the project
-	Operations  []Operation
+	Metadata Metadata // Metadata for the template, like artifact group and ID
+	Common   GlobalTemplate
 }
 
 type ModelEachTemplate struct {
-	ProjectName string // Name of the project
-	Package     string
-	Name        string
-	Model       Model
+	Metadata Metadata // Metadata for the template, like artifact group and ID
+	Common   GlobalTemplate
+	Package  string
+	Name     string
+	Model    Model
 }
 
 type ModelsOnceTemplate struct {
-	ProjectName string // Name of the project
-	Models      []Model
+	Metadata Metadata // Metadata for the template, like artifact group and ID
+	Common   GlobalTemplate
+	Models   []Model
 }
 
 type EnumEachTemplate struct {
-	ProjectName string // Name of the project
-	Package     string
-	Name        string
-	Enum        Enum
+	Metadata Metadata // Metadata for the template, like artifact group and ID
+	Common   GlobalTemplate
+	Package  string
+	Name     string
+	Enum     Enum
 }

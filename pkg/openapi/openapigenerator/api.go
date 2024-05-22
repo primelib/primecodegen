@@ -35,6 +35,9 @@ type CodeGenerator interface {
 	// ToCodeType converts a schema to a language-specific type
 	ToCodeType(schema *base.Schema, required bool) (string, error)
 
+	// PostProcessType is used for post-processing a type (e.g. void type if the type is empty)
+	PostProcessType(codeType string) string
+
 	// IsPrimitiveType checks if a type is a primitive type
 	IsPrimitiveType(input string) bool
 

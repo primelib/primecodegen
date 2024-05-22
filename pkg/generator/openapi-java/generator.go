@@ -2,7 +2,12 @@ package openapi_java
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
+	"os/exec"
 	"slices"
+	"strings"
+	texttemplate "text/template"
 
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
@@ -44,16 +49,33 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		return fmt.Errorf("failed to build template data: %w", err)
 	}
 
+	// set packages
+	templateData.Packages = openapigenerator.CommonPackages{
+		Client:     "io.primelib.generated",
+		Models:     "io.primelib.generated.models",
+		Enums:      "io.primelib.generated.enums",
+		Operations: "io.primelib.generated.operations",
+		Auth:       "io.primelib.generated.auth",
+	}
+
 	// TODO: remove this - render template data passed to render files
 	bytes, _ := yaml.Marshal(templateData)
 	fmt.Print(string(bytes))
 
 	// generate files
 	files, err := openapigenerator.GenerateFiles(fmt.Sprintf("openapi-%s-%s", g.Id(), opts.TemplateId), opts.OutputDir, templateData, template.RenderOpts{
-		DryRun:      opts.DryRun,
-		Types:       nil,
-		IgnoreFiles: nil,
-		Properties:  map[string]string{},
+		DryRun:               opts.DryRun,
+		Types:                nil,
+		IgnoreFiles:          nil,
+		IgnoreFileCategories: nil,
+		Properties:           map[string]string{},
+		PostProcess:          g.PostProcessContent,
+		TemplateFunctions: texttemplate.FuncMap{
+			"toClassName":     g.ToClassName,
+			"toFunctionName":  g.ToFunctionName,
+			"toPropertyName":  g.ToPropertyName,
+			"toParameterName": g.ToParameterName,
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
@@ -64,7 +86,7 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 	log.Info().Msgf("Generated %d files", len(files))
 
 	// post-processing (formatting)
-	err = g.PostProcessing(opts.OutputDir)
+	err = g.PostProcessing(files)
 	if err != nil {
 		return fmt.Errorf("failed to run post-processing: %w", err)
 	}
@@ -178,6 +200,15 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, required bool) (string, 
 	return "", fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
 }
 
+func (g *JavaGenerator) PostProcessType(codeType string) string {
+	// set type to void if empty
+	if codeType == "" {
+		return "void"
+	}
+
+	return codeType
+}
+
 func (g *JavaGenerator) IsPrimitiveType(input string) bool {
 	return slices.Contains(g.primitiveTypes, input)
 }
@@ -190,7 +221,41 @@ func (g *JavaGenerator) TypeToImport(typeName string) string {
 	return g.typeToImport[typeName]
 }
 
-func (g *JavaGenerator) PostProcessing(outputDir string) error {
+func (g *JavaGenerator) PostProcessContent(name string, content []byte) []byte {
+	// clean imports
+	if strings.HasSuffix(name, ".java") {
+		content = CleanJavaImports(content)
+	}
+
+	return content
+}
+
+const fmtBinary = "google-java-format"
+
+func (g *JavaGenerator) PostProcessing(files []template.RenderedFile) error {
+	_, err := exec.LookPath(fmtBinary)
+	if err != nil {
+		slog.Warn(fmtBinary + " not found in PATH, skipping formatting")
+		return nil
+	}
+
+	var formatFiles []string
+	for _, f := range files {
+		if strings.HasSuffix(f.File, ".java") && f.State == template.FileRendered {
+			formatFiles = append(formatFiles, f.File)
+		}
+	}
+
+	slog.Debug("Post processing java files using "+fmtBinary, "file_len", len(files))
+	cmd := exec.Command(fmtBinary, "-r", "--aosp")
+	cmd.Args = append(cmd.Args, formatFiles...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error running %s: %v", fmtBinary, err)
+	}
+
 	return nil
 }
 

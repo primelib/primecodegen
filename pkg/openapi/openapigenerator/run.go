@@ -2,6 +2,7 @@ package openapigenerator
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/primelib/primecodegen/pkg/template"
 )
@@ -19,15 +20,31 @@ func GeneratorById(id string, allGenerators []CodeGenerator) (CodeGenerator, err
 func GenerateFiles(templateId string, outputDir string, templateData DocumentModel, renderOpts template.RenderOpts) ([]template.RenderedFile, error) {
 	var files []template.RenderedFile
 
+	common := GlobalTemplate{
+		GeneratorProperties: renderOpts.Properties,
+		Auth:                templateData.Auth,
+		Packages:            templateData.Packages,
+		Operations:          templateData.Operations,
+		Models:              templateData.Models,
+		Enums:               templateData.Enums,
+	}
+	metadata := Metadata{
+		ArtifactGroupId: "",
+		ArtifactId:      "",
+		Name:            strings.TrimSpace(templateData.Name),
+		DisplayName:     strings.TrimSpace(templateData.DisplayName),
+		Description:     templateData.Description,
+	}
+
 	var data []interface{}
 	data = append(data, SupportOnceTemplate{
-		ProjectName: renderOpts.Properties["projectName"],
-		GoModule:    renderOpts.Properties["goModule"],
+		Metadata: metadata,
+		Common:   common,
 	})
 	data = append(data, APIOnceTemplate{
-		ProjectName: renderOpts.Properties["projectName"],
-		Package:     "clients",
-		Operations:  templateData.Operations,
+		Metadata: metadata,
+		Common:   common,
+		Package:  common.Packages.Client,
 	})
 	for tag, ops := range templateData.OperationsByTag {
 		tagDescription := ""
@@ -36,35 +53,39 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 		}
 
 		data = append(data, APIEachTemplate{
-			ProjectName:    renderOpts.Properties["projectName"],
-			Package:        "clients",
+			Metadata:       metadata,
+			Common:         common,
+			Package:        common.Packages.Client,
 			TagName:        tag,
 			TagDescription: tagDescription,
-			Operations:     ops,
+			TagOperations:  ops,
 		})
 	}
 	for _, op := range templateData.Operations {
 		data = append(data, OperationEachTemplate{
-			ProjectName: renderOpts.Properties["projectName"],
-			Package:     "operations", // TODO: need this from the generator
-			Name:        op.OperationId,
-			Operation:   op,
+			Metadata:  metadata,
+			Common:    common,
+			Package:   common.Packages.Operations,
+			Name:      op.Name,
+			Operation: op,
 		})
 	}
 	for _, model := range templateData.Models {
 		data = append(data, ModelEachTemplate{
-			ProjectName: renderOpts.Properties["projectName"],
-			Package:     "types", // TODO: need this from the generator
-			Name:        model.Name,
-			Model:       model,
+			Metadata: metadata,
+			Common:   common,
+			Package:  common.Packages.Models,
+			Name:     model.Name,
+			Model:    model,
 		})
 	}
 	for _, enum := range templateData.Enums {
 		data = append(data, EnumEachTemplate{
-			ProjectName: renderOpts.Properties["projectName"],
-			Package:     "types", // TODO: need this from the generator
-			Name:        enum.Name,
-			Enum:        enum,
+			Metadata: metadata,
+			Common:   common,
+			Package:  common.Packages.Models,
+			Name:     enum.Name,
+			Enum:     enum,
 		})
 	}
 

@@ -2,6 +2,8 @@ package template
 
 import (
 	"encoding/json"
+	"os"
+	"reflect"
 	"strings"
 	"text/template"
 
@@ -53,5 +55,18 @@ var templateFunctions = template.FuncMap{
 	"marshalYAML": func(input interface{}) string {
 		a, _ := yaml.Marshal(input)
 		return string(a)
+	},
+	// toFilePath is used to convert a package path into a file path (e.g. "io.github.myuser" -> "io/github/myuser")
+	"toFilePath": func(input string) string {
+		return strings.ReplaceAll(input, ".", string(os.PathSeparator))
+	},
+	// notLast is used to determine if the current index is not the last index in a slice
+	"notLast": func(data interface{}, idx int) bool {
+		val := reflect.ValueOf(data)
+		if val.Kind() == reflect.Slice {
+			return idx < val.Len()-1
+		}
+
+		return false
 	},
 }

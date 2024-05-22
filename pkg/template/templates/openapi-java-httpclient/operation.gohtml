@@ -1,0 +1,86 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.OperationEachTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Package }};
+
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.experimental.Accessors;
+
+{{- range .Common.Models }}
+import {{ $.Common.Packages.Models }}.{{ .Name }};
+{{- end }}
+
+import org.jetbrains.annotations.ApiStatus;
+
+import java.util.Objects;
+import java.util.function.Consumer;
+import javax.annotation.processing.Generated;
+
+/**
+ * {{ .Operation.Name }}
+{{- if .Operation.Description }}
+ * <p>
+ * {{ .Operation.Description }}
+{{- end }}
+ *
+{{- if .Operation.Deprecated }}
+* @deprecated{{ if .Operation.DeprecatedDescription }} {{ .Operation.DeprecatedDescription }}{{ end }}
+{{- end }}
+ */
+@Getter
+@Setter
+@EqualsAndHashCode
+@ToString
+@Accessors(fluent = true, chain = true)
+{{- if .Operation.Deprecated }}
+@Deprecated
+{{- end }}
+@Generated(value = "io.github.primelib.primecodegen")
+public class {{.Operation.Name}}OperationSpec {
+    /**
+     * allows to disable validation of the spec, use with care!
+     */
+    @ApiStatus.Experimental
+    public static Boolean VALIDATION_ENABLED = true;
+
+    {{- range $param := .Operation.Parameters }}
+
+    /**
+     * {{ $param.Description | commentSingleLine }}
+     */
+    // TODO: annotations
+    private {{ $param.Type }} {{ $param.Name }};
+    {{- end }}
+
+    /**
+     * Constructs a validated instance of {@link {{.Operation.Name}}OperationSpec}.
+     *
+     * @param spec the specification to process
+     */
+    @ApiStatus.Internal
+    public {{.Operation.Name}}OperationSpec(Consumer<{{.Operation.Name}}OperationSpec> spec) {
+        spec.accept(this);
+        if (VALIDATION_ENABLED)
+            validate();
+    }
+
+    /**
+     * Validates the Spec, will throw a exception if required parameters are missing
+     *
+     * @throws NullPointerException
+     */
+    public void validate() {
+        {{- range $param := .Operation.Parameters }}
+        {{- if $param.Required }}
+        Objects.requireNonNull({{ $param.Name }}, "{{ $param.Name }} is a required parameter!");
+        {{- end }}
+        {{- end }}
+    }
+}

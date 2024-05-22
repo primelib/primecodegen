@@ -4,7 +4,7 @@ var defaultSnippets = []string{"global-layout.gohtml"}
 
 var allTemplates = []Config{
 	{
-		ID:          "openapi-go-client",
+		ID:          "openapi-go-httpclient",
 		Description: "OpenAPI Client for Go",
 		Files: []File{
 			{
@@ -61,6 +61,87 @@ var allTemplates = []Config{
 				Snippets:       defaultSnippets,
 				TargetFileName: "go.sum",
 				Type:           TypeSupportOnce,
+			},
+		},
+	},
+	{
+		ID:          "openapi-java-httpclient",
+		Description: "OpenAPI Client for Go",
+		Files: []File{
+			// factory
+			{
+				SourceTemplate:  "api_factory.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+				TargetFileName:  "{{ .Metadata.Name }}Factory.java",
+				Type:            TypeAPIOnce,
+			},
+			{
+				SourceTemplate:  "api_factoryspec.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+				TargetFileName:  "{{ .Metadata.Name }}FactorySpec.java",
+				Type:            TypeAPIOnce,
+			},
+			// api
+			{
+				SourceTemplate:  "api_main.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+				TargetFileName:  "{{ .Metadata.Name }}Api.java",
+				Type:            TypeAPIOnce,
+			},
+			{
+				SourceTemplate:  "api_consumer.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+				TargetFileName:  "{{ .Metadata.Name }}ConsumerApi.java",
+				Type:            TypeAPIOnce,
+			},
+			// operations
+			{
+				SourceTemplate:  "operation.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "src/main/java/{{ .Common.Packages.Operations | toFilePath }}",
+				TargetFileName:  "{{ .Operation.Name }}OperationSpec.java",
+				Type:            TypeOperationEach,
+			},
+			// model
+			{
+				SourceTemplate:  "model.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "src/main/java/{{ .Common.Packages.Models | toFilePath }}",
+				TargetFileName:  "{{ .Model.Name }}.java",
+				Type:            TypeModelEach,
+			},
+			{
+				SourceTemplate:  "enum.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "src/main/java/{{ .Common.Packages.Enums | toFilePath }}",
+				TargetFileName:  "{{ .Model.Name }}.java",
+				Type:            TypeEnumEach,
+			},
+			// support files - gradle
+			{
+				SourceTemplate:  "build.gradle.kts.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "",
+				TargetFileName:  "build.gradle.kts",
+				Type:            TypeSupportOnce,
+			},
+			{
+				SourceTemplate:  "settings.gradle.kts.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "",
+				TargetFileName:  "settings.gradle.kts",
+				Type:            TypeSupportOnce,
+			},
+			{
+				SourceTemplate:  "gradle-wrapper.properties.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "gradle/wrapper",
+				TargetFileName:  "gradle-wrapper.properties",
+				Type:            TypeSupportOnce,
 			},
 		},
 	},
