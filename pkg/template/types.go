@@ -1,10 +1,17 @@
 package template
 
+import (
+	"text/template"
+)
+
 type RenderOpts struct {
-	DryRun      bool              // DryRun will not write any files to disk
-	Types       []Type            // Types can be used to only render files of specific types
-	IgnoreFiles []string          // IgnoreFiles is a list of file names that should not be rendered
-	Properties  map[string]string // User-defined properties that can be used in the templates
+	DryRun               bool                                     // DryRun will not write any files to disk
+	Types                []Type                                   // Types can be used to only render files of specific types
+	IgnoreFiles          []string                                 // IgnoreFiles is a list of file names that should not be rendered
+	IgnoreFileCategories []string                                 // IgnoreFileCategories is a list of file categories that should not be rendered
+	Properties           map[string]string                        // User-defined properties that can be used in the templates
+	PostProcess          func(name string, content []byte) []byte // PostProcess is a function that can be used to post-process file output
+	TemplateFunctions    template.FuncMap                         // TemplateFunctions is a map of additional functions that can be used in the templates
 }
 
 type RenderedFile struct {
@@ -35,6 +42,7 @@ type File struct {
 	TargetDirectory string   // TargetDirectory is the directory where the rendered file will be saved
 	TargetFileName  string   // TargetFileName contains the template for the file name
 	Type            Type     // Type is the type of the template
+	Category        []string // Category is a list of categories that the template belongs to, can be used to filter which templates to render
 	// TODO: allow to filter or transform template data per file
 }
 

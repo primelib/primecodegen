@@ -31,7 +31,7 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 	// pre-load all template files
 	tmpl := make(map[string]*template.Template)
 	for _, file := range config.Files {
-		t, err := loadTemplate(config.ID, append([]string{file.SourceTemplate}, file.Snippets...))
+		t, err := loadTemplate(config.ID, append([]string{file.SourceTemplate}, file.Snippets...), opts.TemplateFunctions)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse template in %s, file %s: %w", config.ID, file.SourceTemplate, err)
 		}
@@ -70,6 +70,10 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 		targetFile := filepath.Join(targetDir, resolvedFile)
 		skippedByScope := len(opts.Types) > 0 && !slices.Contains(opts.Types, file.Type)
 		skippedByName := slices.Contains(opts.IgnoreFiles, file.TargetFileName)
+		output := renderedContent.Bytes()
+		if opts.PostProcess != nil {
+			output = opts.PostProcess(resolvedFile, output)
+		}
 
 		var state FileState
 		if opts.DryRun {
@@ -84,7 +88,7 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 				return nil, fmt.Errorf("failed to create directory %s: %w", targetDir, err)
 			}
 
-			err = os.WriteFile(targetFile, renderedContent.Bytes(), 0644)
+			err = os.WriteFile(targetFile, output, 0644)
 			if err != nil {
 				return nil, fmt.Errorf("failed to write rendered file %s: %w", targetFile, err)
 			}
@@ -96,7 +100,7 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 	return files, nil
 }
 
-func loadTemplate(templateId string, files []string) (*template.Template, error) {
+func loadTemplate(templateId string, files []string, customFunctions template.FuncMap) (*template.Template, error) {
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no files provided")
 	}
@@ -105,6 +109,9 @@ func loadTemplate(templateId string, files []string) (*template.Template, error)
 
 	tmpl := template.New(name)
 	tmpl.Funcs(templateFunctions)
+	if customFunctions != nil {
+		tmpl.Funcs(customFunctions)
+	}
 	for _, f := range files {
 		err := loadTemplateById(tmpl, lookupTemplates, f)
 		if err != nil {
@@ -149,8 +156,9 @@ func loadTemplateById(tmpl *template.Template, lookupTemplates []string, templat
 	return fmt.Errorf("neither embedded filesystem nor PRIMECODEGEN_TEMPLATE_DIR provides template file %s", templateFile)
 }
 
+// resolveName resolves the file name by executing the template with the provided data
 func resolveName(input string, data interface{}) (string, error) {
-	tmpl, err := template.New("name").Parse(input)
+	tmpl, err := template.New("name").Funcs(templateFunctions).Parse(input)
 	if err != nil {
 		return "", err
 	}

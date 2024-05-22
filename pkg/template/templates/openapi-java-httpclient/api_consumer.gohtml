@@ -1,0 +1,77 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Package }};
+
+import feign.RequestLine;
+import feign.Param;
+import feign.Headers;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
+import io.reactivex.Flowable;
+
+{{- range .Common.Models }}
+import {{ $.Common.Packages.Models }}.{{ .Name }};
+{{- end }}
+
+{{- range .Common.Operations }}
+import {{ $.Common.Packages.Operations }}.{{ .Name }}OperationSpec;
+{{- end }}
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Consumer;
+import javax.annotation.processing.Generated;
+
+@Generated(value = "io.github.primelib.primecodegen")
+public class {{ .Metadata.Name }}ConsumerApi {
+    private final {{ .Metadata.Name }}Api api;
+
+    public {{ .Metadata.Name }}ConsumerApi({{ .Metadata.Name }}Api api) {
+        this.api = api;
+    }
+
+{{ range $op := .Common.Operations }}
+    /**
+    * {{ $op.Name }}
+    * {{ $op.Summary }}
+    {{- if $op.Description }}
+    * {{ $op.Description }}
+    {{- end }}
+    *
+    * Authentication - Required Scopes: ...
+    * foreach param (ignore static) / x-param-static
+    *
+    {{- if $op.Parameters }}
+    * @param spec a consumer that creates the payload for this operation. Supports the following properties:
+    * <ul>
+    {{- range $param := $op.Parameters }}
+    *   <li>{{ $param.Name }}: {{ $param.Description | commentSingleLine }}</li>
+    {{- end }}
+    * </ul>
+    {{- end }}
+    {{- if $op.Documentation }}
+    {{- range $doc := $op.Documentation }}
+    * @see <a href="{{ $doc.URL }}">{{ $doc.Title }}</a>
+    {{- end }}
+    {{- end }}
+    {{- if $op.Deprecated }}
+    * @deprecated{{ if $op.DeprecatedDescription }} {{ $op.DeprecatedDescription | commentSingleLine }}{{ end }}
+    {{- end }}
+    */
+    {{- if eq $op.Stability "experimental" }}
+    @ApiStatus.Experimental
+    {{- end }}
+    {{- if $op.Parameters }}
+    public {{ $op.ReturnType }} {{ $op.Name | toFunctionName }}(Consumer<{{ $op.Name }}OperationSpec> spec) {
+        {{$op.Name }}OperationSpec r = new {{ $op.Name }}OperationSpec(spec);
+        {{ if ne $op.ReturnType "void" }}return {{ end }}api.{{ $op.Name | toFunctionName }}({{ range $i, $param := $op.Parameters }}r.{{ $param.Name }}(){{ if notLast $op.Parameters $i }}, {{ end }}{{ end }});
+    }
+    {{- else }}
+    public {{ $op.ReturnType }} {{ $op.Name | toFunctionName }}() {
+        {{ if ne $op.ReturnType "void" }}return {{ end }}api.{{ $op.Name | toFunctionName }}();
+    }
+    {{- end }}
+{{ end }}
+}

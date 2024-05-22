@@ -1,0 +1,54 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.SupportOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+plugins {
+    `java-library`
+    id("me.philippheuer.configuration") version "0.10.9"
+}
+
+val version: String = properties["version"] as? String ?: "0.0.0"
+
+projectConfiguration {
+    type.set(me.philippheuer.projectcfg.domain.ProjectType.LIBRARY)
+    javaVersion.set(JavaVersion.VERSION_17)
+{{ if .Metadata.ArtifactGroupId }}
+    artifactGroupId.set("{{ .Metadata.ArtifactGroupId }}")
+    artifactId.set("{{ .Metadata.ArtifactId }}")
+    artifactDisplayName.set("{{ .Metadata.DisplayName }}")
+    artifactDescription.set("{{ .Metadata.Description }}")
+{{ end }}
+}
+
+dependencies {
+    // bom
+    api(platform("io.github.openfeign:feign-bom:13.2.1"))
+    api(platform("io.github.resilience4j:resilience4j-bom:2.2.0"))
+    api(platform("com.fasterxml.jackson:jackson-bom:2.17.1"))
+    api(platform("io.github.primelib.primecodegenlib.java:bom:0.0.2"))
+
+    // annotations
+    implementation("org.jetbrains:annotations:24.1.0")
+
+    // feign
+    implementation("io.github.openfeign:feign-core")
+    implementation("io.github.openfeign:feign-jackson")
+    implementation("io.github.openfeign:feign-slf4j")
+    implementation("io.github.openfeign:feign-okhttp")
+    implementation("io.github.openfeign:feign-micrometer")
+{{ if .Common.HasParametersWithType "form" -}}
+    implementation("io.github.openfeign.form:feign-form:3.8.0")
+{{ end }}
+
+    // codegen libs
+    api("io.github.primelib.primecodegenlib.java:feign-common")
+
+    // jackson
+    implementation("com.fasterxml.jackson.core:jackson-databind")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+
+    // metrics
+    api("io.micrometer:micrometer-core:1.13.0")
+
+    // test
+    testImplementation("org.slf4j:slf4j-simple:2.0.13")
+}

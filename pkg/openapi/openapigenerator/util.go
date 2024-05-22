@@ -2,6 +2,9 @@ package openapigenerator
 
 import (
 	"slices"
+
+	"github.com/pb33f/libopenapi/orderedmap"
+	"gopkg.in/yaml.v3"
 )
 
 func getBoolValue(ptrToBool *bool, defaultValue bool) bool {
@@ -28,4 +31,16 @@ func cleanImports(imports []string) (out []string) {
 	slices.Sort(out)
 
 	return out
+}
+
+func getOrDefault(extensions *orderedmap.Map[string, *yaml.Node], key string, defaultValue string) string {
+	if extensions == nil {
+		return defaultValue
+	}
+
+	if node, ok := extensions.Get(key); ok {
+		return node.Value
+	}
+
+	return defaultValue
 }

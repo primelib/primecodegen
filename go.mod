@@ -8,8 +8,8 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/mattn/go-colorable v0.1.13
-	github.com/pb33f/libopenapi v0.16.7
-	github.com/rs/zerolog v1.32.0
+	github.com/pb33f/libopenapi v0.16.8
+	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -32,7 +32,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
-	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
+	golang.org/x/exp v0.0.0-20240531132922-fd00a4e0eefc // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect

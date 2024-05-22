@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"slices"
 	"strings"
+	texttemplate "text/template"
 
 	"github.com/cidverse/go-ptr"
 	"github.com/pb33f/libopenapi"
@@ -53,12 +54,18 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 
 	// generate files
 	files, err := openapigenerator.GenerateFiles(fmt.Sprintf("openapi-%s-%s", g.Id(), opts.TemplateId), opts.OutputDir, templateData, template.RenderOpts{
-		DryRun:      opts.DryRun,
-		Types:       nil,
-		IgnoreFiles: nil,
+		DryRun:               opts.DryRun,
+		Types:                nil,
+		IgnoreFiles:          nil,
+		IgnoreFileCategories: nil,
 		Properties: map[string]string{
-			"projectName": opts.Doc.Model.Info.Title,
-			"goModule":    "github.com/primelib/generated",
+			"goModule": "github.com/primelib/generated",
+		},
+		TemplateFunctions: texttemplate.FuncMap{
+			"toClassName":     g.ToClassName,
+			"toFunctionName":  g.ToFunctionName,
+			"toPropertyName":  g.ToPropertyName,
+			"toParameterName": g.ToParameterName,
 		},
 	})
 	if err != nil {
@@ -192,6 +199,10 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema, required bool) (string, er
 	}
 
 	return codeType, nil
+}
+
+func (g *GoGenerator) PostProcessType(codeType string) string {
+	return codeType
 }
 
 func (g *GoGenerator) IsPrimitiveType(input string) bool {

@@ -1,0 +1,128 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Package }};
+
+import {{ .Package }}.{{ .Metadata.Name }}Api;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import feign.Feign;
+import feign.form.FormEncoder;
+import feign.Logger;
+import feign.jackson.JacksonDecoder;
+import feign.jackson.JacksonEncoder;
+import feign.micrometer.MicrometerCapability;
+import feign.okhttp.OkHttpClient;
+import feign.reactive.ReactorFeign;
+import feign.reactive.RxJavaFeign;
+import feign.slf4j.Slf4jLogger;
+import okhttp3.Credentials;
+
+import io.github.primelib.primecodegenlib.java.feign.common.api.AuthMethod;
+import io.github.primelib.primecodegenlib.java.feign.common.api.PrimeExtension;
+import io.github.primelib.primecodegenlib.java.feign.common.interceptor.AuthInterceptor;
+import io.github.primelib.primecodegenlib.java.feign.common.capabilities.PrimeCapability;
+
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import io.reactivex.Flowable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.util.function.Consumer;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import javax.annotation.processing.Generated;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE, force = true)
+@Slf4j
+@Generated(value = "io.github.primelib.primecodegen")
+public class {{ .Metadata.Name }}Factory {
+    public static <T> T create(Consumer<{{ .Metadata.Name }}FactorySpec<T>> spec) {
+        {{ .Metadata.Name }}FactorySpec<T> config = new {{ .Metadata.Name }}FactorySpec<>(spec);
+
+        if (config.api().isInterface()) {
+            return buildClient(spec);
+        } else {
+            try {
+                {{ .Metadata.Name }}Api api = buildClient(s -> {
+                    s.api({{ .Metadata.Name }}Api.class);
+                    s.applySpec(config);
+                });
+                return config.api().getConstructor({{ .Metadata.Name }}Api.class).newInstance(api);
+            } catch (Exception ex) {
+                throw new IllegalArgumentException("api must have a constructor with one parameter of type {{ .Metadata.Name }}Api", ex);
+            }
+        }
+    }
+
+    public static {{ .Metadata.Name }}Api create() {
+        return create(spec -> spec.api({{ .Metadata.Name }}Api.class));
+    }
+
+    private static <T> T buildClient(Consumer<{{ .Metadata.Name }}FactorySpec<T>> spec) {
+        {{ .Metadata.Name }}FactorySpec<T> config = new {{ .Metadata.Name }}FactorySpec<>(spec);
+
+        // http client
+        okhttp3.OkHttpClient.Builder clientBuilder = new okhttp3.OkHttpClient.Builder();
+        if (config.proxy() != null && config.proxy().type() != Proxy.Type.DIRECT) {
+            clientBuilder.proxy(new Proxy(config.proxy().type(), new InetSocketAddress(config.proxy().host(), config.proxy().port())));
+            if (config.proxy().username() != null || config.proxy().password() != null) {
+                clientBuilder.proxyAuthenticator((route, response) -> {
+                    return response.request().newBuilder()
+                            .header("Proxy-Authorization", Credentials.basic(config.proxy().username(), new String(config.proxy().password())))
+                            .build();
+                });
+            }
+        }
+
+        // objectMapper
+        JsonMapper.Builder objectMapperBuilder = JsonMapper.builder()
+            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE)
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
+            .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+            {{ if .Common.GeneratorProperties.jacksonIncludeNonNull -}}
+            // condition: jsonIncludeNonNull
+            // .serializationInclusion(JsonInclude.Include.NON_NULL)
+            {{ end }}
+            .addModule(new JavaTimeModule());
+        config.extensions().forEach(extension -> extension.customizeObjectMapper(objectMapperBuilder));
+        ObjectMapper objectMapper = objectMapperBuilder.build();
+
+        // builder
+        return Feign.builder()
+                .client(new OkHttpClient(clientBuilder.build()))
+                {{ if .Common.HasParametersWithType "form" -}}
+                //.encoder(new FormEncoder(new JacksonEncoder(objectMapper)))
+                {{ else -}}
+                .encoder(new JacksonEncoder(objectMapper))
+                {{ end }}
+                .decoder(new JacksonDecoder(objectMapper))
+                .logger(new Slf4jLogger())
+                .logLevel(Logger.Level.valueOf(config.logLevel().toUpperCase()))
+                .addCapability(new MicrometerCapability(config.meterRegistry()))
+                .addCapability(new PrimeCapability(config.backendName(), config.extensions()))
+                .requestInterceptor(new AuthInterceptor(config.auth()))
+                .decodeVoid()
+                .target(config.api(), config.baseUrl());
+    }
+}

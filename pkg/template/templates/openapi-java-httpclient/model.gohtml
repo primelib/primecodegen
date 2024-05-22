@@ -1,0 +1,99 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.ModelEachTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Package }};
+
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.Accessors;
+import org.jetbrains.annotations.ApiStatus;
+
+import javax.annotation.processing.Generated;
+import java.util.List;
+import java.util.function.Consumer;
+
+/**
+ * {{ .Model.Name }}
+{{- if .Model.Description }}
+ * <p>
+ * {{ .Model.Description }}
+{{- end }}
+ *
+{{- if .Model.Deprecated }}
+* @deprecated{{ if .Model.DeprecatedDescription }} {{ .Model.DeprecatedDescription }}{{ end }}
+{{- end }}
+ */
+@Getter
+@Setter
+{{- if .Model.Parent -}}
+@EqualsAndHashCode(callSuper = true)
+{{- else }}
+@EqualsAndHashCode
+{{- end }}
+@ToString
+@Accessors(fluent = true, chain = true)
+{{- if .Model.Properties }}
+@NoArgsConstructor(access = AccessLevel.PROTECTED, force = true)
+{{- end }}
+{{- if not .Model.Parent }}
+@Builder
+{{- end }}
+@JsonTypeName("{{.Model.Name}}")
+{{- if .Model.Properties }}
+@JsonPropertyOrder({
+{{- range $i, $prop := .Model.Properties }}
+    "{{ $prop.Name }}"{{ if notLast $.Model.Properties $i }},{{ end }}
+{{- end }}
+})
+{{- end }}
+{{- if .Model.Deprecated }}
+@Deprecated
+{{- end }}
+@Generated(value = "io.github.primelib.primecodegen")
+public class {{.Model.Name}}{{if .Model.Parent}} extends {{.Model.Parent}}{{end}} {
+{{ range $p := .Model.Properties }}
+{{- if $p.Description }}
+    /**
+     * {{ $p.Description }}
+     */
+{{- end }}
+    @JsonProperty("{{$p.FieldName}}")
+    protected {{ $p.Type }} {{ $p.Name }};
+{{ end }}
+    /**
+     * Constructs a validated instance of {@link {{.Model.Name}}}.
+     *
+     * @param spec the specification to process
+     */
+    public {{.Model.Name}}(Consumer<{{.Model.Name}}> spec) {
+{{- if .Model.Parent }}
+        super();
+{{- end }}
+        spec.accept(this);
+    }
+
+    /**
+     * Constructs a validated instance of {@link {{.Model.Name}}}.
+     * <p>
+     * NOTE: This constructor is not considered stable and may change if the model is updated. Consider using {@link #{{.Model.Name}}(Consumer)} instead.
+{{- range $p := .Model.Properties }}
+     * @param {{ $p.Name }} {{ if $p.Description }}{{ $p.Description }}{{ else }}{{ $p.Name }}{{ end }}
+{{- end }}
+     */
+    @ApiStatus.Internal
+    public {{.Model.Name}}({{range $i, $p := .Model.Properties}}{{$p.Type}} {{$p.Name}}{{if notLast $.Model.Properties $i}}, {{end}}{{end}}) {
+        {{- range $p := .Model.Properties }}
+        this.{{$p.Name}} = {{$p.Name}};
+        {{- end }}
+    }
+}

@@ -20,6 +20,22 @@ type {{ $serviceName }} service
 {{ end }}
 //
 //meta:operation {{ $op.Method | upperCase }} {{ $op.Path }}
+func (s *{{ $serviceName }}) {{ $op.OperationId }}(ctx context.Context, owner, repo string, checkRunID int64) (*CheckRun, *Response, error) {
+u := fmt.Sprintf("repos/%v/%v/check-runs/%v", owner, repo, checkRunID)
+req, err := s.client.NewRequest("GET", u, nil)
+if err != nil {
+return nil, nil, err
+}
 
+req.Header.Set("Accept", mediaTypeCheckRunsPreview)
+
+checkRun := new(CheckRun)
+resp, err := s.client.Do(ctx, req, checkRun)
+if err != nil {
+return nil, resp, err
+}
+
+return checkRun, resp, nil
+}
 
 {{- end }}

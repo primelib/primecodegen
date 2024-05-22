@@ -3,6 +3,7 @@ package openapigenerator
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/cidverse/go-ptr"
 	"github.com/pb33f/libopenapi"
@@ -11,7 +12,13 @@ import (
 )
 
 func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator CodeGenerator) (DocumentModel, error) {
-	var template = DocumentModel{}
+	title := doc.Model.Info.Title
+	var template = DocumentModel{
+		Name:        generator.ToClassName(title),
+		DisplayName: title,
+		Description: doc.Model.Info.Description,
+		Auth:        BuildAuth(doc),
+	}
 
 	// all operations
 	operations, err := BuildOperations(OperationOpts{
@@ -52,6 +59,19 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 	return template, nil
 }
 
+func BuildAuth(doc *libopenapi.DocumentModel[v3.Document]) Auth {
+	var auth Auth
+
+	for security := doc.Model.Components.SecuritySchemes.Oldest(); security != nil; security = security.Next() {
+		auth.Methods = append(auth.Methods, AuthMethod{
+			Name:   security.Key,
+			Scheme: strings.ToLower(security.Value.Scheme),
+		})
+	}
+
+	return auth
+}
+
 type OperationOpts struct {
 	Generator CodeGenerator
 	Doc       *libopenapi.DocumentModel[v3.Document]
@@ -65,16 +85,18 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 			// operation
 			operation := Operation{
-				Path:        path.Key,
-				Method:      op.Key,
-				Summary:     op.Value.Summary,
-				Description: op.Value.Description,
-				Tag:         "default",
-				Tags:        op.Value.Tags,
-				OperationId: gen.ToFunctionName(op.Value.OperationId),
-				Deprecated:  getBoolValue(op.Value.Deprecated, false),
-				// DeprecatedReason: op.Value.Extensions.Get("x-deprecated"),
-				Documentation: make([]Documentation, 0),
+				Name:             gen.ToClassName(op.Value.OperationId),
+				Path:             path.Key,
+				Method:           op.Key,
+				Summary:          op.Value.Summary,
+				Description:      op.Value.Description,
+				Tag:              "default",
+				Tags:             op.Value.Tags,
+				ReturnType:       "",
+				Deprecated:       getBoolValue(op.Value.Deprecated, false),
+				DeprecatedReason: getOrDefault(op.Value.Extensions, "x-deprecated", ""),
+				Documentation:    make([]Documentation, 0),
+				Stability:        getOrDefault(op.Value.Extensions, "x-stability", "stable"),
 			}
 			if len(op.Value.Tags) > 0 {
 				operation.Tag = op.Value.Tags[0]
@@ -132,11 +154,14 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 			// request body
 			if rb := op.Value.RequestBody; rb != nil {
 				// TODO: set correct type for request body
+				payloadType := rb.Content.First().Value().Schema.Schema().Title
+
 				operation.Parameters = append(operation.Parameters, Parameter{
 					Name:        "payload",
 					In:          "body",
 					Description: rb.Description,
-					Type:        "string",
+					Type:        payloadType,
+					Required:    true,
 				})
 			}
 
