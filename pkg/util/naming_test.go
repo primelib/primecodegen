@@ -106,3 +106,23 @@ func TestToCamelCase(t *testing.T) {
 		}
 	}
 }
+
+func TestToSlug(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"Hello World", "hello-world"},
+		{"hello world", "hello-world"},
+		{"hello_world", "hello-world"},
+		{"hello-world", "hello-world"},
+		{"", ""},
+	}
+
+	for _, test := range tests {
+		result := ToSlug(test.input)
+		if result != test.expected {
+			t.Errorf("ToSlug(%s) returned %s, expected %s", test.input, result, test.expected)
+		}
+	}
+}

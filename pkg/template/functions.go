@@ -42,8 +42,14 @@ var templateFunctions = template.FuncMap{
 	"camelCase": func(input string) string {
 		return util.ToCamelCase(input)
 	},
+	"slug": func(input string) string {
+		return util.ToSlug(input)
+	},
 	"commentSingleLine": func(input string) string {
 		return util.CommentSingleLine(input)
+	},
+	"wrapIn": func(left string, right string, input string) string {
+		return left + input + right
 	},
 	"conditionalValue": func(condition bool, trueValue, falseValue interface{}) interface{} {
 		return util.Ternary(condition, trueValue, falseValue)

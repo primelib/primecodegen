@@ -15,7 +15,6 @@ import (
 	"github.com/primelib/primecodegen/pkg/template"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 )
 
 type GoGenerator struct {
@@ -38,9 +37,10 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		return fmt.Errorf("document is required")
 	}
 
-	// TODO: remove - render final document pre-template generation
-	// out, _ := opts.Doc.Model.Render()
-	// fmt.Print(string(out))
+	// required options
+	if opts.ArtifactId == "" {
+		return fmt.Errorf("artifact id is required, please set the --md-artifact-id flag")
+	}
 
 	// build template data
 	templateData, err := g.TemplateData(opts.Doc)
@@ -48,9 +48,14 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		return fmt.Errorf("failed to build template data: %w", err)
 	}
 
-	// TODO: remove this - render template data passed to render files
-	bytes, _ := yaml.Marshal(templateData)
-	fmt.Print(string(bytes))
+	// set packages
+	templateData.Packages = openapigenerator.CommonPackages{
+		Client:     "client",
+		Models:     "models",
+		Enums:      "enums",
+		Operations: "operations",
+		Auth:       "auth",
+	}
 
 	// generate files
 	files, err := openapigenerator.GenerateFiles(fmt.Sprintf("openapi-%s-%s", g.Id(), opts.TemplateId), opts.OutputDir, templateData, template.RenderOpts{
@@ -58,16 +63,14 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		Types:                nil,
 		IgnoreFiles:          nil,
 		IgnoreFileCategories: nil,
-		Properties: map[string]string{
-			"goModule": "github.com/primelib/generated",
-		},
+		Properties:           map[string]string{},
 		TemplateFunctions: texttemplate.FuncMap{
 			"toClassName":     g.ToClassName,
 			"toFunctionName":  g.ToFunctionName,
 			"toPropertyName":  g.ToPropertyName,
 			"toParameterName": g.ToParameterName,
 		},
-	})
+	}, opts)
 	if err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}

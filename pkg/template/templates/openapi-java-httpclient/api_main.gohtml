@@ -47,6 +47,14 @@ public interface {{ .Metadata.Name }}Api {
     {{- if eq $op.Stability "experimental" }}
     @ApiStatus.Experimental
     {{- end }}
+    @RequestLine("{{ $op.Method }} {{ $op.Path }}{{ if $op.QueryParameters }}?{{ range $i, $p := $op.QueryParameters }}{{ $p.Name }}={{$p.FieldName | wrapIn "{" "}" }}{{ if notLast $op.QueryParameters $i }}&{{ end }}{{ end }}{{ end }}")
+    {{- if $op.HeaderParameters }}
+    @Headers({
+    {{- range $i, $p := $op.HeaderParameters }}
+        "{{ $p.Name }}: {{ $p.FieldName }}{{ if notLast $op.HeaderParameters $i }},{{ end }}"
+    {{- end }}
+    })
+    {{- end }}
     {{$op.ReturnType}} {{$op.Name | toFunctionName }}(
         {{- range $i, $param := $op.Parameters }}
             {{if $param.Required}}@NotNull{{else}}@Nullable{{end}} {{if ne $param.In "body"}}@Param("{{ $param.FieldName }}") {{end}}{{$param.Type}} {{$param.Name}}{{if notLast $op.Parameters $i}},{{end}}

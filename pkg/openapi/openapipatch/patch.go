@@ -34,5 +34,8 @@ func PatchV3(patchIds []string, doc libopenapi.Document, v3doc *libopenapi.Docum
 		}
 	}
 
+	// reload document
+	_, _, _, _ = doc.RenderAndReload()
+
 	return doc, v3doc, nil
 }

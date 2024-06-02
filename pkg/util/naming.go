@@ -5,6 +5,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/gosimple/slug"
 	"github.com/iancoleman/strcase"
 )
 
@@ -14,6 +15,11 @@ func init() {
 	// configure acronyms
 	strcase.ConfigureAcronym("API", "api")
 	strcase.ConfigureAcronym("HTML", "html")
+
+	// configure custom rune substitutions for slug
+	slug.CustomRuneSub = map[rune]string{
+		'_': "-",
+	}
 }
 
 // CapitalizeAfterChars removes the characters in the chars slice and capitalizes the next character
@@ -50,4 +56,8 @@ func ToKebabCase(input string) string {
 
 func ToCamelCase(input string) string {
 	return strcase.ToLowerCamel(input)
+}
+
+func ToSlug(input string) string {
+	return slug.MakeLang(input, "en")
 }

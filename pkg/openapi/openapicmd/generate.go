@@ -1,6 +1,9 @@
 package openapicmd
 
 import (
+	"fmt"
+	"os"
+
 	openapi_go "github.com/primelib/primecodegen/pkg/generator/openapi-go"
 	openapi_java "github.com/primelib/primecodegen/pkg/generator/openapi-java"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
@@ -39,6 +42,11 @@ func GenerateCmd() *cobra.Command {
 			}
 			log.Info().Str("input", in).Str("output", out).Msg("generating")
 
+			// metadata
+			metadataGroupId, _ := cmd.Flags().GetString("md-group-id")
+			metadataArtifactId, _ := cmd.Flags().GetString("md-artifact-id")
+
+
 			// open document
 			doc, err := openapidocument.OpenDocumentFile(in)
 			if err != nil {
@@ -55,16 +63,24 @@ func GenerateCmd() *cobra.Command {
 				log.Fatal().Err(err).Msg("failed to patch document")
 			}
 
+			// print final spec
+			if os.Getenv("PRIMECODEGEN_DEBUG_SPEC") == "true" {
+				out, _ := v3doc.Model.Render()
+				fmt.Print(string(out))
+			}
+
 			// run generator
 			gen, err := openapigenerator.GeneratorById(generatorId, generators)
 			if err != nil {
 				log.Fatal().Err(err).Str("generator-id", generatorId).Str("template", templateId).Msg("failed to run generator")
 			}
 			generatorOpts := openapigenerator.GenerateOpts{
-				DryRun:     false,
-				Doc:        v3doc,
-				OutputDir:  out,
-				TemplateId: templateId,
+				DryRun:          false,
+				Doc:             v3doc,
+				OutputDir:       out,
+				TemplateId:      templateId,
+				ArtifactGroupId: metadataGroupId,
+				ArtifactId:      metadataArtifactId,
 			}
 			log.Info().Str("generator-id", gen.Id()).Str("template", templateId).Bool("dry-run", generatorOpts.DryRun).Str("output-dir", generatorOpts.OutputDir).Msg("running generator")
 			err = gen.Generate(generatorOpts)
@@ -78,6 +94,8 @@ func GenerateCmd() *cobra.Command {
 	cmd.Flags().StringP("output", "o", "", "Output Directory")
 	cmd.Flags().StringP("generator", "g", "", "Code Generation Generator ID")
 	cmd.Flags().StringP("template", "t", "", "Code Generation Template ID")
+	cmd.Flags().String("md-group-id", "", "Artifact Group ID")
+	cmd.Flags().String("md-artifact-id", "", "Artifact ID")
 
 	return cmd
 }

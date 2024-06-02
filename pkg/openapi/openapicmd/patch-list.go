@@ -16,11 +16,11 @@ func PatchListCmd() *cobra.Command {
 		Short:   "List available patches",
 		Run: func(cmd *cobra.Command, args []string) {
 			w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-			fmt.Fprintf(w, "ID\tDescription\n")
+			_, _ = fmt.Fprintf(w, "ID\tDescription\n")
 			for _, t := range openapipatch.V3Patchers {
-				fmt.Fprintf(w, "%s\t%s\n", t.ID, t.Description)
+				_, _ = fmt.Fprintf(w, "%s\t%s\n", t.ID, t.Description)
 			}
-			w.Flush()
+			_ = w.Flush()
 		},
 	}
 

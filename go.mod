@@ -6,6 +6,7 @@ require (
 	github.com/bluekeyes/go-gitdiff v0.7.3
 	github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf
 	github.com/evanphx/json-patch/v5 v5.9.0
+	github.com/gosimple/slug v1.14.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/mattn/go-colorable v0.1.13
 	github.com/pb33f/libopenapi v0.16.8
@@ -20,6 +21,7 @@ require (
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
+	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect

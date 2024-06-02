@@ -46,10 +46,12 @@ type CodeGenerator interface {
 }
 
 type GenerateOpts struct {
-	DryRun     bool
-	Doc        *libopenapi.DocumentModel[v3.Document]
-	OutputDir  string
-	TemplateId string
+	DryRun          bool
+	Doc             *libopenapi.DocumentModel[v3.Document]
+	OutputDir       string
+	TemplateId      string
+	ArtifactGroupId string
+	ArtifactId      string
 }
 
 type SchemaDefinition struct {
