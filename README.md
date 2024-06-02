@@ -19,6 +19,11 @@ The `openapi-generate` command can be used to generate code from an OpenAPI spec
 |----------------------------------------------------------------------------------------------|------------------------------------------------------------------|
 | `primecodegen openapi-generate -i openapi.yaml -g go -t client -o /out`                      | run code generation with generator `go` and template `client`    |
 
+Environment Variables:
+
+- `PRIMECODEGEN_DEBUG_SPEC` - if set, the final OpenAPI specification is written to stdout.
+- `PRIMECODEGEN_DEBUG_TEMPLATEDATA` - if set, the template data passed to the code generator is written to stdout.
+
 ## OpenAPI Template Data
 
 The `openapi-generate-template` command can be used to pre-process the openapi spec and pass the resulting template data to an external code generator.

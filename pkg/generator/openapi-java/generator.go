@@ -16,7 +16,6 @@ import (
 	"github.com/primelib/primecodegen/pkg/template"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 )
 
 type JavaGenerator struct {
@@ -39,9 +38,19 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		return fmt.Errorf("document is required")
 	}
 
-	// TODO: remove - render final document pre-template generation
-	// out, _ := opts.Doc.Model.Render()
-	// fmt.Print(string(out))
+	// required options
+	if opts.ArtifactGroupId == "" {
+		return fmt.Errorf("artifact id is required, please set the --md-group-id flag")
+	}
+	if opts.ArtifactId == "" {
+		return fmt.Errorf("artifact id is required, please set the --md-artifact-id flag")
+	}
+
+	// print final spec
+	if os.Getenv("PRIMECODEGEN_DEBUG_SPEC") == "true" {
+		out, _ := opts.Doc.Model.Render()
+		fmt.Print(string(out))
+	}
 
 	// build template data
 	templateData, err := g.TemplateData(opts.Doc)
@@ -50,17 +59,14 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 	}
 
 	// set packages
+	rootPackagePath := strings.ReplaceAll(opts.ArtifactGroupId+"."+opts.ArtifactId, "-", ".")
 	templateData.Packages = openapigenerator.CommonPackages{
-		Client:     "io.primelib.generated",
-		Models:     "io.primelib.generated.models",
-		Enums:      "io.primelib.generated.enums",
-		Operations: "io.primelib.generated.operations",
-		Auth:       "io.primelib.generated.auth",
+		Client:     rootPackagePath,
+		Models:     rootPackagePath + ".models",
+		Enums:      rootPackagePath + ".enums",
+		Operations: rootPackagePath + ".operations",
+		Auth:       rootPackagePath + ".auth",
 	}
-
-	// TODO: remove this - render template data passed to render files
-	bytes, _ := yaml.Marshal(templateData)
-	fmt.Print(string(bytes))
 
 	// generate files
 	files, err := openapigenerator.GenerateFiles(fmt.Sprintf("openapi-%s-%s", g.Id(), opts.TemplateId), opts.OutputDir, templateData, template.RenderOpts{
@@ -76,7 +82,7 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 			"toPropertyName":  g.ToPropertyName,
 			"toParameterName": g.ToParameterName,
 		},
-	})
+	}, opts)
 	if err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}

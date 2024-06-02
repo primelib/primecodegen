@@ -13,6 +13,7 @@ import (
 
 func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator CodeGenerator) (DocumentModel, error) {
 	title := doc.Model.Info.Title
+	title = strings.TrimSuffix(title, "API")
 	var template = DocumentModel{
 		Name:        generator.ToClassName(title),
 		DisplayName: title,
@@ -165,6 +166,23 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				})
 			}
 
+			// response type
+			for resp := op.Value.Responses.Codes.Oldest(); resp != nil; resp = resp.Next() {
+				if resp.Value.Content == nil {
+					continue
+				}
+
+				if resp.Value.Content.First() == nil {
+					continue
+				}
+
+				if resp.Key == "200" || resp.Key == "201" {
+					operation.ReturnType = resp.Value.Content.First().Value().Schema.Schema().Title
+					break
+				}
+			}
+
+			operation.ReturnType = gen.PostProcessType(operation.ReturnType)
 			operation.Imports = cleanImports(operation.Imports)
 			operations = append(operations, operation)
 		}

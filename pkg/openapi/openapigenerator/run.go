@@ -2,9 +2,12 @@ package openapigenerator
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/primelib/primecodegen/pkg/template"
+	"github.com/primelib/primecodegen/pkg/util"
+	"gopkg.in/yaml.v3"
 )
 
 func GeneratorById(id string, allGenerators []CodeGenerator) (CodeGenerator, error) {
@@ -17,9 +20,16 @@ func GeneratorById(id string, allGenerators []CodeGenerator) (CodeGenerator, err
 	return nil, fmt.Errorf("generator with id %s not found", id)
 }
 
-func GenerateFiles(templateId string, outputDir string, templateData DocumentModel, renderOpts template.RenderOpts) ([]template.RenderedFile, error) {
+func GenerateFiles(templateId string, outputDir string, templateData DocumentModel, renderOpts template.RenderOpts, generatorOpts GenerateOpts) ([]template.RenderedFile, error) {
 	var files []template.RenderedFile
 
+	// print templdate data
+	if os.Getenv("PRIMECODEGEN_DEBUG_TEMPLATEDATA") == "true" {
+		bytes, _ := yaml.Marshal(templateData)
+		fmt.Print(string(bytes))
+	}
+
+	// global template data
 	common := GlobalTemplate{
 		GeneratorProperties: renderOpts.Properties,
 		Auth:                templateData.Auth,
@@ -29,11 +39,14 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 		Enums:               templateData.Enums,
 	}
 	metadata := Metadata{
-		ArtifactGroupId: "",
-		ArtifactId:      "",
+		ArtifactGroupId: generatorOpts.ArtifactGroupId,
+		ArtifactId:      generatorOpts.ArtifactId,
 		Name:            strings.TrimSpace(templateData.Name),
 		DisplayName:     strings.TrimSpace(templateData.DisplayName),
 		Description:     templateData.Description,
+	}
+	if metadata.ArtifactId == "" {
+		metadata.ArtifactId = util.ToSlug(metadata.Name)
 	}
 
 	var data []interface{}
