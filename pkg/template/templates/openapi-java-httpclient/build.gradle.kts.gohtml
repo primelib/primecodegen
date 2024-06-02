@@ -11,12 +11,46 @@ val version: String = properties["version"] as? String ?: "0.0.0"
 projectConfiguration {
     type.set(me.philippheuer.projectcfg.domain.ProjectType.LIBRARY)
     javaVersion.set(JavaVersion.VERSION_17)
-{{ if .Metadata.ArtifactGroupId }}
+{{- if .Metadata.ArtifactGroupId }}
     artifactGroupId.set("{{ .Metadata.ArtifactGroupId }}")
+{{- end }}
+{{- if .Metadata.ArtifactId }}
     artifactId.set("{{ .Metadata.ArtifactId }}")
+{{- end }}
+{{- if .Metadata.DisplayName }}
     artifactDisplayName.set("{{ .Metadata.DisplayName }}")
+{{- end }}
+{{- if .Metadata.Description }}
     artifactDescription.set("{{ .Metadata.Description }}")
-{{ end }}
+{{- end }}
+
+    pom = { pom ->
+        {{- if .Metadata.RepositoryUrl }}
+        pom.url.set("https://{{ .Metadata.RepositoryUrl }}")
+        pom.issueManagement {
+            system.set("GitHub")
+            url.set("https://{{ .Metadata.RepositoryUrl }}/issues")
+        }
+        {{- end }}
+        pom.licenses {
+            license {
+                {{- if .Metadata.LicenseName }}
+                name.set("{{ .Metadata.LicenseName }}")
+                {{- end }}
+                distribution.set("repo")
+                {{- if .Metadata.LicenseUrl }}
+                url.set("{{ .Metadata.LicenseUrl }}")
+                {{- end }}
+            }
+        }
+        {{- if .Metadata.RepositoryUrl }}
+        pom.scm {
+            connection.set("scm:git:git://{{ .Metadata.RepositoryUrl }}.git")
+            developerConnection.set("scm:git:git://{{ .Metadata.RepositoryUrl }}.git")
+            url.set("https://{{ .Metadata.RepositoryUrl }}")
+        }
+        {{- end }}
+    }
 }
 
 dependencies {

@@ -45,7 +45,9 @@ func GenerateCmd() *cobra.Command {
 			// metadata
 			metadataGroupId, _ := cmd.Flags().GetString("md-group-id")
 			metadataArtifactId, _ := cmd.Flags().GetString("md-artifact-id")
-
+			metadataRepositoryUrl, _ := cmd.Flags().GetString("md-repository-url")
+			metadataLicenseName, _ := cmd.Flags().GetString("md-license-name")
+			metadataLicenseUrl, _ := cmd.Flags().GetString("md-license-url")
 
 			// open document
 			doc, err := openapidocument.OpenDocumentFile(in)
@@ -81,6 +83,9 @@ func GenerateCmd() *cobra.Command {
 				TemplateId:      templateId,
 				ArtifactGroupId: metadataGroupId,
 				ArtifactId:      metadataArtifactId,
+				RepositoryUrl:   metadataRepositoryUrl,
+				LicenseName:     metadataLicenseName,
+				LicenseUrl:      metadataLicenseUrl,
 			}
 			log.Info().Str("generator-id", gen.Id()).Str("template", templateId).Bool("dry-run", generatorOpts.DryRun).Str("output-dir", generatorOpts.OutputDir).Msg("running generator")
 			err = gen.Generate(generatorOpts)
@@ -96,6 +101,9 @@ func GenerateCmd() *cobra.Command {
 	cmd.Flags().StringP("template", "t", "", "Code Generation Template ID")
 	cmd.Flags().String("md-group-id", "", "Artifact Group ID")
 	cmd.Flags().String("md-artifact-id", "", "Artifact ID")
+	cmd.Flags().String("md-repository-url", "", "Repository URL (without protocol or .git suffix)")
+	cmd.Flags().String("md-license-name", "", "License Name")
+	cmd.Flags().String("md-license-url", "", "License URL")
 
 	return cmd
 }
