@@ -52,6 +52,9 @@ type GenerateOpts struct {
 	TemplateId      string
 	ArtifactGroupId string
 	ArtifactId      string
+	RepositoryUrl   string
+	LicenseName     string
+	LicenseUrl      string
 }
 
 type SchemaDefinition struct {

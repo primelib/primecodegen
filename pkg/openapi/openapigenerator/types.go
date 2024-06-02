@@ -31,6 +31,9 @@ type Metadata struct {
 	Name            string
 	DisplayName     string
 	Description     string
+	RepositoryUrl   string // RepositoryUrl is the URL to the repository (without protocol or .git suffix)
+	LicenseName     string // LicenseName is the name of the license (MIT, Apache-2.0, etc.)
+	LicenseUrl      string // LicenseUrl is the URL to the license
 }
 
 type Auth struct {

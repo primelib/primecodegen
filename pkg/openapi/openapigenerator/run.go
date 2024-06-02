@@ -44,6 +44,9 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 		Name:            strings.TrimSpace(templateData.Name),
 		DisplayName:     strings.TrimSpace(templateData.DisplayName),
 		Description:     templateData.Description,
+		RepositoryUrl:   generatorOpts.RepositoryUrl,
+		LicenseName:     generatorOpts.LicenseName,
+		LicenseUrl:      generatorOpts.LicenseUrl,
 	}
 	if metadata.ArtifactId == "" {
 		metadata.ArtifactId = util.ToSlug(metadata.Name)
