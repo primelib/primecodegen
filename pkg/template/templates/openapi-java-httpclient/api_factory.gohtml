@@ -100,10 +100,10 @@ public class {{ .Metadata.Name }}Factory {
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
             .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
-            {{ if .Common.GeneratorProperties.jacksonIncludeNonNull -}}
+            {{- if .Common.GeneratorProperties.jacksonIncludeNonNull }}
             // condition: jsonIncludeNonNull
             // .serializationInclusion(JsonInclude.Include.NON_NULL)
-            {{ end }}
+            {{- end }}
             .addModule(new JavaTimeModule());
         config.extensions().forEach(extension -> extension.customizeObjectMapper(objectMapperBuilder));
         ObjectMapper objectMapper = objectMapperBuilder.build();
@@ -111,11 +111,11 @@ public class {{ .Metadata.Name }}Factory {
         // builder
         return Feign.builder()
                 .client(new OkHttpClient(clientBuilder.build()))
-                {{ if .Common.HasParametersWithType "form" -}}
+                {{- if .Common.HasParametersWithType "form" }}
                 //.encoder(new FormEncoder(new JacksonEncoder(objectMapper)))
-                {{ else -}}
+                {{- else }}
                 .encoder(new JacksonEncoder(objectMapper))
-                {{ end }}
+                {{- end }}
                 .decoder(new JacksonDecoder(objectMapper))
                 .logger(new Slf4jLogger())
                 .logLevel(Logger.Level.valueOf(config.logLevel().toUpperCase()))

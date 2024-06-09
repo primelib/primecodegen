@@ -23,7 +23,7 @@ func GeneratorById(id string, allGenerators []CodeGenerator) (CodeGenerator, err
 func GenerateFiles(templateId string, outputDir string, templateData DocumentModel, renderOpts template.RenderOpts, generatorOpts GenerateOpts) ([]template.RenderedFile, error) {
 	var files []template.RenderedFile
 
-	// print templdate data
+	// print template data
 	if os.Getenv("PRIMECODEGEN_DEBUG_TEMPLATEDATA") == "true" {
 		bytes, _ := yaml.Marshal(templateData)
 		fmt.Print(string(bytes))

@@ -101,7 +101,13 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 }
 
 func (g *JavaGenerator) TemplateData(doc *libopenapi.DocumentModel[v3.Document]) (openapigenerator.DocumentModel, error) {
-	return openapigenerator.BuildTemplateData(doc, g)
+	templateData, err := openapigenerator.BuildTemplateData(doc, g)
+	if err != nil {
+		return templateData, err
+	}
+
+	templateData = openapigenerator.PruneTypeAliases(templateData, g.primitiveTypes)
+	return templateData, nil
 }
 
 func (g *JavaGenerator) ToClassName(name string) string {

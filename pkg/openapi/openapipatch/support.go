@@ -64,8 +64,10 @@ func GenerateOperationIds(doc *libopenapi.DocumentModel[v3.Document]) error {
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		url := path.Key
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
+			originalOperationId := op.Value.OperationId
 			op.Value.OperationId = util.ToOperationId(op.Key, url)
-			log.Trace().Str("path", strings.ToUpper(op.Key)+" "+url).Str("operation-id", op.Value.OperationId).Msg("replacing operation id with generated id")
+
+			log.Trace().Str("path", strings.ToUpper(op.Key)+" "+url).Str("operation-id", op.Value.OperationId).Str("original-operation-id", originalOperationId).Msg("replacing operation id with generated id")
 		}
 	}
 
@@ -76,7 +78,8 @@ func GenerateOperationIds(doc *libopenapi.DocumentModel[v3.Document]) error {
 func MergePolymorphicSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 	// component schemas
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-		log.Warn().Str("schema", schema.Key).Msg("merging components.schema")
+		// TODO: remove
+		log.Debug().Str("schema", schema.Key).Msg("merging components.schema")
 
 		_, err := openapidocument.SimplifyPolymorphism(schema.Value)
 		if err != nil {
