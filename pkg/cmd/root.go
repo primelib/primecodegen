@@ -27,11 +27,16 @@ func rootCmd() *cobra.Command {
 		Use:   `primecodegen`,
 		Short: `PrimeCodeGen is a code generator for API specifications.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			// log format
+			// validate log level and format
 			if !slices.Contains(validLogFormats, cfg.LogFormat) {
 				log.Error().Str("current", cfg.LogFormat).Strs("valid", validLogFormats).Msg("invalid log format specified")
 				os.Exit(1)
 			}
+			if !slices.Contains(validLogLevels, cfg.LogLevel) {
+				log.Error().Str("current", cfg.LogLevel).Strs("valid", validLogLevels).Msg("invalid log level specified")
+				os.Exit(1)
+			}
+
 			var logContext zerolog.Context
 			if cfg.LogFormat == "plain" {
 				logContext = zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: true}).With().Timestamp()
@@ -50,10 +55,6 @@ func rootCmd() *cobra.Command {
 			zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 			// log level
-			if !slices.Contains(validLogLevels, cfg.LogLevel) {
-				log.Error().Str("current", cfg.LogLevel).Strs("valid", validLogLevels).Msg("invalid log level specified")
-				os.Exit(1)
-			}
 			if cfg.LogLevel == "trace" {
 				zerolog.SetGlobalLevel(zerolog.TraceLevel)
 			} else if cfg.LogLevel == "debug" {

@@ -306,3 +306,54 @@ func BuildEnums(opts ModelOpts) ([]Enum, error) {
 
 	return enums, nil
 }
+
+// PruneTypeAliases removes type aliases and replaces it with the actual type
+// A type alias is identified by not having properties and the parent being a primitive type
+func PruneTypeAliases(documentModel DocumentModel, primitiveTypes []string) DocumentModel {
+	var typeAliasModels []Model
+	for _, model := range documentModel.Models {
+		if len(model.Properties) == 0 && slices.Contains(primitiveTypes, model.Parent) {
+			typeAliasModels = append(typeAliasModels, model)
+		}
+	}
+
+	// fix types (replace type alias with primitive type)
+	for i, model := range documentModel.Models {
+		for j, property := range model.Properties {
+			for _, typeAliasModel := range typeAliasModels {
+				if property.Type == typeAliasModel.Name {
+					documentModel.Models[i].Properties[j].Type = typeAliasModel.Parent
+					break
+				}
+			}
+		}
+	}
+	for i, op := range documentModel.Operations {
+		for j, param := range op.Parameters {
+			for _, typeAliasModel := range typeAliasModels {
+				if param.Type == typeAliasModel.Name {
+					documentModel.Operations[i].Parameters[j].Type = typeAliasModel.Parent
+					break
+				}
+			}
+		}
+
+		for _, typeAliasModel := range typeAliasModels {
+			if op.ReturnType == typeAliasModel.Name {
+				documentModel.Operations[i].ReturnType = typeAliasModel.Parent
+				break
+			}
+		}
+	}
+
+	// remove type alias models
+	for _, typeAliasModel := range typeAliasModels {
+		for i, model := range documentModel.Models {
+			if strings.ToLower(model.Name) == strings.ToLower(typeAliasModel.Name) {
+				documentModel.Models = append(documentModel.Models[:i], documentModel.Models[i+1:]...)
+			}
+		}
+	}
+
+	return documentModel
+}
