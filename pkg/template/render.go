@@ -3,12 +3,15 @@ package template
 import (
 	"bytes"
 	"embed"
+	"errors"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"slices"
 	"text/template"
+
+	"github.com/primelib/primecodegen/pkg/util"
 )
 
 //go:embed templates/*
@@ -21,7 +24,7 @@ func RenderTemplateById(templateId string, outputDir string, templateType Type, 
 		}
 	}
 
-	return nil, fmt.Errorf("template with id %s not found", templateId)
+	return nil, errors.Join(ErrTemplateNotFound, errors.New("template id: "+templateId))
 }
 
 // RenderTemplate renders the template with the provided data and returns the rendered files
@@ -31,9 +34,16 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 	// pre-load all template files
 	tmpl := make(map[string]*template.Template)
 	for _, file := range config.Files {
+		if file.SourceTemplate == "" {
+			continue
+		}
+
 		t, err := loadTemplate(config.ID, append([]string{file.SourceTemplate}, file.Snippets...), opts.TemplateFunctions)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse template in %s, file %s: %w", config.ID, file.SourceTemplate, err)
+			return nil, errors.Join(
+				ErrFailedToParseTemplate,
+				fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err),
+			)
 		}
 		tmpl[file.SourceTemplate] = t
 	}
@@ -45,13 +55,27 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 			continue
 		}
 
-		// render
-		t := tmpl[file.SourceTemplate]
-
 		var renderedContent bytes.Buffer
-		err := t.Execute(&renderedContent, data)
-		if err != nil {
-			return nil, fmt.Errorf("failed to render template in %s, file %s: %w", config.ID, file.SourceTemplate, err)
+		if file.SourceTemplate != "" {
+			t := tmpl[file.SourceTemplate]
+
+			err := t.Execute(&renderedContent, data)
+			if err != nil {
+				return nil, errors.Join(
+					ErrFailedToRenderTemplate,
+					fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err),
+				)
+			}
+		} else if file.SourceUrl != "" {
+			err := util.DownloadBytes(file.SourceUrl, &renderedContent)
+			if err != nil {
+				return nil, errors.Join(
+					ErrFailedToDownloadTemplateFile,
+					fmt.Errorf("failed to download template from %s: %w", file.SourceUrl, err),
+				)
+			}
+		} else {
+			return nil, errors.Join(ErrTemplateFileOrUrlIsRequired, errors.New("template id: "+file.TargetDirectory+"/"+file.TargetFileName))
 		}
 
 		// variables in dir or name

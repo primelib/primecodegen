@@ -261,7 +261,6 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 
 		add.Imports = cleanImports(add.Imports)
 		models = append(models, add)
-
 	}
 
 	return models, nil
