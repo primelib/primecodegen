@@ -30,6 +30,8 @@ func ContentTypeToShortName(input string) string {
 		return "form"
 	} else if input == "multipart/form-data" {
 		return "form"
+	} else if input == "application/octet-stream" {
+		return "bytes"
 	}
 
 	return input
