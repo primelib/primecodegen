@@ -27,7 +27,9 @@ func rootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.LogLevel, "log-level", "info", "log level - allowed: "+strings.Join(zerologconfig.ValidLogLevels, ","))
 	cmd.PersistentFlags().StringVar(&cfg.LogFormat, "log-format", "color", "log format - allowed: "+strings.Join(zerologconfig.ValidLogFormats, ","))
 	cmd.PersistentFlags().BoolVar(&cfg.LogCaller, "log-caller", false, "include caller in log functions")
+
 	cmd.AddCommand(versionCmd())
+
 	cmd.AddGroup(&cobra.Group{ID: "openapi", Title: "OpenAPI Generation"})
 	cmd.AddCommand(openapicmd.GenerateCmd())
 	cmd.AddCommand(openapicmd.GenerateTemplateCmd())
