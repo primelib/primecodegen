@@ -3,7 +3,6 @@ package openapipatch
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
@@ -49,9 +48,10 @@ func flattenInlineRequestBodies(doc *libopenapi.DocumentModel[v3.Document]) erro
 					if rb.Value.Schema.IsReference() { // skip references
 						continue
 					}
+					addSuffix := op.Value.RequestBody.Content.First().Key() != rb.Key // add suffix from the second request body onwards
 
 					// move schema to components and replace with reference
-					key := util.ToPascalCase(op.Value.OperationId) + "B" + strings.ToUpper(util.ContentTypeToShortName(rb.Key))
+					key := util.ToPascalCase(op.Value.OperationId) + "B" + util.Ternary(addSuffix, util.UpperCaseFirstLetter(util.ContentTypeToShortName(rb.Key)), "")
 					log.Trace().Msg("moving request schema to components: " + key)
 					if ref, err := moveSchemaIntoComponents(doc, key, rb.Value.Schema); err != nil {
 						return fmt.Errorf("error moving schema to components: %w", err)
