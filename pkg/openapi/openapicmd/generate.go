@@ -18,7 +18,7 @@ var generators = []openapigenerator.CodeGenerator{
 	openapi_go.NewGenerator(),
 	openapi_java.NewGenerator(),
 }
-var generatorPatches = []string{"pruneOperationTags", "generateOperationIds", "flattenSchemas", "mergePolymorphicSchemas", "missingSchemaTitle"}
+var generatorPatches = []string{"fixOperationTags", "generateOperationIds", "flattenSchemas", "mergePolymorphicSchemas", "missingSchemaTitle"}
 
 func GenerateCmd() *cobra.Command {
 	cmd := &cobra.Command{

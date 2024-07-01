@@ -14,6 +14,13 @@ type V3Config struct {
 }
 
 var V3Patchers = map[string]V3Config{
+	"fixOperationTags": {
+		ID:             "fixOperationTags",
+		Description:    "Ensures all operations have at least one tag, and that tags are documented in the document",
+		Enabled:        true,
+		CodeGeneration: false,
+		Func:           FixOperationTags,
+	},
 	"pruneOperationTags": {
 		ID:             "pruneOperationTags",
 		Description:    "Removes all tags from operations",

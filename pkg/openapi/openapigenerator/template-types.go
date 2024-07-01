@@ -4,6 +4,7 @@ type GlobalTemplate struct {
 	GeneratorProperties map[string]string
 	Auth                Auth
 	Packages            CommonPackages
+	Services            map[string]Service
 	Operations          []Operation
 	Models              []Model
 	Enums               []Enum

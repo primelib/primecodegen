@@ -14,7 +14,7 @@ func getBoolValue(ptrToBool *bool, defaultValue bool) bool {
 	return defaultValue
 }
 
-func cleanImports(imports []string) (out []string) {
+func uniqueSortImports(imports []string) (out []string) {
 	// unique imports
 	visited := make(map[string]bool)
 	for _, imp := range imports {

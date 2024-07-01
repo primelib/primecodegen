@@ -11,7 +11,7 @@ import (
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 )
 
-func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator CodeGenerator) (DocumentModel, error) {
+func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator CodeGenerator, packageConfig CommonPackages) (DocumentModel, error) {
 	title := doc.Model.Info.Title
 	title = strings.TrimSuffix(title, "API")
 	var template = DocumentModel{
@@ -19,6 +19,7 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 		DisplayName: title,
 		Description: doc.Model.Info.Description,
 		Auth:        BuildAuth(doc),
+		Packages:    packageConfig,
 	}
 
 	// all operations
@@ -35,6 +36,21 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 	template.OperationsByTag = make(map[string][]Operation)
 	for _, op := range operations {
 		template.OperationsByTag[op.Tag] = append(template.OperationsByTag[op.Tag], op)
+	}
+
+	// services
+	template.Services = make(map[string]Service)
+	for _, tag := range doc.Model.Tags {
+		service := Service{
+			Name:        tag.Name,
+			Description: tag.Description,
+			Operations:  []Operation{},
+		}
+		if _, ok := template.OperationsByTag[tag.Name]; ok {
+			service.Operations = append(service.Operations, template.OperationsByTag[tag.Name]...)
+		}
+
+		template.Services[tag.Name] = service
 	}
 
 	// models
@@ -93,7 +109,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				Description:      op.Value.Description,
 				Tag:              "default",
 				Tags:             op.Value.Tags,
-				ReturnType:       "",
+				ReturnType:       CodeType{},
 				Deprecated:       getBoolValue(op.Value.Deprecated, false),
 				DeprecatedReason: getOrDefault(op.Value.Extensions, "x-deprecated", ""),
 				Documentation:    make([]Documentation, 0),
@@ -118,10 +134,11 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					return operations, fmt.Errorf("error building property schema: %w", err)
 				}
 
-				pType, err := gen.ToCodeType(param.Schema.Schema(), ptr.Value(param.Required))
+				pType, err := gen.ToCodeType(pSchema, CodeTypeSchemaParameter, ptr.Value(param.Required))
 				if err != nil {
 					return operations, fmt.Errorf("error converting type of [%s:%s:parameter:%s]: %w", path.Key, op.Key, param.Name, err)
 				}
+				pType = gen.PostProcessType(pType)
 
 				allowedValues, err := openapidocument.EnumToAllowedValues(pSchema)
 				if err != nil {
@@ -133,7 +150,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					In:              param.In,
 					Description:     param.Description,
 					Type:            pType,
-					IsPrimitiveType: gen.IsPrimitiveType(pType),
+					IsPrimitiveType: gen.IsPrimitiveType(pType.Name),
 					AllowedValues:   allowedValues,
 					Required:        getBoolValue(param.Required, false),
 					Deprecated:      param.Deprecated,
@@ -157,13 +174,15 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				// TODO: set correct type for request body
 				payloadType := rb.Content.First().Value().Schema.Schema().Title
 
-				operation.Parameters = append(operation.Parameters, Parameter{
+				bodyParam := Parameter{
 					Name:        "payload",
 					In:          "body",
 					Description: rb.Description,
-					Type:        payloadType,
+					Type:        gen.PostProcessType(CodeType{Name: payloadType}),
 					Required:    true,
-				})
+				}
+				operation.BodyParameter = &bodyParam
+				operation.Parameters = append(operation.Parameters, bodyParam)
 			}
 
 			// response type
@@ -177,13 +196,16 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				}
 
 				if resp.Key == "200" || resp.Key == "201" {
-					operation.ReturnType = resp.Value.Content.First().Value().Schema.Schema().Title
+					responseType, err := gen.ToCodeType(resp.Value.Content.First().Value().Schema.Schema(), CodeTypeSchemaResponse, false)
+					if err != nil {
+						return operations, fmt.Errorf("error converting type of [%s:%s:responseType:%s]: %w", path.Key, op.Key, resp.Key, err)
+					}
+					operation.ReturnType = gen.PostProcessType(responseType)
 					break
 				}
 			}
 
-			operation.ReturnType = gen.PostProcessType(operation.ReturnType)
-			operation.Imports = cleanImports(operation.Imports)
+			operation.Imports = uniqueSortImports(operation.Imports)
 			operations = append(operations, operation)
 		}
 	}
@@ -221,10 +243,11 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 					return models, fmt.Errorf("error building property schema: %w", err)
 				}
 
-				pType, err := gen.ToCodeType(pSchema, false)
+				pType, err := gen.ToCodeType(pSchema, CodeTypeSchemaProperty, false)
 				if err != nil {
 					return models, fmt.Errorf("error converting type of [%s:object:%s]: %w", schema.Key, p.Key, err)
 				}
+				pType = gen.PostProcessType(pType)
 
 				allowedValues, err := openapidocument.EnumToAllowedValues(pSchema)
 				if err != nil {
@@ -236,30 +259,36 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 					Description:     pSchema.Description,
 					Title:           pSchema.Title,
 					Type:            pType,
-					IsPrimitiveType: gen.IsPrimitiveType(pType),
+					IsPrimitiveType: gen.IsPrimitiveType(pType.Name),
 					Nullable:        getBoolValue(pSchema.Nullable, slices.Contains(pSchema.Type, "null")), // 3.1 uses null type, 3.0 uses nullable
 					AllowedValues:   allowedValues,
 				})
+
 				add.Imports = append(add.Imports, gen.TypeToImport(pType))
 			}
 		} else if slices.Contains(s.Type, "array") {
-			mParent, err := gen.ToCodeType(s, false)
+			mParent, err := gen.ToCodeType(s, CodeTypeSchemaArray, false)
 			if err != nil {
 				return models, fmt.Errorf("error converting type of [%s:array]: %w", schema.Key, err)
 			}
+			mParent = gen.PostProcessType(mParent)
 
 			add.Parent = mParent
 		} else {
-			mType, err := gen.ToCodeType(s, false)
+			mParent, err := gen.ToCodeType(s, CodeTypeSchemaParent, false)
 			if err != nil {
 				return models, fmt.Errorf("error converting type of [%s]: %w", schema.Key, err)
 			}
+			mParent = gen.PostProcessType(mParent)
 
-			add.Parent = mType
+			add.Parent = mParent
 			add.Imports = append(add.Imports, gen.TypeToImport(add.Parent))
 		}
+		if len(add.Properties) == 0 && add.Parent.Name != "" {
+			add.IsTypeAlias = true
+		}
 
-		add.Imports = cleanImports(add.Imports)
+		add.Imports = uniqueSortImports(add.Imports)
 		models = append(models, add)
 	}
 
@@ -280,10 +309,11 @@ func BuildEnums(opts ModelOpts) ([]Enum, error) {
 			continue
 		}
 
-		vType, err := gen.ToCodeType(s, true)
+		vType, err := gen.ToCodeType(s, CodeTypeSchemaProperty, true)
 		if err != nil {
 			return enums, fmt.Errorf("error converting type of [%s]: %w", schema.Key, err)
 		}
+		vType = gen.PostProcessType(vType)
 
 		add := Enum{
 			Name:          gen.ToClassName(s.Title),
@@ -299,7 +329,7 @@ func BuildEnums(opts ModelOpts) ([]Enum, error) {
 			v.Name = gen.ToPropertyName(v.Name)
 			add.AllowedValues[k] = v
 		}
-		add.Imports = cleanImports(add.Imports)
+		add.Imports = uniqueSortImports(add.Imports)
 		enums = append(enums, add)
 	}
 
@@ -311,7 +341,7 @@ func BuildEnums(opts ModelOpts) ([]Enum, error) {
 func PruneTypeAliases(documentModel DocumentModel, primitiveTypes []string) DocumentModel {
 	var typeAliasModels []Model
 	for _, model := range documentModel.Models {
-		if len(model.Properties) == 0 && slices.Contains(primitiveTypes, model.Parent) {
+		if model.IsTypeAlias {
 			typeAliasModels = append(typeAliasModels, model)
 		}
 	}
@@ -320,7 +350,7 @@ func PruneTypeAliases(documentModel DocumentModel, primitiveTypes []string) Docu
 	for i, model := range documentModel.Models {
 		for j, property := range model.Properties {
 			for _, typeAliasModel := range typeAliasModels {
-				if property.Type == typeAliasModel.Name {
+				if property.Type.Name == typeAliasModel.Name {
 					documentModel.Models[i].Properties[j].Type = typeAliasModel.Parent
 					break
 				}
@@ -330,7 +360,7 @@ func PruneTypeAliases(documentModel DocumentModel, primitiveTypes []string) Docu
 	for i, op := range documentModel.Operations {
 		for j, param := range op.Parameters {
 			for _, typeAliasModel := range typeAliasModels {
-				if param.Type == typeAliasModel.Name {
+				if param.Type.Name == typeAliasModel.Name {
 					documentModel.Operations[i].Parameters[j].Type = typeAliasModel.Parent
 					break
 				}
@@ -338,7 +368,7 @@ func PruneTypeAliases(documentModel DocumentModel, primitiveTypes []string) Docu
 		}
 
 		for _, typeAliasModel := range typeAliasModels {
-			if op.ReturnType == typeAliasModel.Name {
+			if op.ReturnType.Name == typeAliasModel.Name {
 				documentModel.Operations[i].ReturnType = typeAliasModel.Parent
 				break
 			}

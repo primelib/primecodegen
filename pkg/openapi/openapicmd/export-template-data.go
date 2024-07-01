@@ -55,7 +55,9 @@ func GenerateTemplateCmd() *cobra.Command {
 
 			// build template data
 			log.Info().Str("generator-id", gen.Id()).Str("output-file", out).Msg("generating template data")
-			templateData, err := gen.TemplateData(v3doc)
+			templateData, err := gen.TemplateData(openapigenerator.TemplateDataOpts{
+				Doc: v3doc,
+			})
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to transform spec into template data for the generator")
 			}

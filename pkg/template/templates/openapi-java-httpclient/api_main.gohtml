@@ -17,6 +17,8 @@ import {{ $.Common.Packages.Models }}.{{ .Name }};
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+import java.util.Map;
 import javax.annotation.processing.Generated;
 
 @Generated(value = "io.github.primelib.primecodegen")
@@ -55,7 +57,7 @@ public interface {{ .Metadata.Name }}Api {
     {{- end }}
     })
     {{- end }}
-    {{$op.ReturnType}} {{$op.Name | toFunctionName }}(
+    {{ $op.ReturnType }} {{ $op.Name | toFunctionName }}(
         {{- range $i, $param := $op.Parameters }}
             {{if $param.Required}}@NotNull{{else}}@Nullable{{end}} {{if ne $param.In "body"}}@Param("{{ $param.FieldName }}") {{end}}{{$param.Type}} {{$param.Name}}{{if notLast $op.Parameters $i}},{{end}}
         {{- end }}
