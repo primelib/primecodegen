@@ -13,6 +13,35 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// FixOperationTags ensures all operations have tags, and that tags are documented in the document
+func FixOperationTags(doc *libopenapi.DocumentModel[v3.Document]) error {
+	documentedTags := make(map[string]bool)
+	for _, tag := range doc.Model.Tags {
+		documentedTags[tag.Name] = true
+	}
+
+	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
+		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
+			if len(op.Value.Tags) == 0 {
+				// add default tag, if missing
+				log.Trace().Str("path", strings.ToUpper(op.Key)+" "+path.Key).Msg("operation is missing tags, adding default tag")
+				op.Value.Tags = append(op.Value.Tags, "default")
+			} else {
+				// ensure all tags are documented
+				for _, tag := range op.Value.Tags {
+					if _, ok := documentedTags[tag]; !ok {
+						log.Trace().Str("path", strings.ToUpper(op.Key)+" "+path.Key).Str("tag", tag).Msg("tag is not documented, adding to document")
+						doc.Model.Tags = append(doc.Model.Tags, &base.Tag{Name: tag})
+						documentedTags[tag] = true
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func PruneOperationTags(doc *libopenapi.DocumentModel[v3.Document]) error {
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {

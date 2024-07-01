@@ -14,12 +14,12 @@ import (
 {{ if .Model.Description -}}
 // {{ .Model.Name }} {{ .Model.Description | commentSingleLine }}
 {{ end -}}
-{{ if .Model.Parent -}}
-type {{ .Model.Name }} {{ .Model.Parent }}
+{{ if .Model.Parent.Declaration -}}
+type {{ .Model.Name }} {{ .Model.Parent.Declaration }}
 {{ else }}
 type {{ .Model.Name }} struct {
 {{- range .Model.Properties }}
-    {{ .Name }} {{ if .IsPrimitiveType }}*{{ end }}{{ .Type }} `json:"{{ .FieldName }}{{ if eq .Type "*bool" }},renderZero{{ end }}{{ if .Nullable }},omitempty{{ end }}" form:"name={{ .FieldName }}{{ if not .IsPrimitiveType }},json{{ end }}"` {{ if .Description }}// {{ .Description | commentSingleLine }}{{ end }}
+    {{ .Name }} {{ .Type.Declaration }} `json:"{{ .FieldName }}{{ if eq .Type.Name "*bool" }},renderZero{{ end }}{{ if .Nullable }},omitempty{{ end }}" form:"name={{ .FieldName }}{{ if not .IsPrimitiveType }},json{{ end }}"` {{ if .Description }}// {{ .Description | commentSingleLine }}{{ end }}
 {{- end }}
 }
 {{- end }}

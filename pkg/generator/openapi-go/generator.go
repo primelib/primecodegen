@@ -8,9 +8,7 @@ import (
 	texttemplate "text/template"
 
 	"github.com/cidverse/go-ptr"
-	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
-	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
 	"github.com/primelib/primecodegen/pkg/template"
 	"github.com/primelib/primecodegen/pkg/util"
@@ -42,19 +40,22 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		return fmt.Errorf("artifact id is required, please set the --md-artifact-id flag")
 	}
 
-	// build template data
-	templateData, err := g.TemplateData(opts.Doc)
-	if err != nil {
-		return fmt.Errorf("failed to build template data: %w", err)
-	}
-
 	// set packages
-	templateData.Packages = openapigenerator.CommonPackages{
+	opts.PackageConfig = openapigenerator.CommonPackages{
 		Client:     "client",
 		Models:     "models",
 		Enums:      "enums",
 		Operations: "operations",
 		Auth:       "auth",
+	}
+
+	// build template data
+	templateData, err := g.TemplateData(openapigenerator.TemplateDataOpts{
+		Doc:           opts.Doc,
+		PackageConfig: opts.PackageConfig,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to build template data: %w", err)
 	}
 
 	// generate files
@@ -69,6 +70,7 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 			"toFunctionName":  g.ToFunctionName,
 			"toPropertyName":  g.ToPropertyName,
 			"toParameterName": g.ToParameterName,
+			"isPrimitiveType": g.IsPrimitiveType,
 		},
 	}, opts)
 	if err != nil {
@@ -88,8 +90,8 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 	return nil
 }
 
-func (g *GoGenerator) TemplateData(doc *libopenapi.DocumentModel[v3.Document]) (openapigenerator.DocumentModel, error) {
-	return openapigenerator.BuildTemplateData(doc, g)
+func (g *GoGenerator) TemplateData(opts openapigenerator.TemplateDataOpts) (openapigenerator.DocumentModel, error) {
+	return openapigenerator.BuildTemplateData(opts.Doc, g, opts.PackageConfig)
 }
 
 func (g *GoGenerator) ToClassName(name string) string {
@@ -131,80 +133,126 @@ func (g *GoGenerator) ToParameterName(name string) string {
 	return name
 }
 
-func (g *GoGenerator) ToCodeType(schema *base.Schema, required bool) (string, error) {
+func (g *GoGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerator.CodeTypeSchemaType, required bool) (openapigenerator.CodeType, error) {
+	isNullable := ptr.ValueOrDefault(schema.Nullable, true) == true
+
 	// multiple types
 	if util.CountExcluding(schema.Type, "null") > 1 {
-		return "interface{}", nil
+		return openapigenerator.CodeType{Name: "interface{}", IsNullable: isNullable}, nil
 	}
 
 	// normal types
-	var codeType string
 	switch {
 	case slices.Contains(schema.Type, "string"):
 		switch schema.Format {
-		case "uri", "binary", "byte":
-			codeType = "string"
+		case "uri":
+			return openapigenerator.NewSimpleCodeType("string", schema), nil
+		case "binary", "byte":
+			return openapigenerator.NewArrayCodeType(openapigenerator.NewSimpleCodeType("byte", schema), schema), nil
 		case "date", "date-time":
-			codeType = "string"
+			return openapigenerator.NewSimpleCodeType("string", schema), nil
 		default:
-			codeType = "string"
+			return openapigenerator.NewSimpleCodeType("string", schema), nil
 		}
 	case slices.Contains(schema.Type, "boolean"):
-		codeType = "bool"
+		return openapigenerator.NewSimpleCodeType("bool", schema), nil
 	case slices.Contains(schema.Type, "integer"):
 		switch schema.Format {
 		case "int32":
-			codeType = "int32"
+			return openapigenerator.NewSimpleCodeType("int32", schema), nil
 		case "int64":
-			codeType = "int64"
+			return openapigenerator.NewSimpleCodeType("int64", schema), nil
 		default:
-			codeType = "int64"
+			return openapigenerator.NewSimpleCodeType("int64", schema), nil
 		}
 	case slices.Contains(schema.Type, "number"):
 		switch schema.Format {
 		case "float":
-			codeType = "float32"
+			return openapigenerator.NewSimpleCodeType("float32", schema), nil
 		case "double":
-			codeType = "float64"
+			return openapigenerator.NewSimpleCodeType("float64", schema), nil
 		default:
-			codeType = "float64"
+			return openapigenerator.NewSimpleCodeType("float64", schema), nil
 		}
 	case slices.Contains(schema.Type, "array"):
-		arrayType, err := g.ToCodeType(schema.Items.A.Schema(), true)
+		arrayType, err := g.ToCodeType(schema.Items.A.Schema(), schemaType, true)
 		if err != nil {
-			return "", fmt.Errorf("unhandled array type. schema: %s, format: %s, message: %w", schema.Type, schema.Format, err)
+			return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled array type. schema: %s, format: %s, message: %w", schema.Type, schema.Format, err)
 		}
-		codeType = "[]" + arrayType
+		arrayType = g.PostProcessType(arrayType)
+
+		return openapigenerator.NewArrayCodeType(arrayType, schema), nil
 	case slices.Contains(schema.Type, "object"):
-		if schema.AdditionalProperties != nil {
-			keyType := "string"
-			additionalProperties, err := g.ToCodeType(schema.AdditionalProperties.A.Schema(), true)
-			if err != nil {
-				return "", fmt.Errorf("unhandled additional properties type. schema: %s, format: %s: %w", schema.Type, schema.Format, err)
+		// exception for maps
+		if schemaType == openapigenerator.CodeTypeSchemaParent {
+			if schema.AdditionalProperties != nil && schema.Properties == nil {
+				additionalPropertyType, err := g.ToCodeType(schema.AdditionalProperties.A.Schema(), schemaType, true)
+				if err != nil {
+					return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled additional properties type. schema: %s, format: %s: %w", schema.Type, schema.Format, err)
+				}
+				additionalPropertyType = g.PostProcessType(additionalPropertyType)
+
+				return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("string", schema), additionalPropertyType, schema), nil
+			} else if schema.AdditionalProperties == nil && schema.Properties == nil {
+				return openapigenerator.NewSimpleCodeType("interface{}", schema), nil
 			}
-			codeType = "map[" + keyType + "]" + additionalProperties
-		} else if schema.AdditionalProperties == nil && schema.Properties == nil {
-			codeType = "interface{}"
-		} else {
-			if schema.Title == "" {
-				// TODO: ensure all schemas have a title
-				// return "", fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
-			}
-			codeType = g.ToClassName(schema.Title)
 		}
+
+		if schema.Title == "" {
+			return openapigenerator.DefaultCodeType, fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
+		}
+		return openapigenerator.CodeType{Name: g.ToClassName(schema.Title), IsNullable: isNullable, ImportPath: "models"}, nil // TODO: import path
 	default:
-		return "", fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
+		return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
+	}
+}
+
+func (g *GoGenerator) PostProcessType(codeType openapigenerator.CodeType) openapigenerator.CodeType {
+	if codeType.IsPostProcessed {
+		return codeType
+	}
+
+	// PostProcess TypeArgs
+	for i, typeArg := range codeType.TypeArgs {
+		codeType.TypeArgs[i] = g.PostProcessType(typeArg)
+	}
+
+	// Qualifier
+	qualifier := ""
+	if codeType.ImportPath != "" {
+		parts := strings.Split(codeType.ImportPath, "/")
+		qualifier = parts[len(parts)-1] + "."
+	}
+
+	// FullyQualifiedName
+	switch {
+	case codeType.IsArray:
+		codeType.Declaration = "[]" + codeType.TypeArgs[0].Declaration
+		codeType.QualifiedDeclaration = "[]" + qualifier + codeType.TypeArgs[0].QualifiedDeclaration
+		codeType.Type = "[]" + codeType.TypeArgs[0].Type
+		codeType.QualifiedType = "[]" + qualifier + codeType.TypeArgs[0].Type
+	case codeType.IsMap:
+		codeType.Declaration = "map[" + codeType.TypeArgs[0].Declaration + "]" + codeType.TypeArgs[1].Declaration
+		codeType.QualifiedDeclaration = "map[" + codeType.TypeArgs[0].QualifiedDeclaration + "]" + qualifier + codeType.TypeArgs[1].QualifiedDeclaration
+		codeType.Type = "map[" + codeType.TypeArgs[0].Type + "]" + codeType.TypeArgs[1].Type
+		codeType.QualifiedType = "map[" + codeType.TypeArgs[0].Type + "]" + qualifier + codeType.TypeArgs[1].QualifiedType
+	default:
+		codeType.Declaration = codeType.Name
+		codeType.QualifiedDeclaration = qualifier + codeType.Name
+		codeType.Type = codeType.Name
+		codeType.QualifiedType = qualifier + codeType.Name
 	}
 
 	// pointer
-	if !required && !strings.HasPrefix(codeType, "[]") && !strings.HasPrefix(codeType, "map[") && ptr.ValueOrDefault(schema.Nullable, true) == true {
-		codeType = "*" + codeType
+	if !codeType.IsMap && !codeType.IsArray && codeType.IsNullable {
+		codeType.IsPointer = true
+	}
+	if codeType.IsPointer {
+		codeType.Declaration = "*" + codeType.Declaration
+		codeType.QualifiedDeclaration = "*" + codeType.QualifiedDeclaration
 	}
 
-	return codeType, nil
-}
-
-func (g *GoGenerator) PostProcessType(codeType string) string {
+	codeType.IsPostProcessed = true
 	return codeType
 }
 
@@ -212,7 +260,8 @@ func (g *GoGenerator) IsPrimitiveType(input string) bool {
 	return slices.Contains(g.primitiveTypes, input)
 }
 
-func (g *GoGenerator) TypeToImport(typeName string) string {
+func (g *GoGenerator) TypeToImport(iType openapigenerator.CodeType) string {
+	typeName := iType.Name
 	if typeName == "" {
 		return ""
 	}

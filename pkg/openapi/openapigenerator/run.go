@@ -34,6 +34,7 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 		GeneratorProperties: renderOpts.Properties,
 		Auth:                templateData.Auth,
 		Packages:            templateData.Packages,
+		Services:            templateData.Services,
 		Operations:          templateData.Operations,
 		Models:              templateData.Models,
 		Enums:               templateData.Enums,
@@ -62,19 +63,15 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 		Common:   common,
 		Package:  common.Packages.Client,
 	})
-	for tag, ops := range templateData.OperationsByTag {
-		tagDescription := ""
-		if tagData, ok := templateData.Tags[tag]; ok {
-			tagDescription = tagData.Description
-		}
 
+	for _, service := range templateData.Services {
 		data = append(data, APIEachTemplate{
 			Metadata:       metadata,
 			Common:         common,
 			Package:        common.Packages.Client,
-			TagName:        tag,
-			TagDescription: tagDescription,
-			TagOperations:  ops,
+			TagName:        service.Name,
+			TagDescription: service.Description,
+			TagOperations:  service.Operations,
 		})
 	}
 	for _, op := range templateData.Operations {

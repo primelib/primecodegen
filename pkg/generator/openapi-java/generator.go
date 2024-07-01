@@ -9,9 +9,7 @@ import (
 	"strings"
 	texttemplate "text/template"
 
-	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
-	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
 	"github.com/primelib/primecodegen/pkg/template"
 	"github.com/primelib/primecodegen/pkg/util"
@@ -52,20 +50,23 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		fmt.Print(string(out))
 	}
 
-	// build template data
-	templateData, err := g.TemplateData(opts.Doc)
-	if err != nil {
-		return fmt.Errorf("failed to build template data: %w", err)
-	}
-
 	// set packages
 	rootPackagePath := strings.ReplaceAll(opts.ArtifactGroupId+"."+opts.ArtifactId, "-", ".")
-	templateData.Packages = openapigenerator.CommonPackages{
+	opts.PackageConfig = openapigenerator.CommonPackages{
 		Client:     rootPackagePath,
 		Models:     rootPackagePath + ".models",
 		Enums:      rootPackagePath + ".enums",
 		Operations: rootPackagePath + ".operations",
 		Auth:       rootPackagePath + ".auth",
+	}
+
+	// build template data
+	templateData, err := g.TemplateData(openapigenerator.TemplateDataOpts{
+		Doc:           opts.Doc,
+		PackageConfig: opts.PackageConfig,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to build template data: %w", err)
 	}
 
 	// generate files
@@ -81,6 +82,7 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 			"toFunctionName":  g.ToFunctionName,
 			"toPropertyName":  g.ToPropertyName,
 			"toParameterName": g.ToParameterName,
+			"isPrimitiveType": g.IsPrimitiveType,
 		},
 	}, opts)
 	if err != nil {
@@ -100,12 +102,11 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 	return nil
 }
 
-func (g *JavaGenerator) TemplateData(doc *libopenapi.DocumentModel[v3.Document]) (openapigenerator.DocumentModel, error) {
-	templateData, err := openapigenerator.BuildTemplateData(doc, g)
+func (g *JavaGenerator) TemplateData(opts openapigenerator.TemplateDataOpts) (openapigenerator.DocumentModel, error) {
+	templateData, err := openapigenerator.BuildTemplateData(opts.Doc, g, opts.PackageConfig)
 	if err != nil {
 		return templateData, err
 	}
-
 	templateData = openapigenerator.PruneTypeAliases(templateData, g.primitiveTypes)
 	return templateData, nil
 }
@@ -148,74 +149,71 @@ func (g *JavaGenerator) ToParameterName(name string) string {
 	return name
 }
 
-func (g *JavaGenerator) ToCodeType(schema *base.Schema, required bool) (string, error) {
+func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerator.CodeTypeSchemaType, required bool) (openapigenerator.CodeType, error) {
 	// multiple types
 	if util.CountExcluding(schema.Type, "null") > 1 {
-		return "Object", nil
+		return openapigenerator.CodeType{Name: "Object"}, nil
 	}
 
 	// normal types
-	if slices.Contains(schema.Type, "string") && schema.Format == "" {
-		return "String", nil
-	}
-	if slices.Contains(schema.Type, "string") && schema.Format == "uri" {
-		return "String", nil
-	}
-	if slices.Contains(schema.Type, "string") && schema.Format == "binary" {
-		return "byte[]", nil
-	}
-	if slices.Contains(schema.Type, "string") && schema.Format == "byte" {
-		return "byte[]", nil
-	}
-	if slices.Contains(schema.Type, "string") && schema.Format == "date" {
-		return "Timestamp", nil
-	}
-	if slices.Contains(schema.Type, "string") && schema.Format == "date-time" {
-		return "Timestamp", nil
-	}
-	if slices.Contains(schema.Type, "boolean") {
-		return "boolean", nil
-	}
-	if slices.Contains(schema.Type, "integer") && schema.Format == "" {
-		return "int", nil
-	}
-	if slices.Contains(schema.Type, "integer") && schema.Format == "int32" {
-		return "int", nil
-	}
-	if slices.Contains(schema.Type, "integer") && schema.Format == "int64" {
-		return "long", nil
-	}
-	if slices.Contains(schema.Type, "number") && schema.Format == "" {
-		return "double", nil
-	}
-	if slices.Contains(schema.Type, "number") && schema.Format == "float" {
-		return "float", nil
-	}
-	if slices.Contains(schema.Type, "number") && schema.Format == "double" {
-		return "double", nil
-	}
-	if slices.Contains(schema.Type, "array") {
-		arrayType, err := g.ToCodeType(schema.Items.A.Schema(), true)
+	switch {
+	case slices.Contains(schema.Type, "string") && schema.Format == "":
+		return openapigenerator.CodeType{Name: "String"}, nil
+	case slices.Contains(schema.Type, "string") && schema.Format == "uri":
+		return openapigenerator.CodeType{Name: "String"}, nil
+	case slices.Contains(schema.Type, "string") && schema.Format == "binary":
+		return openapigenerator.CodeType{Name: "byte", IsArray: true}, nil
+	case slices.Contains(schema.Type, "string") && schema.Format == "byte":
+		return openapigenerator.CodeType{Name: "byte", IsArray: true}, nil
+	case slices.Contains(schema.Type, "string") && schema.Format == "date":
+		return openapigenerator.CodeType{Name: "Instant", ImportPath: "java.time"}, nil
+	case slices.Contains(schema.Type, "string") && schema.Format == "date-time":
+		return openapigenerator.CodeType{Name: "Instant", ImportPath: "java.time"}, nil
+	case slices.Contains(schema.Type, "boolean"):
+		return openapigenerator.CodeType{Name: "boolean"}, nil
+	case slices.Contains(schema.Type, "integer") && schema.Format == "":
+		return openapigenerator.CodeType{Name: "int"}, nil
+	case slices.Contains(schema.Type, "integer") && schema.Format == "int32":
+		return openapigenerator.CodeType{Name: "int"}, nil
+	case slices.Contains(schema.Type, "integer") && schema.Format == "int64":
+		return openapigenerator.CodeType{Name: "long"}, nil
+	case slices.Contains(schema.Type, "number") && schema.Format == "":
+		return openapigenerator.CodeType{Name: "double"}, nil
+	case slices.Contains(schema.Type, "number") && schema.Format == "float":
+		return openapigenerator.CodeType{Name: "float"}, nil
+	case slices.Contains(schema.Type, "number") && schema.Format == "double":
+		return openapigenerator.CodeType{Name: "double"}, nil
+	case slices.Contains(schema.Type, "array"):
+		arrayType, err := g.ToCodeType(schema.Items.A.Schema(), schemaType, true)
 		if err != nil {
-			return "", fmt.Errorf("unhandled array type. schema: %s, format: %s", schema.Type, schema.Format)
+			return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled array type. schema: %s, format: %s", schema.Type, schema.Format)
 		}
-		return "List<" + arrayType + ">", nil
-	}
-	if slices.Contains(schema.Type, "object") {
-		if schema.Title == "" {
-			// TODO: ensure all schemas have a title
-			// return "", fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
-		}
-		return g.ToClassName(schema.Title), nil
-	}
+		return openapigenerator.NewArrayCodeType(arrayType, schema), nil
+	case slices.Contains(schema.Type, "object"):
+		if schema.AdditionalProperties != nil {
+			additionalPropertyType, err := g.ToCodeType(schema.AdditionalProperties.A.Schema(), schemaType, true)
+			if err != nil {
+				return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled additional properties type. schema: %s, format: %s: %w", schema.Type, schema.Format, err)
+			}
 
-	return "", fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
+			return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), additionalPropertyType, schema), nil
+		} else if schema.AdditionalProperties == nil && schema.Properties == nil {
+			return openapigenerator.CodeType{Name: "Object"}, nil
+		} else {
+			if schema.Title == "" {
+				return openapigenerator.DefaultCodeType, fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
+			}
+			return openapigenerator.CodeType{Name: g.ToClassName(schema.Title)}, nil // TODO: import path
+		}
+	default:
+		return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
+	}
 }
 
-func (g *JavaGenerator) PostProcessType(codeType string) string {
+func (g *JavaGenerator) PostProcessType(codeType openapigenerator.CodeType) openapigenerator.CodeType {
 	// set type to void if empty
-	if codeType == "" {
-		return "void"
+	if codeType.Name == "" {
+		codeType.Name = "Void"
 	}
 
 	return codeType
@@ -225,7 +223,9 @@ func (g *JavaGenerator) IsPrimitiveType(input string) bool {
 	return slices.Contains(g.primitiveTypes, input)
 }
 
-func (g *JavaGenerator) TypeToImport(typeName string) string {
+func (g *JavaGenerator) TypeToImport(iType openapigenerator.CodeType) string {
+	typeName := iType.Name
+
 	if typeName == "" {
 		return ""
 	}

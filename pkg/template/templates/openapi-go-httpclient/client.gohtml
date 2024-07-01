@@ -4,24 +4,168 @@
 package {{ .Package }}
 
 import (
+	"context"
+    "errors"
+    "fmt"
+	"net"
+	"net/http"
+	"strings"
     "time"
 
-    "github.com/imroc/req/v3"
+	"github.com/go-resty/resty/v2"
+    "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-type GithubClient struct {
-    *req.Client
+const unixSocketPrefix = "unix://"
 
-    // Services used for talking to different parts of the GitHub API.
-    Default *DefaultService
+type Client struct {
+	// Client is the underlying HTTP client library.
+	restyClient *resty.Client
+
+{{- range $k, $v := .Common.Services }}
+    // {{ $v.Description }}
+    {{ $v.Name | pascalCase }} *{{ $v.Name | pascalCase }}Service
+{{- end }}
 }
 
-func NewClient() {
-    client := req.C().
-      SetUserAgent("my-custom-client").
-      SetTimeout(5 * time.Second)
+var ErrFailedToCreateClient = fmt.Errorf("failed to create client")
+
+// New returns a new {{ .Metadata.Name }} API client.
+func New(options ...OptionFunc) (Client, error) {
+	restyClient := resty.NewWithClient(
+		&http.Client{
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
+		},
+	)
+
+	// disable debug and trace by default
+	restyClient.SetDebug(false) // disable debug mode
+	// resty warns when using basic auth on non-https
+	restyClient.SetDisableWarn(true)
+	// user-agent
+	restyClient.SetHeader("User-Agent", "PrimeCodeGen-{{ .Metadata.Name }}/1.0.0")
+
+	client := Client{
+		restyClient: restyClient,
+	}
+    {{- range $k, $v := .Common.Services }}
+    client.{{ $v.Name | pascalCase }} = &{{ $v.Name | pascalCase }}Service{client: &client}
+    {{- end }}
+
+	for _, f := range options {
+		err := f(&client)
+		if err != nil {
+			return client, errors.Join(ErrFailedToCreateClient, err)
+		}
+	}
+
+	return client, nil
 }
 
-type service struct {
-    client *Client
+// OptionFunc can be used to customize the resty client.
+type OptionFunc func(*Client) error
+
+// WithBaseURL sets the base URL for API requests to a custom endpoint.
+func WithBaseURL(urlStr string) OptionFunc {
+	return func(c *Client) error {
+		if strings.HasPrefix(urlStr, unixSocketPrefix) {
+			unixSocket := strings.TrimPrefix(urlStr, unixSocketPrefix)
+
+			transport := http.Transport{
+				DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+					return net.Dial("unix", unixSocket)
+				},
+			}
+			c.restyClient.SetTransport(&transport).SetScheme("http").SetBaseURL(unixSocket)
+		} else {
+			c.restyClient.SetBaseURL(urlStr)
+		}
+		return nil
+	}
+}
+
+// WithUserAgent sets the User-Agent header for API requests.
+func WithUserAgent(userAgent string) OptionFunc {
+	return func(c *Client) error {
+		c.restyClient.SetHeader("User-Agent", userAgent)
+		return nil
+	}
+}
+
+// WithTimeout sets the timeout for API requests.
+func WithTimeout(timeout int) OptionFunc {
+	return func(c *Client) error {
+		c.restyClient.SetTimeout(time.Duration(timeout) * time.Second)
+		return nil
+	}
+}
+
+// WithRetryCount sets the number of retries for API requests.
+func WithRetryCount(retryCount int) OptionFunc {
+	return func(c *Client) error {
+		c.restyClient.SetRetryCount(retryCount)
+		return nil
+	}
+}
+
+// WithRetryWaitTime sets the initial wait time between retries for API requests.
+func WithRetryWaitTime(waitTime int) OptionFunc {
+	return func(c *Client) error {
+		c.restyClient.SetRetryWaitTime(time.Duration(waitTime) * time.Millisecond)
+		return nil
+	}
+}
+
+// WithRetryMaxWaitTime sets the maximum wait time between retries for API requests.
+func WithRetryMaxWaitTime(maxWaitTime int) OptionFunc {
+	return func(c *Client) error {
+		c.restyClient.SetRetryMaxWaitTime(time.Duration(maxWaitTime) * time.Millisecond)
+		return nil
+	}
+}
+
+// WithRetryCondition sets the condition for retrying API requests.
+func WithRetryCondition(condition resty.RetryConditionFunc) OptionFunc {
+	return func(c *Client) error {
+		c.restyClient.AddRetryCondition(condition)
+		return nil
+	}
+}
+
+// WithBasicAuth sets the basic authentication credentials for API requests.
+func WithBasicAuth(username string, password string) OptionFunc {
+	return func(c *Client) error {
+		c.restyClient.SetBasicAuth(username, password)
+		return nil
+	}
+}
+
+// WithAuthToken sets the bearer token for API requests.
+func WithAuthToken(scheme string, token string) OptionFunc {
+	return func(c *Client) error {
+		if scheme != "" {
+			c.restyClient.SetAuthScheme(scheme)
+		} else {
+			c.restyClient.SetAuthScheme("Bearer")
+		}
+		c.restyClient.SetAuthToken(token)
+		return nil
+	}
+}
+
+// WithDebug enables or disables debug mode for the resty client.
+func WithDebug(enable bool) OptionFunc {
+	return func(c *Client) error {
+		c.restyClient.SetDebug(enable)
+		if enable {
+			c.restyClient.EnableTrace()
+		} else {
+			c.restyClient.DisableTrace()
+		}
+		return nil
+	}
+}
+
+type Service struct {
+	client *Client
 }

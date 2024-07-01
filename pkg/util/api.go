@@ -10,6 +10,14 @@ func URLRemovePathParams(url string) string {
 	return re.ReplaceAllString(url, "")
 }
 
+// URLPathParamAddByPrefix converts path parameters to By{ParamName}
+func URLPathParamAddByPrefix(path string) string {
+	re := regexp.MustCompile(`{([^}]+)}`)
+	return re.ReplaceAllStringFunc(path, func(match string) string {
+		return "By" + strings.Title(replaceCommonWords(strings.Trim(match, "{}")))
+	})
+}
+
 func ParseURLAPIVersion(url string) string {
 	re := regexp.MustCompile(`/[vV]([0-9]+)/`)
 	matches := re.FindStringSubmatch(url)
@@ -41,7 +49,8 @@ func ToOperationId(method string, url string) string {
 	operationID := strings.Replace(url, "/api", "", 1)
 	operationID = strings.Replace(operationID, "/oauth2/", "/OAuth2/", 1)
 	operationID = convertPathParameterToSingularIfFollowedByVariable(operationID)
-	operationID = URLRemovePathParams(operationID)
+	//operationID = URLRemovePathParams(operationID)
+	operationID = URLPathParamAddByPrefix(operationID)
 
 	// get version and remove it from the operationID
 	version := ParseURLAPIVersion(url)

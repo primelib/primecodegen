@@ -4,23 +4,85 @@
 package {{ .Package }}
 
 import (
+    "context"
 	"net/http"
+
+    "{{ .Metadata.ArtifactId }}/pkgs/{{.Common.Packages.Models }}"
+    "github.com/go-resty/resty/v2"
+    "github.com/primelib/primecodegen-lib-go/requeststruct"
 )
 
-type {{ .Name }}Request struct {
+{{ $reqStructName := printf "%sRequest" (.Name) }}
+type {{ $reqStructName }} struct {
+{{- range .Operation.HeaderParameters }}
+	{{ .Name | toPropertyName }} {{ .Type.QualifiedDeclaration }} `headerParam:"style=simple,explode=false,name={{ .FieldName }}"` {{ if .Description }}// {{ .Description | commentSingleLine }}{{ end }}
+{{- end }}
 {{- range .Operation.PathParameters }}
-	{{ .Name | pascalCase }} {{ .Type }} `pathParam:"style=simple,explode=false,name={{ .FieldName }}"` {{ if .Description }}// {{ .Description | commentSingleLine }}{{ end }}
+	{{ .Name | toPropertyName }} {{ .Type.QualifiedDeclaration }} `pathParam:"style=simple,explode=false,name={{ .FieldName }}"` {{ if .Description }}// {{ .Description | commentSingleLine }}{{ end }}
 {{- end }}
 {{- range .Operation.QueryParameters }}
-	{{ .Name | pascalCase }} {{ .Type }} `queryParam:"style=simple,explode=false,name={{ .FieldName }}"` {{ if .Description }}// {{ .Description | commentSingleLine }}{{ end }}
+	{{ .Name | toPropertyName }} {{ .Type.QualifiedDeclaration }} `queryParam:"style=simple,explode=false,name={{ .FieldName }}"` {{ if .Description }}// {{ .Description | commentSingleLine }}{{ end }}
+{{- end }}
+{{- if .Operation.BodyParameter }}
+    {{ .Operation.BodyParameter.Name | toPropertyName }} {{ .Operation.BodyParameter.Type.QualifiedDeclaration }} `bodyParam:""` {{ if .Operation.BodyParameter.Description }}// {{ .Operation.BodyParameter.Description | commentSingleLine }}{{ end }}
 {{- end }}
 }
 
 type {{ .Name }}Response struct {
+{{- if isNotEmpty .Operation.ReturnType.QualifiedDeclaration }}
 	// Success response
+    Result {{ .Operation.ReturnType.QualifiedDeclaration }}
+{{- end }}
 	// Error response
 	// HTTP response status code for this operation
 	StatusCode int
 	// Raw HTTP response; suitable for custom response parsing
 	RawResponse *http.Response
+}
+
+// {{ .Operation.Name }}{{if .Operation.Description }} {{ .Operation.Description | commentSingleLine }}{{ end }}
+//
+{{- range $doc := .Operation.Documentation }}
+// {{ $doc.Title }}: {{ $doc.URL }}
+{{- end }}
+//
+//meta:operation {{ .Operation.Method | upperCase }} {{ .Operation.Path }}
+func {{ .Operation.Name | toFunctionName }}(client *resty.Client, ctx context.Context, req {{ .Operation.Name | toClassName }}Request) (*{{ .Operation.Name | toClassName }}Response, error) {
+    r := client.R().SetContext(ctx)
+
+    // process request parameters
+    reqData, err := requeststruct.ResolveRequestParams(req)
+	if err != nil {
+		return nil, err
+	}
+	r.SetHeaders(reqData.HeaderParams)
+	r.SetPathParams(reqData.PathParams)
+	r.SetQueryParamsFromValues(reqData.QueryParams)
+    if reqData.BodyParam != nil {
+        r.SetBody(reqData.BodyParam)
+    }
+    {{- if isNotEmpty .Operation.ReturnType.QualifiedType }}
+    {{- if .Operation.ReturnType.IsMap }}
+    result := make({{ .Operation.ReturnType.QualifiedType }})
+    {{- else if .Operation.ReturnType.IsArray }}
+    var result {{ .Operation.ReturnType.QualifiedType }}
+    {{- else }}
+    result := new({{ .Operation.ReturnType.QualifiedType }})
+    {{- end }}
+    r.SetResult(result)
+    {{- end }}
+
+    // send the request
+    resp, err := r.{{ .Operation.Method | toFunctionName }}("{{ .Operation.Path }}")
+	if err != nil {
+		return nil, err
+	}
+
+    return &{{ .Operation.Name | toClassName }}Response{
+		StatusCode:  resp.StatusCode(),
+		RawResponse: resp.RawResponse,
+        {{- if isNotEmpty .Operation.ReturnType.Name }}
+        Result:      result,
+        {{- end }}
+	}, nil
 }

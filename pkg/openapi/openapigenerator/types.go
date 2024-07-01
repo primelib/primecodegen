@@ -9,6 +9,7 @@ type DocumentModel struct {
 	DisplayName     string
 	Description     string
 	Tags            map[string]Tag
+	Services        map[string]Service
 	Operations      []Operation
 	OperationsByTag map[string][]Operation
 	Models          []Model
@@ -72,6 +73,13 @@ type Tag struct {
 	Description string `yaml:"description,omitempty"`
 }
 
+// Service represents a named collection of operations
+type Service struct {
+	Name        string `yaml:"name"`
+	Description string `yaml:"description,omitempty"`
+	Operations  []Operation
+}
+
 type Operation struct {
 	Name             string          `yaml:"name,omitempty"`
 	Path             string          `yaml:"path"`
@@ -80,7 +88,7 @@ type Operation struct {
 	Description      string          `yaml:"description,omitempty"` // Long description
 	Tag              string          `yaml:"tag,omitempty"`
 	Tags             []string        `yaml:"tags,omitempty"`
-	ReturnType       string          `yaml:"returnType,omitempty"`
+	ReturnType       CodeType        `yaml:"returnType,omitempty"`
 	Deprecated       bool            `yaml:"deprecated,omitempty"`
 	DeprecatedReason string          `yaml:"deprecatedReason,omitempty"`
 	Parameters       []Parameter     `yaml:"parameters,omitempty"`
@@ -88,6 +96,7 @@ type Operation struct {
 	QueryParameters  []Parameter     `yaml:"queryParameters,omitempty"`
 	HeaderParameters []Parameter     `yaml:"headerParameters,omitempty"`
 	CookieParameters []Parameter     `yaml:"cookieParameters,omitempty"`
+	BodyParameter    *Parameter      `yaml:"bodyParameter,omitempty"`
 	Imports          []string        `yaml:"imports,omitempty"`
 	Documentation    []Documentation `yaml:"documentation,omitempty"`
 	Stability        string          `yaml:"stability,omitempty"`
@@ -108,7 +117,7 @@ type Parameter struct {
 	FieldName        string                                  `yaml:"fieldName,omitempty"` // FieldName is the original name of the parameter
 	In               string                                  `yaml:"in,omitempty"`
 	Description      string                                  `yaml:"description,omitempty"`
-	Type             string                                  `yaml:"type,omitempty"`
+	Type             CodeType                                `yaml:"type,omitempty"`
 	IsPrimitiveType  bool                                    `yaml:"isPrimitiveType,omitempty"`
 	Required         bool                                    `yaml:"required,omitempty"`
 	AllowedValues    map[string]openapidocument.AllowedValue `yaml:"allowedValues,omitempty"`
@@ -119,21 +128,22 @@ type Parameter struct {
 type Model struct {
 	Name             string     `yaml:"name"`
 	Description      string     `yaml:"description,omitempty"`
-	Parent           string     `yaml:"parent,omitempty"`
+	Parent           CodeType   `yaml:"parent,omitempty"`
 	Properties       []Property `yaml:"properties,omitempty"`
 	AnyOf            []Model    `yaml:"anyOf,omitempty"`
 	AllOf            []Model    `yaml:"allOf,omitempty"`
 	OneOf            []Model    `yaml:"oneOf,omitempty"`
 	Imports          []string   `yaml:"imports,omitempty"`
 	Deprecated       bool       `yaml:"deprecated,omitempty"`
+	IsTypeAlias      bool       `yaml:"isTypeAlias,omitempty"`
 	DeprecatedReason string     `yaml:"deprecatedReason,omitempty"`
 }
 
 type Enum struct {
 	Name          string                                  `yaml:"name"`
 	Description   string                                  `yaml:"description,omitempty"`
-	Parent        string                                  `yaml:"parent,omitempty"`
-	ValueType     string                                  `yaml:"ValueType,omitempty"`
+	Parent        CodeType                                `yaml:"parent,omitempty"`
+	ValueType     CodeType                                `yaml:"valueType,omitempty"`
 	AllowedValues map[string]openapidocument.AllowedValue `yaml:"allowedValues,omitempty"`
 	Imports       []string                                `yaml:"imports,omitempty"`
 }
@@ -143,7 +153,7 @@ type Property struct {
 	FieldName       string                                  `yaml:"fieldName,omitempty"`   // FieldName is the original name of the parameter
 	Title           string                                  `yaml:"title,omitempty"`       // Title is the human-readable name of the parameter
 	Description     string                                  `yaml:"description,omitempty"` // Description is the human-readable description of the parameter
-	Type            string                                  `yaml:"type,omitempty"`
+	Type            CodeType                                `yaml:"type,omitempty"`
 	IsPrimitiveType bool                                    `yaml:"isPrimitiveType,omitempty"`
 	Nullable        bool                                    `yaml:"nullable,omitempty"`
 	AllowedValues   map[string]openapidocument.AllowedValue `yaml:"allowedValues,omitempty"`

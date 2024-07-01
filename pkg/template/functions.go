@@ -12,6 +12,12 @@ import (
 )
 
 var templateFunctions = template.FuncMap{
+	"hasPrefix": func(s, prefix string) bool {
+		return strings.HasPrefix(s, prefix)
+	},
+	"hasSuffix": func(s, suffix string) bool {
+		return strings.HasSuffix(s, suffix)
+	},
 	"firstNonEmpty": func(values ...string) string {
 		return util.FirstNonEmptyString(values...)
 	},
@@ -61,6 +67,12 @@ var templateFunctions = template.FuncMap{
 	"marshalYAML": func(input interface{}) string {
 		a, _ := yaml.Marshal(input)
 		return string(a)
+	},
+	"isEmpty": func(input string) bool {
+		return input == ""
+	},
+	"isNotEmpty": func(input string) bool {
+		return input != ""
 	},
 	// toFilePath is used to convert a package path into a file path (e.g. "io.github.myuser" -> "io/github/myuser")
 	"toFilePath": func(input string) string {
