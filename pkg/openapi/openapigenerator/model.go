@@ -24,8 +24,9 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 
 	// all operations
 	operations, err := BuildOperations(OperationOpts{
-		Generator: generator,
-		Doc:       doc,
+		Generator:     generator,
+		Doc:           doc,
+		PackageConfig: packageConfig,
 	})
 	if err != nil {
 		return template, err
@@ -55,8 +56,9 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 
 	// models
 	models, err := BuildComponentModels(ModelOpts{
-		Generator: generator,
-		Doc:       doc,
+		Generator:     generator,
+		Doc:           doc,
+		PackageConfig: packageConfig,
 	})
 	if err != nil {
 		return template, err
@@ -65,8 +67,9 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 
 	// enums
 	enums, err := BuildEnums(ModelOpts{
-		Generator: generator,
-		Doc:       doc,
+		Generator:     generator,
+		Doc:           doc,
+		PackageConfig: packageConfig,
 	})
 	if err != nil {
 		return template, err
@@ -90,8 +93,9 @@ func BuildAuth(doc *libopenapi.DocumentModel[v3.Document]) Auth {
 }
 
 type OperationOpts struct {
-	Generator CodeGenerator
-	Doc       *libopenapi.DocumentModel[v3.Document]
+	Generator     CodeGenerator
+	Doc           *libopenapi.DocumentModel[v3.Document]
+	PackageConfig CommonPackages
 }
 
 func BuildOperations(opts OperationOpts) ([]Operation, error) {
@@ -171,14 +175,16 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 
 			// request body
 			if rb := op.Value.RequestBody; rb != nil {
-				// TODO: set correct type for request body
-				payloadType := rb.Content.First().Value().Schema.Schema().Title
+				bodyType, err := gen.ToCodeType(rb.Content.First().Value().Schema.Schema(), CodeTypeSchemaResponse, false)
+				if err != nil {
+					return operations, fmt.Errorf("error converting type of [%s:%s:bodyType]: %w", path.Key, op.Key, err)
+				}
 
 				bodyParam := Parameter{
 					Name:        "payload",
 					In:          "body",
 					Description: rb.Description,
-					Type:        gen.PostProcessType(CodeType{Name: payloadType}),
+					Type:        gen.PostProcessType(bodyType),
 					Required:    true,
 				}
 				operation.BodyParameter = &bodyParam
@@ -214,8 +220,9 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 }
 
 type ModelOpts struct {
-	Generator CodeGenerator
-	Doc       *libopenapi.DocumentModel[v3.Document]
+	Generator     CodeGenerator
+	Doc           *libopenapi.DocumentModel[v3.Document]
+	PackageConfig CommonPackages
 }
 
 func BuildComponentModels(opts ModelOpts) ([]Model, error) {
