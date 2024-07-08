@@ -278,6 +278,13 @@ func (g *GoGenerator) PostProcessing(outputDir string) error {
 		return fmt.Errorf("error running gofmt: %v", err)
 	}
 
+	// run goimports
+	cmd = exec.Command("goimports", "-w", outputDir)
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error running goimports: %v", err)
+	}
+
 	return nil
 }
 

@@ -65,7 +65,7 @@ func {{ .Operation.Name | toFunctionName }}(client *resty.Client, ctx context.Co
     {{- if .Operation.ReturnType.IsMap }}
     result := make({{ .Operation.ReturnType.QualifiedType }})
     {{- else if .Operation.ReturnType.IsArray }}
-    var result {{ .Operation.ReturnType.QualifiedType }}
+    var result {{ .Operation.ReturnType.QualifiedDeclaration }}
     {{- else }}
     result := new({{ .Operation.ReturnType.QualifiedType }})
     {{- end }}
