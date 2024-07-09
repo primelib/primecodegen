@@ -36,6 +36,8 @@ func TestToPascalCase(t *testing.T) {
 		{"HelloWorld", "HelloWorld"},
 		{"plain text", "PlainText"},
 		{"PLAIN TEXT", "PlainText"},
+		{"api_endpoint", "APIEndpoint"}, // acronyms
+		{"vcs-release", "VCSRelease"},   // acronyms
 		{"", ""},
 	}
 

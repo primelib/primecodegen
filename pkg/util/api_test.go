@@ -54,12 +54,12 @@ func TestToOperationId(t *testing.T) {
 		expectedID string
 	}{
 		{"GET", "/api/users", "getUsersV1"},
-		{"GET", "/api/users/{id}", "getUserV1"},
-		{"POST", "/api/posts/{id}/comments", "postPostCommentsV1"},
-		{"PUT", "/api/v1/updates/{id}", "putUpdateV1"},
-		{"DELETE", "/api/v2/posts/{id}", "deletePostV2"},
-		{"PATCH", "/api/v1/items/{id}/update", "patchItemUpdateV1"},
-		{"GET", "/api/v1/books/{bookId}/file/*", "getBookFileV1"},
+		{"GET", "/api/users/{id}", "getUserByIdV1"},
+		{"POST", "/api/posts/{id}/comments", "postPostByIdCommentsV1"},
+		{"PUT", "/api/v1/updates/{id}", "putUpdateByIdV1"},
+		{"DELETE", "/api/v2/posts/{id}", "deletePostByIdV2"},
+		{"PATCH", "/api/v1/items/{id}/update", "patchItemByIdUpdateV1"},
+		{"GET", "/api/v1/books/{bookId}/file/*", "getBookByBookIdFileV1"},
 	}
 
 	for _, tc := range testCases {

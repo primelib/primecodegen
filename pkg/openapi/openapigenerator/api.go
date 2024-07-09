@@ -5,6 +5,7 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/primelib/primecodegen/pkg/openapi/openapiutil"
 )
 
 // CodeGenerator is the interface that all code generators must implement
@@ -80,6 +81,7 @@ type SchemaDefinition struct {
 }
 
 var DefaultCodeType = CodeType{}
+var VoidCodeType = CodeType{IsVoid: true}
 
 type CodeType struct {
 	Name                 string // Name of the type
@@ -93,6 +95,7 @@ type CodeType struct {
 	IsMap                bool
 	IsNullable           bool
 	IsPointer            bool
+	IsVoid               bool
 	IsPostProcessed      bool
 	ImportPath           string
 }
@@ -111,21 +114,25 @@ func NewSimpleCodeType(name string, schema *base.Schema) CodeType {
 }
 
 func NewArrayCodeType(itemType CodeType, schema *base.Schema) CodeType {
-	isNullable := ptr.ValueOrDefault(schema.Nullable, true) == true
-
 	return CodeType{
 		TypeArgs:   []CodeType{itemType},
 		IsArray:    true,
-		IsNullable: isNullable,
+		IsNullable: openapiutil.IsSchemaNullable(schema),
+	}
+}
+
+func NewListCodeType(itemType CodeType, schema *base.Schema) CodeType {
+	return CodeType{
+		TypeArgs:   []CodeType{itemType},
+		IsList:     true,
+		IsNullable: openapiutil.IsSchemaNullable(schema),
 	}
 }
 
 func NewMapCodeType(keyType CodeType, valueType CodeType, schema *base.Schema) CodeType {
-	isNullable := ptr.ValueOrDefault(schema.Nullable, true) == true
-
 	return CodeType{
 		TypeArgs:   []CodeType{keyType, valueType},
-		IsNullable: isNullable,
+		IsNullable: openapiutil.IsSchemaNullable(schema),
 		IsMap:      true,
 	}
 }

@@ -58,7 +58,7 @@ public class {{.Operation.Name}}OperationSpec {
      * {{ $param.Description | commentSingleLine }}
      */
     // TODO: annotations
-    private {{ $param.Type }} {{ $param.Name }};
+    private {{ $param.Type.QualifiedDeclaration }} {{ $param.Name }};
     {{- end }}
 
     /**
