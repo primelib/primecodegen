@@ -11,6 +11,7 @@ import (
 
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
+	"github.com/primelib/primecodegen/pkg/openapi/openapiutil"
 	"github.com/primelib/primecodegen/pkg/template"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
@@ -19,6 +20,7 @@ import (
 type JavaGenerator struct {
 	reservedWords  []string
 	primitiveTypes []string
+	boxedTypes     map[string]string
 	typeToImport   map[string]string
 }
 
@@ -155,6 +157,9 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 		return openapigenerator.CodeType{Name: "Object"}, nil
 	}
 
+	// nullable
+	isNullable := openapiutil.IsSchemaNullable(schema)
+
 	// normal types
 	switch {
 	case slices.Contains(schema.Type, "string") && schema.Format == "":
@@ -162,31 +167,36 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 	case slices.Contains(schema.Type, "string") && schema.Format == "uri":
 		return openapigenerator.CodeType{Name: "String"}, nil
 	case slices.Contains(schema.Type, "string") && schema.Format == "binary":
-		return openapigenerator.CodeType{Name: "byte", IsArray: true}, nil
+		return openapigenerator.CodeType{TypeArgs: []openapigenerator.CodeType{openapigenerator.NewSimpleCodeType(g.BoxType("byte", isNullable), schema)}, IsArray: true}, nil
 	case slices.Contains(schema.Type, "string") && schema.Format == "byte":
-		return openapigenerator.CodeType{Name: "byte", IsArray: true}, nil
+		return openapigenerator.CodeType{TypeArgs: []openapigenerator.CodeType{openapigenerator.NewSimpleCodeType(g.BoxType("byte", isNullable), schema)}, IsArray: true}, nil
 	case slices.Contains(schema.Type, "string") && schema.Format == "date":
 		return openapigenerator.CodeType{Name: "Instant", ImportPath: "java.time"}, nil
 	case slices.Contains(schema.Type, "string") && schema.Format == "date-time":
 		return openapigenerator.CodeType{Name: "Instant", ImportPath: "java.time"}, nil
 	case slices.Contains(schema.Type, "boolean"):
-		return openapigenerator.CodeType{Name: "boolean"}, nil
+		return openapigenerator.NewSimpleCodeType(g.BoxType("boolean", isNullable), schema), nil
 	case slices.Contains(schema.Type, "integer") && schema.Format == "":
-		return openapigenerator.CodeType{Name: "int"}, nil
+		return openapigenerator.NewSimpleCodeType(g.BoxType("int", isNullable), schema), nil
 	case slices.Contains(schema.Type, "integer") && schema.Format == "int32":
-		return openapigenerator.CodeType{Name: "int"}, nil
+		return openapigenerator.NewSimpleCodeType(g.BoxType("int", isNullable), schema), nil
 	case slices.Contains(schema.Type, "integer") && schema.Format == "int64":
-		return openapigenerator.CodeType{Name: "long"}, nil
+		return openapigenerator.NewSimpleCodeType(g.BoxType("long", isNullable), schema), nil
 	case slices.Contains(schema.Type, "number") && schema.Format == "":
-		return openapigenerator.CodeType{Name: "double"}, nil
+		return openapigenerator.NewSimpleCodeType(g.BoxType("double", isNullable), schema), nil
 	case slices.Contains(schema.Type, "number") && schema.Format == "float":
-		return openapigenerator.CodeType{Name: "float"}, nil
+		return openapigenerator.NewSimpleCodeType(g.BoxType("float", isNullable), schema), nil
 	case slices.Contains(schema.Type, "number") && schema.Format == "double":
-		return openapigenerator.CodeType{Name: "double"}, nil
+		return openapigenerator.NewSimpleCodeType(g.BoxType("double", isNullable), schema), nil
 	case slices.Contains(schema.Type, "array"):
 		arrayType, err := g.ToCodeType(schema.Items.A.Schema(), schemaType, true)
 		if err != nil {
 			return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled array type. schema: %s, format: %s", schema.Type, schema.Format)
+		}
+
+		isArrayTypeNullable := openapiutil.IsSchemaNullable(schema.Items.A.Schema())
+		if isArrayTypeNullable {
+			return openapigenerator.NewListCodeType(arrayType, schema), nil
 		}
 		return openapigenerator.NewArrayCodeType(arrayType, schema), nil
 	case slices.Contains(schema.Type, "object"):
@@ -211,11 +221,67 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 }
 
 func (g *JavaGenerator) PostProcessType(codeType openapigenerator.CodeType) openapigenerator.CodeType {
-	// set type to void if empty
-	if codeType.Name == "" {
-		codeType.Name = "Void"
+	if codeType.IsPostProcessed {
+		return codeType
 	}
 
+	// VoidType
+	if codeType.IsVoid {
+		codeType.Declaration = "void"
+		codeType.QualifiedDeclaration = "void"
+		codeType.Type = "void"
+		codeType.QualifiedType = "void"
+		codeType.IsPostProcessed = true
+		return codeType
+	}
+
+	// PostProcess TypeArgs
+	for i, typeArg := range codeType.TypeArgs {
+		codeType.TypeArgs[i] = g.PostProcessType(typeArg)
+	}
+
+	// Validate
+	if codeType.IsArray && len(codeType.TypeArgs) != 1 {
+		log.Fatal().Interface("codeType", codeType).Msgf("Array type must have exactly one type argument.")
+		return codeType
+	}
+	if codeType.IsMap && len(codeType.TypeArgs) != 2 {
+		log.Fatal().Interface("codeType", codeType).Msgf("Map type must have exactly two type arguments.")
+		return codeType
+	}
+
+	// Qualifier
+	qualifier := ""
+	if codeType.ImportPath != "" {
+		parts := strings.Split(codeType.ImportPath, "/")
+		qualifier = parts[len(parts)-1] + "."
+	}
+
+	// FullyQualifiedName
+	switch {
+	case codeType.IsArray:
+		codeType.Declaration = codeType.TypeArgs[0].Declaration + "[]"
+		codeType.QualifiedDeclaration = qualifier + codeType.TypeArgs[0].QualifiedDeclaration + "[]"
+		codeType.Type = codeType.TypeArgs[0].Type + "[]"
+		codeType.QualifiedType = qualifier + codeType.TypeArgs[0].Type + "[]"
+	case codeType.IsList:
+		codeType.Declaration = "List<" + codeType.TypeArgs[0].Declaration + ">"
+		codeType.QualifiedDeclaration = "List<" + qualifier + codeType.TypeArgs[0].QualifiedDeclaration + ">"
+		codeType.Type = "List<" + codeType.TypeArgs[0].Type + ">"
+		codeType.QualifiedType = "List<" + qualifier + codeType.TypeArgs[0].Type + ">"
+	case codeType.IsMap:
+		codeType.Declaration = "Map<" + codeType.TypeArgs[0].Declaration + ", " + codeType.TypeArgs[1].Declaration + ">"
+		codeType.QualifiedDeclaration = "Map<" + codeType.TypeArgs[0].QualifiedDeclaration + ", " + qualifier + codeType.TypeArgs[1].QualifiedDeclaration + ">"
+		codeType.Type = "Map<" + codeType.TypeArgs[0].Type + ", " + codeType.TypeArgs[1].Type + ">"
+		codeType.QualifiedType = "Map<" + codeType.TypeArgs[0].Type + ", " + qualifier + codeType.TypeArgs[1].QualifiedType + ">"
+	default:
+		codeType.Declaration = g.BoxType(codeType.Name, codeType.IsNullable)
+		codeType.QualifiedDeclaration = qualifier + g.BoxType(codeType.Name, codeType.IsNullable)
+		codeType.Type = g.BoxType(codeType.Name, codeType.IsNullable)
+		codeType.QualifiedType = qualifier + g.BoxType(codeType.Name, codeType.IsNullable)
+	}
+
+	codeType.IsPostProcessed = true
 	return codeType
 }
 
@@ -269,6 +335,18 @@ func (g *JavaGenerator) PostProcessing(files []template.RenderedFile) error {
 	}
 
 	return nil
+}
+
+func (g *JavaGenerator) BoxType(codeType string, box bool) string {
+	if !box {
+		return codeType
+	}
+
+	if boxedType, ok := g.boxedTypes[codeType]; ok {
+		return boxedType
+	}
+
+	return codeType
 }
 
 func NewGenerator() *JavaGenerator {
@@ -332,14 +410,24 @@ func NewGenerator() *JavaGenerator {
 			"while",
 		},
 		primitiveTypes: []string{
-			"String",
 			"boolean",
 			"int",
 			"long",
+			"short",
 			"float",
 			"double",
 			"byte",
 			"char",
+		},
+		boxedTypes: map[string]string{
+			"boolean": "Boolean",
+			"int":     "Integer",
+			"long":    "Long",
+			"short":   "Short",
+			"float":   "Float",
+			"double":  "Double",
+			"byte":    "Byte",
+			"char":    "Character",
 		},
 		typeToImport: map[string]string{
 			"OffsetDateTime": "java.time.OffsetDateTime",

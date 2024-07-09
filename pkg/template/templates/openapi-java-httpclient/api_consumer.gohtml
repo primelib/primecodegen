@@ -42,9 +42,6 @@ public class {{ .Metadata.Name }}ConsumerApi {
     * {{ $op.Description }}
     {{- end }}
     *
-    * Authentication - Required Scopes: ...
-    * foreach param (ignore static) / x-param-static
-    *
     {{- if $op.Parameters }}
     * @param spec a consumer that creates the payload for this operation. Supports the following properties:
     * <ul>
@@ -66,13 +63,13 @@ public class {{ .Metadata.Name }}ConsumerApi {
     @ApiStatus.Experimental
     {{- end }}
     {{- if $op.Parameters }}
-    public {{ $op.ReturnType }} {{ $op.Name | toFunctionName }}(Consumer<{{ $op.Name }}OperationSpec> spec) {
+    public {{ $op.ReturnType.QualifiedType }} {{ $op.Name | toFunctionName }}(Consumer<{{ $op.Name }}OperationSpec> spec) {
         {{$op.Name }}OperationSpec r = new {{ $op.Name }}OperationSpec(spec);
-        {{ if ne $op.ReturnType "void" }}return {{ end }}api.{{ $op.Name | toFunctionName }}({{ range $i, $param := $op.Parameters }}r.{{ $param.Name }}(){{ if notLast $op.Parameters $i }}, {{ end }}{{ end }});
+        {{ if ne $op.ReturnType.QualifiedType "void" }}return {{ end }}api.{{ $op.Name | toFunctionName }}({{ range $i, $param := $op.Parameters }}r.{{ $param.Name }}(){{ if notLast $op.Parameters $i }}, {{ end }}{{ end }});
     }
     {{- else }}
-    public {{ $op.ReturnType }} {{ $op.Name | toFunctionName }}() {
-        {{ if ne $op.ReturnType "void" }}return {{ end }}api.{{ $op.Name | toFunctionName }}();
+    public {{ $op.ReturnType.QualifiedType }} {{ $op.Name | toFunctionName }}() {
+        {{ if ne $op.ReturnType.QualifiedType "void" }}return {{ end }}api.{{ $op.Name | toFunctionName }}();
     }
     {{- end }}
 {{ end }}

@@ -78,6 +78,9 @@ func MergeSchema(baseSP *base.SchemaProxy, overwriteSP *base.SchemaProxy) error 
 	if override.Items != nil {
 		result.Items = override.Items
 	}
+	if override.Nullable != nil {
+		result.Nullable = override.Nullable
+	}
 	if override.Properties != nil {
 		if result.Properties == nil {
 			result.Properties = override.Properties

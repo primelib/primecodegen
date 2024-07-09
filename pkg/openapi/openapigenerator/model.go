@@ -9,6 +9,7 @@ import (
 	"github.com/pb33f/libopenapi"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
+	"github.com/primelib/primecodegen/pkg/openapi/openapiutil"
 )
 
 func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator CodeGenerator, packageConfig CommonPackages) (DocumentModel, error) {
@@ -113,7 +114,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				Description:      op.Value.Description,
 				Tag:              "default",
 				Tags:             op.Value.Tags,
-				ReturnType:       CodeType{},
+				ReturnType:       gen.PostProcessType(VoidCodeType),
 				Deprecated:       getBoolValue(op.Value.Deprecated, false),
 				DeprecatedReason: getOrDefault(op.Value.Extensions, "x-deprecated", ""),
 				Documentation:    make([]Documentation, 0),
@@ -267,7 +268,7 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 					Title:           pSchema.Title,
 					Type:            pType,
 					IsPrimitiveType: gen.IsPrimitiveType(pType.Name),
-					Nullable:        getBoolValue(pSchema.Nullable, slices.Contains(pSchema.Type, "null")), // 3.1 uses null type, 3.0 uses nullable
+					Nullable:        openapiutil.IsSchemaNullable(pSchema),
 					AllowedValues:   allowedValues,
 				})
 
@@ -291,7 +292,7 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 			add.Parent = mParent
 			add.Imports = append(add.Imports, gen.TypeToImport(add.Parent))
 		}
-		if len(add.Properties) == 0 && add.Parent.Name != "" {
+		if len(add.Properties) == 0 && (add.Parent.Name != "" || add.Parent.IsArray || add.Parent.IsList || add.Parent.IsMap) {
 			add.IsTypeAlias = true
 		}
 

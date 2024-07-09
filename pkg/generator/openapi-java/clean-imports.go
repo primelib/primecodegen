@@ -68,6 +68,7 @@ func findUnusedImports(content []byte, imports []string) (unusedImports []string
 			className + "(",
 			className + "::",
 			className + "<",
+			className + "[]",
 			"<" + className + ">",
 		}
 

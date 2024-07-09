@@ -145,8 +145,6 @@ func flattenInnerSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 			continue
 		}
 
-		log.Warn().Str("name", schema.Key).Msg("procesing schema")
-
 		for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
 			if !p.Value.IsReference() && slices.Contains(p.Value.Schema().Type, "object") {
 				key := util.ToPascalCase(p.Key)

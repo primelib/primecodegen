@@ -37,7 +37,7 @@ import java.util.function.Consumer;
  */
 @Getter
 @Setter
-{{- if .Model.Parent -}}
+{{- if .Model.Parent.Declaration }}
 @EqualsAndHashCode(callSuper = true)
 {{- else }}
 @EqualsAndHashCode
@@ -62,7 +62,7 @@ import java.util.function.Consumer;
 @Deprecated
 {{- end }}
 @Generated(value = "io.github.primelib.primecodegen")
-public class {{.Model.Name}}{{if .Model.Parent}} extends {{.Model.Parent}}{{end}} {
+public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Parent.Declaration}}{{end}} {
 {{ range $p := .Model.Properties }}
 {{- if $p.Description }}
     /**
@@ -70,7 +70,7 @@ public class {{.Model.Name}}{{if .Model.Parent}} extends {{.Model.Parent}}{{end}
      */
 {{- end }}
     @JsonProperty("{{$p.FieldName}}")
-    protected {{ $p.Type }} {{ $p.Name }};
+    protected {{ $p.Type.QualifiedDeclaration }} {{ $p.Name }};
 {{ end }}
     /**
      * Constructs a validated instance of {@link {{.Model.Name}}}.
@@ -93,7 +93,7 @@ public class {{.Model.Name}}{{if .Model.Parent}} extends {{.Model.Parent}}{{end}
 {{- end }}
      */
     @ApiStatus.Internal
-    public {{.Model.Name}}({{range $i, $p := .Model.Properties}}{{$p.Type}} {{$p.Name}}{{if notLast $.Model.Properties $i}}, {{end}}{{end}}) {
+    public {{.Model.Name}}({{range $i, $p := .Model.Properties}}{{$p.Type.Declaration}} {{$p.Name}}{{if notLast $.Model.Properties $i}}, {{end}}{{end}}) {
         {{- range $p := .Model.Properties }}
         this.{{$p.Name}} = {{$p.Name}};
         {{- end }}

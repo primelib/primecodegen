@@ -10,7 +10,7 @@ import (
 
 func TestRenderTemplateDryRun(t *testing.T) {
 	config := Config{
-		ID:          "openapi-go-client",
+		ID:          "openapi-go-httpclient",
 		Description: "dummy template for a go model",
 		Files: []File{
 			{
@@ -41,7 +41,7 @@ func TestRenderTemplateFile(t *testing.T) {
 	defer os.RemoveAll(outputDir)
 
 	config := Config{
-		ID:          "openapi-go-client",
+		ID:          "openapi-go-httpclient",
 		Description: "dummy template for a go model",
 		Files: []File{
 			{
