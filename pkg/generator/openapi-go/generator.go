@@ -1,6 +1,7 @@
 package openapi_go
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"slices"
@@ -87,6 +88,12 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		return fmt.Errorf("failed to run post-processing: %w", err)
 	}
 
+	// write metadata
+	err = openapigenerator.WriteMetadata(opts.OutputDir, files)
+	if err != nil {
+		return errors.Join(openapigenerator.ErrFailedToWriteMetadata, err)
+	}
+
 	return nil
 }
 
@@ -109,7 +116,6 @@ func (g *GoGenerator) ToFunctionName(name string) string {
 	if slices.Contains(g.reservedWords, name) {
 		return name + "Func"
 	}
-
 	return name
 }
 
@@ -119,7 +125,6 @@ func (g *GoGenerator) ToPropertyName(name string) string {
 	if slices.Contains(g.reservedWords, name) {
 		return name + "Prop"
 	}
-
 	return name
 }
 
@@ -129,7 +134,6 @@ func (g *GoGenerator) ToParameterName(name string) string {
 	if slices.Contains(g.reservedWords, name) {
 		return name + "Prop"
 	}
-
 	return name
 }
 
