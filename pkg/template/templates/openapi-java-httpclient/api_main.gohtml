@@ -54,7 +54,7 @@ public interface {{ .Metadata.Name }}Api {
     {{- end }}
     })
     {{- end }}
-    {{ $op.ReturnType.QualifiedType }} {{ $op.Name | toFunctionName }}{{- if gt (len $op.Parameters) 0 }}(
+    {{ $op.ReturnType.QualifiedType }} {{ $op.Name }}{{- if gt (len $op.Parameters) 0 }}(
         {{- range $i, $param := $op.Parameters }}
             {{if $param.Required}}@NotNull{{else}}@Nullable{{end}} {{if ne $param.In "body"}}@Param("{{ $param.FieldName }}") {{end}}{{$param.Type.QualifiedType}} {{$param.Name}}{{if notLast $op.Parameters $i}},{{end}}
         {{- end }}

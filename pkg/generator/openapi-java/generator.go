@@ -1,6 +1,7 @@
 package openapi_java
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -99,6 +100,12 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 	err = g.PostProcessing(files)
 	if err != nil {
 		return fmt.Errorf("failed to run post-processing: %w", err)
+	}
+
+	// write metadata
+	err = openapigenerator.WriteMetadata(opts.OutputDir, files)
+	if err != nil {
+		return errors.Join(openapigenerator.ErrFailedToWriteMetadata, err)
 	}
 
 	return nil

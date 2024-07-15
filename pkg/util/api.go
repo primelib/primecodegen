@@ -15,9 +15,11 @@ func URLPathParamAddByPrefix(path string) string {
 	re := regexp.MustCompile(`{([^}]+)}`)
 	return re.ReplaceAllStringFunc(path, func(match string) string {
 		paramName := strings.Trim(match, "{}")
-		if paramName == "id" {
-			return ""
-		}
+		/*
+			if paramName == "id" {
+				return ""
+			}
+		*/
 		return "By" + strings.Title(paramName)
 	})
 }
