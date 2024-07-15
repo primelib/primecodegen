@@ -69,9 +69,15 @@ dependencies {
     implementation("io.github.openfeign:feign-slf4j")
     implementation("io.github.openfeign:feign-okhttp")
     implementation("io.github.openfeign:feign-micrometer")
-{{ if .Common.HasParametersWithType "form" -}}
+{{- if .Common.HasParametersWithType "form" -}}
     implementation("io.github.openfeign.form:feign-form:3.8.0")
-{{ end }}
+{{- end }}
+
+    // http client
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+{{- if .Common.Endpoints.HasEndpointWithType "socket" }}
+    implementation("com.kohlschutter.junixsocket:junixsocket-core:2.10.0")
+{{- end }}
 
     // codegen libs
     api("io.github.primelib.primecodegenlib.java:feign-common")

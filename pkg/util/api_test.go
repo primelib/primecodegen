@@ -25,6 +25,26 @@ func TestURLRemovePathParams(t *testing.T) {
 	}
 }
 
+func TestURLPathParamAddByPrefix(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"/customers/{id}", "/customers/"},
+		{"/orders/{orderNumber}", "/orders/ByOrderNumber"},
+		{"/users/{userId}/details", "/users/ByUserId/details"},
+		{"/products/{productId}/reviews", "/products/ByProductId/reviews"},
+		{"/categories/{category}/items", "/categories/ByCategory/items"},
+	}
+
+	for _, test := range tests {
+		result := URLPathParamAddByPrefix(test.input)
+		if result != test.expected {
+			t.Errorf("URLPathParamAddByPrefix(%q) = %q; want %q", test.input, result, test.expected)
+		}
+	}
+}
+
 func TestParseURLAPIVersion(t *testing.T) {
 	testCases := []struct {
 		url      string

@@ -111,14 +111,14 @@ var allTemplates = []Config{
 				SourceTemplate:  "model.gohtml",
 				Snippets:        defaultSnippets,
 				TargetDirectory: "src/main/java/{{ .Common.Packages.Models | toFilePath }}",
-				TargetFileName:  "{{ .Model.Name }}.java",
+				TargetFileName:  "{{ .Name }}.java",
 				Type:            TypeModelEach,
 			},
 			{
 				SourceTemplate:  "enum.gohtml",
 				Snippets:        defaultSnippets,
 				TargetDirectory: "src/main/java/{{ .Common.Packages.Enums | toFilePath }}",
-				TargetFileName:  "{{ .Model.Name }}.java",
+				TargetFileName:  "{{ .Name }}.java",
 				Type:            TypeEnumEach,
 			},
 			// support files - gradle

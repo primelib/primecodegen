@@ -9,13 +9,14 @@ type DocumentModel struct {
 	DisplayName     string
 	Description     string
 	Tags            map[string]Tag
+	Endpoints       Endpoints
+	Auth            Auth
 	Services        map[string]Service
 	Operations      []Operation
 	OperationsByTag map[string][]Operation
 	Models          []Model
 	Enums           []Enum
 	Packages        CommonPackages // Packages holds the import paths for output packages
-	Auth            Auth
 }
 
 type CommonPackages struct {
@@ -35,6 +36,30 @@ type Metadata struct {
 	RepositoryUrl   string // RepositoryUrl is the URL to the repository (without protocol or .git suffix)
 	LicenseName     string // LicenseName is the name of the license (MIT, Apache-2.0, etc.)
 	LicenseUrl      string // LicenseUrl is the URL to the license
+}
+
+type Endpoints []Endpoint
+
+type Endpoint struct {
+	Type        string
+	URL         string
+	Description string
+}
+
+func (e Endpoints) HasEndpointWithType(value string) bool {
+	for _, ep := range e {
+		if ep.Type == value {
+			return true
+		}
+	}
+	return false
+}
+
+func (e Endpoints) DefaultEndpoint() string {
+	for _, ep := range e {
+		return ep.URL
+	}
+	return ""
 }
 
 type Auth struct {

@@ -35,9 +35,12 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import io.reactivex.Flowable;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+{{- if .Common.Endpoints.HasEndpointWithType "socket" }}
+import org.newsclub.net.unix.AFSocketFactory;
+import org.newsclub.net.unix.AFUNIXSocketAddress;
+{{- end }}
+
+import java.io.File;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -93,18 +96,32 @@ public class {{ .Metadata.Name }}Factory {
             }
         }
 
+        {{- if .Common.Endpoints.HasEndpointWithType "socket" }}
+        // unix socket
+        if (config.baseUrl().startsWith("unix:")) {
+            try {
+                File socketFile = new File(config.baseUrl().substring(5));
+                AFUNIXSocketAddress socketAddress = new AFUNIXSocketAddress(socketFile);
+                clientBuilder.proxy(Proxy.NO_PROXY);
+                clientBuilder.socketFactory(new AFSocketFactory.FixedAddressSocketFactory(socketAddress));
+            } catch (Exception ex) {
+                throw new IllegalArgumentException("invalid unix socket path: " + config.baseUrl(), ex);
+            }
+        }
+        {{- end }}
+
         // objectMapper
         JsonMapper.Builder objectMapperBuilder = JsonMapper.builder()
-            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-            .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE)
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
-            .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
-            {{- if .Common.GeneratorProperties.jacksonIncludeNonNull }}
-            // condition: jsonIncludeNonNull
-            // .serializationInclusion(JsonInclude.Include.NON_NULL)
-            {{- end }}
-            .addModule(new JavaTimeModule());
+                .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+                .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
+                .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+                {{- if .Common.GeneratorProperties.jacksonIncludeNonNull }}
+                // condition: jsonIncludeNonNull
+                // .serializationInclusion(JsonInclude.Include.NON_NULL)
+                {{- end }}
+                .addModule(new JavaTimeModule());
         config.extensions().forEach(extension -> extension.customizeObjectMapper(objectMapperBuilder));
         ObjectMapper objectMapper = objectMapperBuilder.build();
 

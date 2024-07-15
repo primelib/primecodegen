@@ -32,6 +32,7 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 	// global template data
 	common := GlobalTemplate{
 		GeneratorProperties: renderOpts.Properties,
+		Endpoints:           templateData.Endpoints,
 		Auth:                templateData.Auth,
 		Packages:            templateData.Packages,
 		Services:            templateData.Services,

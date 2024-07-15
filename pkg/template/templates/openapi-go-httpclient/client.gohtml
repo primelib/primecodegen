@@ -59,6 +59,14 @@ func New(options ...OptionFunc) (Client, error) {
 		}
 	}
 
+    // defaults
+	if restyClient.BaseURL == "" {
+		err := WithBaseURL("{{ .Common.Endpoints.DefaultEndpoint }}")(&client)
+		if err != nil {
+			return client, errors.Join(ErrFailedToCreateClient, err)
+		}
+	}
+
 	return client, nil
 }
 
