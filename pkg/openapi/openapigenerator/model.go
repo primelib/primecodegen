@@ -19,6 +19,7 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 		Name:        generator.ToClassName(title),
 		DisplayName: title,
 		Description: doc.Model.Info.Description,
+		Endpoints:   BuildEndpoints(doc),
 		Auth:        BuildAuth(doc),
 		Packages:    packageConfig,
 	}
@@ -78,6 +79,29 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 	template.Enums = append(template.Enums, enums...)
 
 	return template, nil
+}
+
+func BuildEndpoints(doc *libopenapi.DocumentModel[v3.Document]) Endpoints {
+	var endpoints Endpoints
+
+	for _, server := range doc.Model.Servers {
+		endpoint := Endpoint{
+			Type:        "http",
+			URL:         strings.TrimSuffix(server.URL, "/"),
+			Description: server.Description,
+		}
+		if strings.HasPrefix(server.URL, "unix://") {
+			endpoint.Type = "socket"
+		}
+
+		// TODO: add support for variables
+		for epv := server.Variables.Oldest(); epv != nil; epv = epv.Next() {
+		}
+
+		endpoints = append(endpoints, endpoint)
+	}
+
+	return endpoints
 }
 
 func BuildAuth(doc *libopenapi.DocumentModel[v3.Document]) Auth {

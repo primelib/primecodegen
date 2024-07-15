@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,7 +58,7 @@ public final class {{ .Metadata.Name }}FactorySpec<T> extends FeignModuleSpec<{{
      * The api base URL
      */
     @NotNull
-    private String baseUrl = "// TODO: get base url";
+    private String baseUrl = "{{ .Common.Endpoints.DefaultEndpoint }}";
 
     /**
      * The authentication methods to use
@@ -130,11 +131,14 @@ public final class {{ .Metadata.Name }}FactorySpec<T> extends FeignModuleSpec<{{
     }
 
 {{- end }}
+
+    @ApiStatus.Internal
     public void applySpec({{ .Metadata.Name }}FactorySpec<?> spec) {
         backendName(spec.backendName());
         baseUrl(spec.baseUrl());
         auth(spec.auth());
         proxy = spec.proxy();
         meterRegistry(spec.meterRegistry());
+        logLevel(spec.logLevel());
     }
 }

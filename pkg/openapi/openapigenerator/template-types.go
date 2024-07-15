@@ -2,6 +2,7 @@ package openapigenerator
 
 type GlobalTemplate struct {
 	GeneratorProperties map[string]string
+	Endpoints           Endpoints
 	Auth                Auth
 	Packages            CommonPackages
 	Services            map[string]Service

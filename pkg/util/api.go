@@ -14,7 +14,11 @@ func URLRemovePathParams(url string) string {
 func URLPathParamAddByPrefix(path string) string {
 	re := regexp.MustCompile(`{([^}]+)}`)
 	return re.ReplaceAllStringFunc(path, func(match string) string {
-		return "By" + strings.Title(replaceCommonWords(strings.Trim(match, "{}")))
+		paramName := strings.Trim(match, "{}")
+		if paramName == "id" {
+			return ""
+		}
+		return "By" + strings.Title(paramName)
 	})
 }
 
