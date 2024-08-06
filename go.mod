@@ -3,13 +3,13 @@ module github.com/primelib/primecodegen
 go 1.21
 
 require (
-	github.com/bluekeyes/go-gitdiff v0.7.3
+	github.com/bluekeyes/go-gitdiff v0.7.4
 	github.com/cidverse/cidverseutils/zerologconfig v0.1.0
 	github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/gosimple/slug v1.14.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/pb33f/libopenapi v0.16.10
+	github.com/pb33f/libopenapi v0.16.13
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
@@ -35,7 +35,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
-	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/net v0.27.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
