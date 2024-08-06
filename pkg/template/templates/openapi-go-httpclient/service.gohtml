@@ -23,6 +23,9 @@ type {{ $serviceName }} Service
 {{- end }}
 //
 //meta:operation {{ $op.Method | upperCase }} {{ $op.Path }}
+{{- if $op.Deprecated }}
+// Deprecated: {{ if $op.DeprecatedDescription }} {{ $op.DeprecatedDescription | commentSingleLine }}{{ else }}{{ $op.Name | toFunctionName }} is deprecated.{{ end }}
+{{- end }}
 func (s *{{ $serviceName }}) {{ $op.Name | toFunctionName }}(ctx context.Context, req operations.{{ $op.Name | toClassName }}Request) (*operations.{{ $op.Name | toClassName }}Response, error) {
     return operations.{{ $op.Name | toFunctionName }}(s.client.restyClient, ctx, req)
 }
