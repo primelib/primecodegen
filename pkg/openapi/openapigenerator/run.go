@@ -137,6 +137,35 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 	return files, nil
 }
 
+func RemoveFilesListedInMetadata(outputDir string) error {
+	writtenFiles := path.Join(outputDir, ".openapi-generator", "FILES")
+
+	// open the file for reading
+	file, err := os.Open(writtenFiles)
+	if err != nil {
+		return nil // no metadata file found, no files to remove
+	}
+	defer file.Close()
+
+	// read each file name from the file
+	var files []string
+	scanner := yaml.NewDecoder(file)
+	for scanner.Decode(&files) == nil {
+		for _, f := range files {
+			absFile := path.Join(outputDir, f)
+
+			if fileInfo, err := os.Stat(absFile); err == nil && fileInfo.Mode().IsRegular() {
+				remErr := os.Remove(absFile)
+				if remErr != nil {
+					return fmt.Errorf("failed to remove file: %w", remErr)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 // WriteMetadata generates metadata about the generated files for the output directory
 func WriteMetadata(outputDir string, files []template.RenderedFile) error {
 	writtenFiles := path.Join(outputDir, ".openapi-generator", "FILES")
