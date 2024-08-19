@@ -72,6 +72,12 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		return fmt.Errorf("failed to build template data: %w", err)
 	}
 
+	// remove generated files
+	err = openapigenerator.RemoveFilesListedInMetadata(opts.OutputDir)
+	if err != nil {
+		return fmt.Errorf("failed to clear generated files: %w", err)
+	}
+
 	// generate files
 	files, err := openapigenerator.GenerateFiles(fmt.Sprintf("openapi-%s-%s", g.Id(), opts.TemplateId), opts.OutputDir, templateData, template.RenderOpts{
 		DryRun:               opts.DryRun,
