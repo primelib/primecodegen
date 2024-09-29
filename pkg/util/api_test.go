@@ -30,7 +30,7 @@ func TestURLPathParamAddByPrefix(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"/customers/{id}", "/customers/"},
+		{"/customers/{id}", "/customers/ById"},
 		{"/orders/{orderNumber}", "/orders/ByOrderNumber"},
 		{"/users/{userId}/details", "/users/ByUserId/details"},
 		{"/products/{productId}/reviews", "/products/ByProductId/reviews"},
