@@ -10,3 +10,6 @@ output/*
 
 # test files
 openapi.*.yaml
+
+#vscode
+.vscode

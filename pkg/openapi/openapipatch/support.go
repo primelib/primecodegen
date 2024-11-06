@@ -13,6 +13,32 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// CreateOperationTagsFromDocTitle removes all tags and creates one new tag per API spec doc from document title setting it on each operation.
+// Note: This patch must be applied before merging specs.
+func CreateOperationTagsFromDocTitle(doc *libopenapi.DocumentModel[v3.Document]) error {
+
+	// Remove all tags
+	doc.Model.Tags = nil
+	PruneOperationTags(doc)
+	// Create tag from document title
+	documenttag := doc.Model.Info.Title
+	doc.Model.Tags = append(doc.Model.Tags, &base.Tag{Name: documenttag, Description: "See document description"})
+	// Set tag on each operation
+	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
+		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
+			if len(op.Value.Tags) == 0 {
+				// add default tag, if missing
+				log.Trace().Str("path", strings.ToUpper(op.Key)+" "+path.Key).Str("tag", documenttag).Msg("operation is missing tags, adding default tag:")
+				op.Value.Tags = append(op.Value.Tags, documenttag)
+			} else {
+				log.Warn().Strs("Operation Tag", op.Value.Tags).Msg("Found non-empty operation tag - ")
+			}
+		}
+	}
+
+	return nil
+}
+
 // FixOperationTags ensures all operations have tags, and that tags are documented in the document
 func FixOperationTags(doc *libopenapi.DocumentModel[v3.Document]) error {
 	documentedTags := make(map[string]bool)
@@ -158,6 +184,29 @@ func InvalidMaxValue(doc *libopenapi.DocumentModel[v3.Document]) error {
 		}
 	}
 
+	return nil
+}
+
+// Inlines properties of allOf-referenced schemas and removes allOf-references in schemas
+func InlineAllOfHierarchies(doc *libopenapi.DocumentModel[v3.Document]) error {
+	// component schemas
+	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
+		log.Debug().Str("schema", schema.Key).Msg("Inlining properties of allOf-referenced schemas in components.schema")
+		_, err := openapidocument.InlineAllOf(schema.Value)
+		if err != nil {
+			return err
+		}
+
+		if schema.Value.Schema().Properties != nil {
+			for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
+				log.Debug().Str("Property", p.Key).Msg("Inlining properties of allOf in schema.Value.Schema().Properties")
+				_, propErr := openapidocument.InlineAllOf(p.Value)
+				if propErr != nil {
+					return propErr
+				}
+			}
+		}
+	}
 	return nil
 }
 

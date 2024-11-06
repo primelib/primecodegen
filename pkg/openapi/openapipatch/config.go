@@ -14,6 +14,13 @@ type V3Config struct {
 }
 
 var V3Patchers = map[string]V3Config{
+	"createOperationTagsFromDocTitle": {
+		ID:             "createOperationTagsFromDocTitle",
+		Description:    "Removes all tags and creates one new tag per API spec from the document title, setting it on each operation. This patch will be applied before merging specs.",
+		Enabled:        true,
+		CodeGeneration: false,
+		Func:           CreateOperationTagsFromDocTitle,
+	},
 	"fixOperationTags": {
 		ID:             "fixOperationTags",
 		Description:    "Ensures all operations have at least one tag, and that tags are documented in the document",
@@ -69,5 +76,12 @@ var V3Patchers = map[string]V3Config{
 		Enabled:        true,
 		CodeGeneration: true,
 		Func:           MissingSchemaTitle,
+	},
+	"inlineAllOfHierarchies": {
+		ID:             "inlineAllOfHierarchies",
+		Description:    "Inlines properties of allOf-referenced schemas and removes allOf-references in schemas",
+		Enabled:        true,
+		CodeGeneration: true,
+		Func:           InlineAllOfHierarchies,
 	},
 }

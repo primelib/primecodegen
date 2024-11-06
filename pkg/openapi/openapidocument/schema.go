@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pb33f/libopenapi/datamodel/high/base"
+	"github.com/rs/zerolog/log"
 )
 
 type SchemaMatchFunc func(schema *base.Schema) bool
@@ -44,10 +45,10 @@ func IsPolypmorphicSchema(s *base.Schema) bool {
 		return false
 	}
 
-	if s.OneOf != nil && len(s.OneOf) > 1 {
+	if len(s.OneOf) > 1 {
 		return true
 	}
-	if s.AnyOf != nil && len(s.AnyOf) > 1 {
+	if len(s.AnyOf) > 1 {
 		return true
 	}
 
@@ -66,7 +67,7 @@ func MergeSchema(baseSP *base.SchemaProxy, overwriteSP *base.SchemaProxy) error 
 	}
 
 	// merge properties
-	if override.Type != nil && len(override.Type) > 0 {
+	if len(override.Type) > 0 {
 		result.Type = override.Type
 	}
 	if override.Format != "" {
@@ -82,6 +83,10 @@ func MergeSchema(baseSP *base.SchemaProxy, overwriteSP *base.SchemaProxy) error 
 		result.Nullable = override.Nullable
 	}
 	if override.Properties != nil {
+		for op := override.Properties.Oldest(); op != nil; op = op.Next() {
+			bytes, _ := op.Value.Render()
+			log.Trace().Str("key", op.Key).Interface("value", string(bytes)).Msg("Properties: ")
+		}
 		if result.Properties == nil {
 			result.Properties = override.Properties
 		} else {
@@ -94,9 +99,7 @@ func MergeSchema(baseSP *base.SchemaProxy, overwriteSP *base.SchemaProxy) error 
 		if result.Required == nil {
 			result.Required = override.Required
 		} else {
-			for _, s := range override.Required {
-				result.Required = append(result.Required, s)
-			}
+			result.Required = append(result.Required, override.Required...)
 		}
 	}
 
@@ -114,13 +117,36 @@ func SimplifyPolymorphism(schemaProxy *base.SchemaProxy) (*base.SchemaProxy, err
 	}
 
 	// merge allOf schemas into base schema
-	if schema.AllOf != nil && len(schema.AllOf) > 0 {
+	if len(schema.AllOf) > 0 {
 		for _, s := range schema.AllOf {
 			err = MergeSchema(schemaProxy, s)
 			if err != nil {
 				return nil, fmt.Errorf("error merging allIn schema into base schema: %w", err)
 			}
 		}
+	}
+
+	return schemaProxy, nil
+}
+
+func InlineAllOf(schemaProxy *base.SchemaProxy) (*base.SchemaProxy, error) {
+	if schemaProxy.IsReference() { // skip references
+		return nil, nil
+	}
+	schema, err := schemaProxy.BuildSchema()
+	if err != nil {
+		return nil, fmt.Errorf("error building schema: %w", err)
+	}
+	// merge allOf schemas into base schema
+	if len(schema.AllOf) > 0 {
+		for _, schemaRef := range schema.AllOf {
+			err = MergeSchema(schemaProxy, schemaRef)
+			if err != nil {
+				return nil, fmt.Errorf("error merging allOf schema into base schema: %w", err)
+			}
+		}
+		// delete allOf (needed by codegeneration)
+		schema.AllOf = nil
 	}
 
 	return schemaProxy, nil

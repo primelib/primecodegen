@@ -160,7 +160,7 @@ func flattenInnerSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 
 		// flatten anyOf
 		s := schema.Value.Schema()
-		if s.AnyOf != nil && len(s.AnyOf) > 0 {
+		if len(s.AnyOf) > 0 {
 
 		}
 

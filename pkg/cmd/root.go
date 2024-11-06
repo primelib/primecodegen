@@ -34,7 +34,8 @@ func rootCmd() *cobra.Command {
 	cmd.AddCommand(openapicmd.GenerateCmd())
 	cmd.AddCommand(openapicmd.GenerateTemplateCmd())
 	cmd.AddCommand(openapicmd.PatchCmd())
-
+	cmd.AddCommand(openapicmd.OpenAPIConvertCmd())
+	cmd.AddCommand(openapicmd.MergeLibOpenAPICmd())
 	return cmd
 }
 
