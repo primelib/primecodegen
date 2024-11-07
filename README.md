@@ -15,9 +15,9 @@ TODO: add installation instructions
 
 The `openapi-generate` command can be used to generate code from an OpenAPI specification, using a built-in or custom template.
 
-| Command                                                                                      | Description                                                      |
-|----------------------------------------------------------------------------------------------|------------------------------------------------------------------|
-| `primecodegen openapi-generate -i openapi.yaml -g go -t client -o /out`                      | run code generation with generator `go` and template `client`    |
+| Command                                                                 | Description                                                   |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `primecodegen openapi-generate -i openapi.yaml -g go -t client -o /out` | run code generation with generator `go` and template `client` |
 
 Environment Variables:
 
@@ -29,30 +29,30 @@ Environment Variables:
 The `openapi-generate-template` command can be used to pre-process the openapi spec and pass the resulting template data to an external code generator.
 The command supports the following options:
 
-| Command                                                                                      | Description                                                      |
-|----------------------------------------------------------------------------------------------|------------------------------------------------------------------|
-| `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client`                  | generate go template data, stdout                                |
-| `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client -o template.yaml` | generate go template data, file output                           |
+| Command                                                                                      | Description                            |
+| -------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client`                  | generate go template data, stdout      |
+| `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client -o template.yaml` | generate go template data, file output |
 
 ## OpenAPI Patch
 
 The `openapi-patch` command can be used to apply automatic modifications, merge multiple specifications, and apply custom patches to the OpenAPI specification.
 
-| Command                                                                                      | Description                                                      |
-|----------------------------------------------------------------------------------------------|------------------------------------------------------------------|
-| `primecodegen openapi-patch -i openapi.yaml -o patched.yaml`                                 | if no patches are specified, the default ones are applied        |
-| `primecodegen openapi-patch -i openapi.yaml -i openapi.part2.yaml -o patched.yaml`           | merge one or more specifications into one                        |
-| `primecodegen openapi-patch -i openapi.yaml -p flattenSchemas -o patched.yaml`               | apply built-in patch with id `flattenSchemas`                    |
-| `primecodegen openapi-patch -i openapi.yaml -f noservers.jsonpatch`                          | apply a [jsonpatch](https://jsonpatch.com/) to the specification |
-| `primecodegen openapi-patch -i openapi.yaml -f mypatch.patch`                                | apply a `git patch` to the specification                         |
-| `primecodegen openapi-patch list`                                                            | list available patches                                           |
+| Command                                                                            | Description                                                      |
+| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `primecodegen openapi-patch -i openapi.yaml -o patched.yaml`                       | if no patches are specified, the default ones are applied        |
+| `primecodegen openapi-patch -i openapi.yaml -i openapi.part2.yaml -o patched.yaml` | merge one or more specifications into one                        |
+| `primecodegen openapi-patch -i openapi.yaml -p flattenSchemas -o patched.yaml`     | apply built-in patch with id `flattenSchemas`                    |
+| `primecodegen openapi-patch -i openapi.yaml -f noservers.jsonpatch`                | apply a [jsonpatch](https://jsonpatch.com/) to the specification |
+| `primecodegen openapi-patch -i openapi.yaml -f mypatch.patch`                      | apply a `git patch` to the specification                         |
+| `primecodegen openapi-patch list`                                                  | list available patches                                           |
 
 **Note**: All the options can be combined, e.g. merging multiple specifications, custom user-provided patches and built-in patches.
 
 The following built-in patches are available:
 
 | Patch                           | Default | Description                                                                                             |
-|---------------------------------|---------|---------------------------------------------------------------------------------------------------------|
+| ------------------------------- | ------- | ------------------------------------------------------------------------------------------------------- |
 | `pruneOperationTags`            | true    | Removes all tags from operations.                                                                       |
 | `pruneOperationTagsExceptFirst` | false   | Removes all tags from operations except the first one.                                                  |
 | `pruneCommonOperationIdPrefix`  | false   | Removes common operation id prefixes (e. g. all operationIds start with `API_`)                         |

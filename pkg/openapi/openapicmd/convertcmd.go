@@ -13,7 +13,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func OpenAPIConvertCmd() *cobra.Command {
+func OpenAPIConvertCmd(httpClient openapiconvert.HTTPClient) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "openapi-convert",
 		Short:   "Converts input - into output format (currently Swagger 2.0 to OpenAPI 3.0 is supported)",
@@ -36,47 +36,48 @@ func OpenAPIConvertCmd() *cobra.Command {
 			}
 			out, _ := cmd.Flags().GetString("output-dir")
 			log.Info().Str("Dir", out).Msg("Output")
+			if formatIn == "swagger20" && formatOut == "openapi30" {
+				for _, path := range inputFiles {
+					filebasename := filepath.Base(path)
+					filename := strings.TrimSuffix(filebasename, filepath.Ext(filebasename))
+					filecontent, err := os.ReadFile(path)
+					check(err)
 
-			for _, path := range inputFiles {
-				filebasename := filepath.Base(path)
-				filename := strings.TrimSuffix(filebasename, filepath.Ext(filebasename))
-				filecontent, err := os.ReadFile(path)
-				check(err)
+					var openAPIJSON []byte
+					var convertererr error
 
-				var openAPIJSON []byte
-				var convertererr error
-				if formatIn == "swagger20" && formatOut == "openapi30" {
-					openAPIJSON, convertererr = openapiconvert.ConvertSwaggerToOpenAPI(filecontent, converterUrl)
+					openAPIJSON, convertererr = openapiconvert.ConvertSwaggerToOpenAPI(filecontent, converterUrl, httpClient)
 					if convertererr != nil {
 						log.Fatal().Err(convertererr).Msg("Error converting to OpenAPI 3.0")
 					}
+
+					// Unmarshal JSON data into a generic map (intermediate step for YAML)
+					var yamlData map[string]interface{}
+					if err := json.Unmarshal(openAPIJSON, &yamlData); err != nil {
+						log.Fatal().Err(err).Str("output format", formatOut).Str("json", string(openAPIJSON)).Msg("Error unmarshaling spec to YAML - ")
+						return
+					}
+					openAPIYAML, err := yaml.Marshal(yamlData)
+					if err != nil {
+						log.Fatal().Err(err).Str("output format", formatOut).Msg("Error marshaling spec to YAML - ")
+						return
+					}
+					// write document
+					fileoutname := out + "/" + filename + ".yaml"
+					if err := os.WriteFile(fileoutname, openAPIYAML, 0644); err != nil {
+						log.Fatal().Err(err).Str("output format", formatOut).Msg("Error writing YAML file - ")
+					}
+					fmt.Print(string(fileoutname) + "\n")
 				}
-				// Unmarshal JSON data into a generic map (intermediate step for YAML)
-				var yamlData map[string]interface{}
-				if err := json.Unmarshal(openAPIJSON, &yamlData); err != nil {
-					log.Fatal().Err(err).Str("output format", formatOut).Msg("Error unmarshaling spec to YAML - ")
-					return
-				}
-				openAPIYAML, err := yaml.Marshal(yamlData)
-				if err != nil {
-					log.Fatal().Err(err).Str("output format", formatOut).Msg("Error marshaling spec to YAML - ")
-					return
-				}
-				// write document
-				fileoutname := out + "/" + filename + ".yaml"
-				if err := os.WriteFile(fileoutname, openAPIYAML, 0644); err != nil {
-					log.Fatal().Err(err).Str("output format", formatOut).Msg("Error writing YAML file - ")
-				}
-				fmt.Print(string(fileoutname) + "\n")
 			}
 		},
 	}
 
 	cmd.Flags().StringSliceP("input", "i", []string{}, "Input Specification(s) (YAML or JSON)")
-	cmd.Flags().StringP("output-dir", "o", "", "Output Directory (where output file/s is/are written into)")
+	cmd.Flags().StringP("output-dir", "o", "", "Output Directory")
 	cmd.Flags().StringP("converter-url", "c", "", "URL to converter service")
-	cmd.Flags().StringP("format-in", "f", "swagger20", "Input format (currently only swagger20 is supported)")
-	cmd.Flags().StringP("format-out", "r", "openapi30", "Output format (currently only openapi30 is supported)")
+	cmd.Flags().StringP("format-in", "f", "swagger20", "Input format (currently swagger20 is supported)")
+	cmd.Flags().StringP("format-out", "r", "openapi30", "Output format (currently openapi30 is supported)")
 	return cmd
 }
 

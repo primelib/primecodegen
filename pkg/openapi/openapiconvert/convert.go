@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func ConvertSwaggerToOpenAPI(swaggerData []byte, converterUrl string) ([]byte, error) {
+func ConvertSwaggerToOpenAPI(swaggerData []byte, converterUrl string, client HTTPClient) ([]byte, error) {
 
 	swaggerConverterEnvVar := "PRIMECODEGN_SWAGGER_CONVERTER"
 	var url string
@@ -33,7 +33,6 @@ func ConvertSwaggerToOpenAPI(swaggerData []byte, converterUrl string) ([]byte, e
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

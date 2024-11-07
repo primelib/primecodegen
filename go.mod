@@ -11,7 +11,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/gosimple/slug v1.14.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/pb33f/libopenapi v0.18.3
+	github.com/pb33f/libopenapi v0.18.4
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
@@ -35,6 +35,7 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.9-0.20240815153524-6ea36470d1bd // indirect
 	golang.org/x/net v0.30.0 // indirect
