@@ -40,7 +40,7 @@ func flattenInlineRequestBodies(doc *libopenapi.DocumentModel[v3.Document]) erro
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 			if op.Value.OperationId == "" {
-				return fmt.Errorf("operation id is required for operation [%s], you can use generateOperationId to ensure all operations have a id", op.Key)
+				return fmt.Errorf("operation id is required for operation [%s] of path[%s], you can use generateOperationId to ensure all operations have a id", op.Key, path.Key)
 			}
 
 			if op.Value.RequestBody != nil {
@@ -74,7 +74,7 @@ func flattenInlineResponses(doc *libopenapi.DocumentModel[v3.Document]) error {
 				continue
 			}
 			if op.Value.OperationId == "" {
-				return fmt.Errorf("operation id is required for operation [%s], you can use generateOperationId to ensure all operations have a id", op.Key)
+				return fmt.Errorf("operation id is required for operation [%s] of path[%s], you can use generateOperationId to ensure all operations have a id", op.Key, path.Key)
 			}
 
 			for resp := op.Value.Responses.Codes.Oldest(); resp != nil; resp = resp.Next() {
