@@ -1,33 +1,25 @@
 package openapiconvert
 
 import (
-	"bytes"
-	"io"
-	"net/http"
 	"testing"
 
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestConvertSwaggerToOpenAPI(t *testing.T) {
-
 	// arrange
-	mockClient := new(MockHTTPClient)
-	mockResponse := &http.Response{
-		StatusCode: http.StatusOK,
-		Body:       io.NopCloser(bytes.NewBufferString(`{"openapi": "3.0.0"}`)),
-	}
-	mockClient.On("Do", mock.Anything).Return(mockResponse, nil)
+	httpmock.Activate()
+	t.Cleanup(httpmock.DeactivateAndReset)
+
+	httpmock.RegisterResponder("POST", converterEndpoint,
+		httpmock.NewStringResponder(200, `{"openapi": "3.0.0"}`))
 	swaggerData := []byte(`{"swagger": "2.0"}`)
-	converterUrl := "http://mock-converter-url"
 
 	// act
-	result, err := ConvertSwaggerToOpenAPI(swaggerData, converterUrl, mockClient)
+	result, err := ConvertSwaggerToOpenAPI(swaggerData, "")
 
 	// assert
 	assert.NoError(t, err)
 	assert.JSONEq(t, `{"openapi": "3.0.0"}`, string(result))
-
-	mockClient.AssertExpectations(t)
 }

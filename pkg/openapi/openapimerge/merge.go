@@ -2,6 +2,7 @@ package openapimerge
 
 import (
 	"fmt"
+	"github.com/cidverse/cidverseutils/filesystem"
 	"os"
 
 	"github.com/pb33f/libopenapi"
@@ -13,8 +14,8 @@ import (
 	str "strings"
 )
 
-func MergeOpenAPISpecs(emptyspec string, paths []string) (*libopenapi.DocumentModel[v3.Document], error) {
-
+// MergeOpenAPISpecs merges multiple OpenAPI specs into a single OpenAPI spec
+func MergeOpenAPISpecs(emptySpec string, paths []string) (*libopenapi.DocumentModel[v3.Document], error) {
 	var mergedSpec *libopenapi.DocumentModel[v3.Document]
 
 	for _, path := range paths {
@@ -28,33 +29,33 @@ func MergeOpenAPISpecs(emptyspec string, paths []string) (*libopenapi.DocumentMo
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to open document")
 		}
-		v3docmodel, errs := doc.BuildV3Model()
+		v3Model, errs := doc.BuildV3Model()
 		if len(errs) > 0 {
 			log.Fatal().Errs("spec", errs).Msgf("failed to build v3 high level model")
 		}
 		// Initialize mergedSpec if it is nil
 		if mergedSpec == nil {
-			if emptyspec != "" && fileExists(emptyspec) {
-				log.Trace().Str("filepath", emptyspec).Msg("Creating empty doc model from empty spec in")
+			if emptySpec != "" && filesystem.FileExists(emptySpec) {
+				log.Trace().Str("filepath", emptySpec).Msg("Creating empty doc model from empty spec in")
 				// Empty OpenAPI spec from file (for clean info-block build-up)
-				_, mergedSpec, _ = CreateEmptySpec(emptyspec)
+				_, mergedSpec, _ = CreateEmptySpec(emptySpec)
 			} else {
-				mergedSpec = v3docmodel
+				mergedSpec = v3Model
 			}
 		}
 		// Merge OpenAPI elements
-		mergeInfo(&mergedSpec.Model, &v3docmodel.Model)
-		mergeServers(&mergedSpec.Model, &v3docmodel.Model)
-		mergeTags(&mergedSpec.Model, &v3docmodel.Model)
-		mergePaths(&mergedSpec.Model, &v3docmodel.Model)
-		mergeComponents(&mergedSpec.Model, &v3docmodel.Model)
+		mergeInfo(&mergedSpec.Model, &v3Model.Model)
+		mergeServers(&mergedSpec.Model, &v3Model.Model)
+		mergeTags(&mergedSpec.Model, &v3Model.Model)
+		mergePaths(&mergedSpec.Model, &v3Model.Model)
+		mergeComponents(&mergedSpec.Model, &v3Model.Model)
 
 		// Reload document
 		_, doc, _, errs = doc.RenderAndReload()
 		if len(errs) > 0 {
 			log.Error().Errs("spec", errs).Msgf("failed to reload document after patching")
 		}
-		v3docmodel, errs = doc.BuildV3Model()
+		v3Model, errs = doc.BuildV3Model()
 		if len(errs) > 0 {
 			log.Error().Errs("spec", errs).Msgf("failed to build v3 high level model")
 		}
@@ -63,7 +64,6 @@ func MergeOpenAPISpecs(emptyspec string, paths []string) (*libopenapi.DocumentMo
 	return mergedSpec, nil
 }
 
-// Info
 func mergeInfo(dest, src *v3.Document) {
 	if src.Info.Title != "" {
 		if dest.Info.Title != "" {
@@ -128,17 +128,14 @@ func mergeInfo(dest, src *v3.Document) {
 	}
 }
 
-// Servers
 func mergeServers(dest, src *v3.Document) {
 	dest.Servers = append(dest.Servers, src.Servers...)
 }
 
-// Tags
 func mergeTags(dest, src *v3.Document) {
 	dest.Tags = append(dest.Tags, src.Tags...)
 }
 
-// Paths
 func mergePaths(dest, src *v3.Document) {
 	if src.Paths != nil {
 		if dest.Paths == nil {
@@ -160,7 +157,6 @@ func mergePaths(dest, src *v3.Document) {
 	}
 }
 
-// Components
 func mergeComponents(dest, src *v3.Document) {
 	if src.Components == nil {
 		return
@@ -298,7 +294,7 @@ func CreateEmptySpec(path string) (libopenapi.Document, *libopenapi.DocumentMode
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to open document")
 	}
-	v3docmodel, errors := doc.BuildV3Model()
+	v3Model, errors := doc.BuildV3Model()
 	// if anything went wrong when building the v3 model, a slice of errors will be returned
 	if len(errors) > 0 {
 		for i := range errors {
@@ -307,14 +303,5 @@ func CreateEmptySpec(path string) (libopenapi.Document, *libopenapi.DocumentMode
 		panic(fmt.Sprintf("cannot create v3 model from document: %d errors reported", len(errors)))
 	}
 
-	return doc, v3docmodel, nil
-}
-
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		log.Warn().Str("path", path).Msg("File does not exist")
-		return false
-	}
-	return err == nil
+	return doc, v3Model, nil
 }

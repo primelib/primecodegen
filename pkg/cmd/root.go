@@ -6,7 +6,6 @@ import (
 
 	"github.com/cidverse/cidverseutils/zerologconfig"
 	"github.com/primelib/primecodegen/pkg/openapi/openapicmd"
-	"github.com/primelib/primecodegen/pkg/openapi/openapiconvert"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +34,7 @@ func rootCmd() *cobra.Command {
 	cmd.AddCommand(openapicmd.GenerateCmd())
 	cmd.AddCommand(openapicmd.GenerateTemplateCmd())
 	cmd.AddCommand(openapicmd.PatchCmd())
-	cmd.AddCommand(openapicmd.OpenAPIConvertCmd(new(openapiconvert.RealHTTPClient)))
+	cmd.AddCommand(openapicmd.OpenAPIConvertCmd())
 	cmd.AddCommand(openapicmd.MergeLibOpenAPICmd())
 	return cmd
 }

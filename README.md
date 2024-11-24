@@ -9,11 +9,7 @@ This project is a collection of tools to help with merging, patching, and genera
 
 ## Installation
 
-* Install Go on your system
-* Clone this repo
-* Change into the cloned repo directory
-* Type ```$ go build``` and use compiled the `./primecodegen` binary inside the current directory
-* Optionally type ```$ go install``` to use `primecodegen` as systemwide command
+TODO: add installation instructions
 
 ## OpenAPI Code Generator
 
@@ -28,15 +24,15 @@ Environment Variables:
 - `PRIMECODEGEN_DEBUG_SPEC` - if set, the final OpenAPI specification is written to stdout.
 - `PRIMECODEGEN_DEBUG_TEMPLATEDATA` - if set, the template data passed to the code generator is written to stdout.
 
-## OpenAPI Merger
+## OpenAPI Merge
 
-The `openapi-merge` command can be used to convert an input specification into another format. 
+The `openapi-merge` command can be used to merge multiple OpenAPI specifications into one.
 
 | Command                                                                                 | Description                                                                                                                                                                          |
 | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `primecodegen openapi-merge --empty /in/empty_spec.yaml --input /in --output-dir /out ` | Merge OpenAPI specifications to be compatible with code generation tool. Provide an empty OpenAPI 3.0 spec to  build up a clean info-block. As an alternative use the built-in merge when using `openapi-patch` with multiple input specs. |
+| `primecodegen openapi-merge --empty /in/empty_spec.yaml --input /in --output-dir /out ` | Merge OpenAPI specifications to be compatible with code generation tool. Provide an empty OpenAPI 3.0 spec to build up a clean info-block. As an alternative use the built-in merge when using `openapi-patch` with multiple input specs. |
 
-**Note**: If ` --empty` paremeter is not provided the first API spec is taken as starting point for the merged spec resulting in duplication of contents inside the infoblock.
+**Note**: If `--empty` paremeter is not provided the first API spec is taken as starting point for the merged spec resulting in duplication of contents inside the infoblock.
 
 Example for an empty OpenAPI 3.0 spec:
 ```yaml
@@ -51,21 +47,22 @@ info:
   license: ""
   termsOfService: ""
 paths: {}
+components: {}
 ```
 
 ## OpenAPI Converter
 
-The `openapi-convert` command can be used to convert an input specification into another format. 
+The `openapi-convert` command can be used to convert between different OpenAPI versions.
 
 | Command                                                                                                                                             | Description                                                                             |
 | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `primecodegen openapi-convert --converter-url https://host.converter  --format-in swagger20 --format-out openapi30 --input /in --output-dir /out  ` | Converts input - into output format (currently Swagger 2.0 to OpenAPI 3.0 is supported) |
 
-**Note**: If ` --converter-url` paremeter is not provided and env var `PRIMECODEGN_SWAGGER_CONVERTER` is not set the default convert `https://converter.swagger.io/api/convert` will be used.
+**Note**: If `--converter-url` and `PRIMECODEGEN_SWAGGER_CONVERTER` are not set, the default swagger converter `https://converter.swagger.io/api/convert` will be used.
 
 Environment Variables:
 
-- `PRIMECODEGN_SWAGGER_CONVERTER` - if set, the respective converter for Swagger 2.0 to OpenAPI 3.0 conversion is used. The complete url must be provided, e.c. `https://converter.swagger.io/api/convert`
+- `PRIMECODEGEN_SWAGGER_CONVERTER` - used to specify a custom [swagger-converter](https://github.com/swagger-api/swagger-converter) convert endpoint, used for Swagger 2.0 to OpenAPI 3.0 conversion.
 
 ## OpenAPI Template Data
 

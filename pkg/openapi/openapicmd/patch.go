@@ -3,7 +3,6 @@ package openapicmd
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/primelib/primecodegen/pkg/commonmerge"
@@ -66,6 +65,7 @@ func runPatchCmd(inputFiles []string, output string, patches []string, patchFile
 	if len(patches) == 0 {
 		return "", nil
 	}
+
 	// read and merge documents
 	bytes, err := commonmerge.ReadAndMergeFiles(inputFiles)
 	if err != nil {
@@ -116,7 +116,6 @@ func runPatchCmd(inputFiles []string, output string, patches []string, patchFile
 }
 
 func applyPreMergePatches(inputFiles []string, output string, patches []string) (string, []string, []string, error) {
-
 	var resultFiles []string
 
 	for _, v := range patches {
@@ -134,30 +133,26 @@ func applyPreMergePatches(inputFiles []string, output string, patches []string) 
 
 // For each spec replace all operation tags with a tag generated from the spec title
 func createOperationTagsFromDocTitle(inputFiles []string, output string, patches []string, patch string) (string, []string, []string, error) {
-
 	var resultFiles []string
 
 	for _, path := range inputFiles {
-		bytes, err := os.ReadFile(path)
-		if err != nil {
-			return "", []string{}, []string{}, fmt.Errorf("failed to read file %s: %w", path, err)
-		}
-		doc, err := openapidocument.OpenDocument(bytes)
+		doc, err := openapidocument.OpenDocumentFile(path)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to open document")
 		}
-		v3docmodel, errs := doc.BuildV3Model()
+		v3Model, errs := doc.BuildV3Model()
 		if len(errs) > 0 {
-			log.Fatal().Errs("spec", errs).Msgf("failed to build v3 high level model")
+			return "", []string{}, []string{}, errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
 		}
-		doc, v3docmodel, err = openapipatch.PatchV3([]string{patch}, doc, v3docmodel)
+		doc, v3Model, err = openapipatch.PatchV3([]string{patch}, doc, v3Model)
 		if err != nil {
 			return "", []string{}, []string{}, errors.Join(util.ErrFailedToPatchDocument, err)
 		}
+
 		// write document
 		if output != "" {
-			filebasename := filepath.Base(path)
-			filePath := filepath.Join(output, filebasename)
+			fileName := filepath.Base(path)
+			filePath := filepath.Join(output, fileName)
 			writeErr := openapidocument.RenderDocumentFile(doc, filePath)
 			if writeErr != nil {
 				return "", []string{}, []string{}, errors.Join(util.ErrWriteDocumentToFile, writeErr)
@@ -171,6 +166,7 @@ func createOperationTagsFromDocTitle(inputFiles []string, output string, patches
 			return string(outBytes), []string{}, []string{}, nil
 		}
 	}
+
 	// Delete this patch from list
 	for i, v := range patches {
 		if v == "createOperationTagsFromDocTitle" {

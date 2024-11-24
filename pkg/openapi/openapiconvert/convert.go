@@ -9,25 +9,22 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func ConvertSwaggerToOpenAPI(swaggerData []byte, converterUrl string, client HTTPClient) ([]byte, error) {
+const (
+	converterEndpointEnvVar = "PRIMECODEGEN_SWAGGER_CONVERTER"
+	converterEndpoint       = "https://converter.swagger.io/api/convert"
+)
 
-	swaggerConverterEnvVar := "PRIMECODEGN_SWAGGER_CONVERTER"
-	var url string
-	var urlEnvIsSet bool
-
+func ConvertSwaggerToOpenAPI(swaggerData []byte, converterUrl string) ([]byte, error) {
 	if converterUrl == "" {
-		url, urlEnvIsSet = os.LookupEnv(swaggerConverterEnvVar)
-		log.Trace().Bool("Env var is present", urlEnvIsSet).Str("URL", url).Msg("Converter from env: ")
-		if !urlEnvIsSet {
-			// URL of public Swagger Converter
-			url = "https://converter.swagger.io/api/convert"
+		converterUrl, _ = os.LookupEnv(converterEndpointEnvVar)
+		if converterUrl == "" {
+			converterUrl = converterEndpoint
 		}
-	} else {
-		url = converterUrl
 	}
-	log.Debug().Str("URL", url).Msg("Swagger 2.0 OpenAPI 3.0 converter used: ")
+	log.Debug().Str("endpoint", converterUrl).Msg("Converting Swagger to OpenAPI using external service")
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(swaggerData))
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", converterUrl, bytes.NewBuffer(swaggerData))
 	if err != nil {
 		return nil, err
 	}
