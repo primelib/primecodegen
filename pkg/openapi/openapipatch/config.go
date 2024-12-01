@@ -10,7 +10,7 @@ type V3Config struct {
 	Description    string
 	Enabled        bool
 	CodeGeneration bool // required for code generation
-	Func           func(doc *libopenapi.DocumentModel[v3.Document]) error
+	Func           func(model *libopenapi.DocumentModel[v3.Document]) error
 }
 
 var V3Patchers = map[string]V3Config{
@@ -76,12 +76,5 @@ var V3Patchers = map[string]V3Config{
 		Enabled:        true,
 		CodeGeneration: true,
 		Func:           MissingSchemaTitle,
-	},
-	"inlineAllOfHierarchies": {
-		ID:             "inlineAllOfHierarchies",
-		Description:    "Inlines properties of allOf-referenced schemas and removes allOf-references in schemas",
-		Enabled:        true,
-		CodeGeneration: true,
-		Func:           InlineAllOfHierarchies,
 	},
 }

@@ -13,3 +13,7 @@ openapi.*.yaml
 
 #vscode
 .vscode
+
+#varia
+*.patch
+
