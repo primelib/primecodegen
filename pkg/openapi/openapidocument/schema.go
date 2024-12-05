@@ -23,10 +23,10 @@ func SimplifyPolymorphism(schemaName string, schemaProxy *base.SchemaProxy, sche
 		return nil, nil
 	}
 
-	// merge properties of derived schemas referencing a base schema using allOf into it
+	// merge properties of derived schemata referencing a base schema using allOf into the base schema
 	if len(schema.AllOf) > 0 {
 		for _, schemaRef := range schema.AllOf {
-			err := merge(schemaRef, schema, schemas, "AllOf", schemaName, schemataMap)
+			err := mergeAllOf(schemaRef, schema, schemaName, schemas, schemataMap, "AllOf")
 			if err != nil {
 				return nil, fmt.Errorf("error merging schemas: %w", err)
 			}
@@ -35,10 +35,10 @@ func SimplifyPolymorphism(schemaName string, schemaProxy *base.SchemaProxy, sche
 		schema.AllOf = nil
 	}
 
-	// merge anyOf schemas into base schema
+	// merge properties of derived schemata referenced using anyOf inside a base-schema into the base-schema
 	if len(schema.AnyOf) > 0 {
 		for _, schemaRef := range schema.AnyOf {
-			err := merge(schemaRef, schema, schemas, "AnyOf", schemaName, schemataMap)
+			err := mergeAnyOfOneOf(schemaRef, schema, schemaName, schemas, schemataMap, "AnyOf")
 			if err != nil {
 				return nil, fmt.Errorf("error merging schemas: %w", err)
 			}
@@ -47,10 +47,10 @@ func SimplifyPolymorphism(schemaName string, schemaProxy *base.SchemaProxy, sche
 		schema.AnyOf = nil
 	}
 
-	// merge OneOf schemas into base schema
+	// merge properties of derived schemata referenced using oneOf inside a base-schema into the base-schema
 	if len(schema.OneOf) > 0 {
 		for _, schemaRef := range schema.OneOf {
-			err := merge(schemaRef, schema, schemas, "OneOf", schemaName, schemataMap)
+			err := mergeAnyOfOneOf(schemaRef, schema, schemaName, schemas, schemataMap, "OneOf")
 			if err != nil {
 				return nil, fmt.Errorf("error merging schemas: %w", err)
 			}
@@ -103,6 +103,7 @@ func MergeSchema(result *base.Schema, override *base.Schema) (*base.Schema, erro
 			result.Type = append(result.Type, override.Type...)
 		}
 	}
+	// AllOf: Copy props from derived schemas (defining allOf refs) into referenced schemas
 	if len(override.AllOf) > 0 {
 		for _, subSchemaSP := range override.AllOf {
 			err := copyPropertiesIntoBaseSchema(result, subSchemaSP)
@@ -111,19 +112,21 @@ func MergeSchema(result *base.Schema, override *base.Schema) (*base.Schema, erro
 			}
 		}
 	}
-	if len(override.AnyOf) > 0 {
-		for _, subSchemaSP := range override.AnyOf {
+	// AnyOf, OneOf: Copy props from referenced schemas into "this" schema defining one/anyOf refs
+	if len(result.AnyOf) > 0 {
+		for _, subSchemaSP := range result.AnyOf {
 			err := copyPropertiesIntoBaseSchema(result, subSchemaSP)
 			if err != nil {
-				return nil, fmt.Errorf("error copying properties from derived schema into base schemas: %w", err)
+				return nil, fmt.Errorf("error copying properties from one/anyOf referenced schema into base schema: %w", err)
 			}
 		}
 	}
-	if len(override.OneOf) > 0 {
-		for _, subSchemaSP := range override.OneOf {
+	// see above AnyOf ...
+	if len(result.OneOf) > 0 {
+		for _, subSchemaSP := range result.OneOf {
 			err := copyPropertiesIntoBaseSchema(result, subSchemaSP)
 			if err != nil {
-				return nil, fmt.Errorf("error copying properties from derived schema into base schemas: %w", err)
+				return nil, fmt.Errorf("error copying properties from one/anyOf referenced schema into base schema: %w", err)
 			}
 		}
 	}
@@ -202,11 +205,10 @@ func MergeSchema(result *base.Schema, override *base.Schema) (*base.Schema, erro
 			log.Trace().Str("key", op.Key).Interface("value", string(bytes)).Msg("Properties: ")
 		}
 		if result.Properties == nil {
-			result.Properties = override.Properties
-		} else {
-			for op := override.Properties.Oldest(); op != nil; op = op.Next() {
-				result.Properties.Set(op.Key, op.Value)
-			}
+			result.Properties = orderedmap.New[string, *base.SchemaProxy]()
+		}
+		for op := override.Properties.Oldest(); op != nil; op = op.Next() {
+			result.Properties.Set(op.Key, op.Value)
 		}
 	}
 	if override.Title != "" {
@@ -400,7 +402,7 @@ func IsPolypmorphicSchema(s *base.Schema) bool {
 	return false
 }
 
-func merge(schemaRef *base.SchemaProxy, schema *base.Schema, schemas *orderedmap.Map[string, *base.SchemaProxy], polymorphicRel string, derivedSchemaName string, schemataMap map[string]string) error {
+func mergeAllOf(schemaRef *base.SchemaProxy, schema *base.Schema, derivedSchemaName string, schemas *orderedmap.Map[string, *base.SchemaProxy], schemataMap map[string]string, polymorphicRel string) error {
 	reference := schemaRef.GetReference()
 	if reference != "" {
 		baseSchemaName, _ := getSchemaNameFromLocalReference(reference)
@@ -419,6 +421,34 @@ func merge(schemaRef *base.SchemaProxy, schema *base.Schema, schemas *orderedmap
 			log.Trace().Str("schema", baseSchemaName).Str("rendered", string(renderedUpdatedBaseSchema)).Msg("Updated base")
 			schemas.Set(baseSchemaName, base.CreateSchemaProxy(mergedBaseSchema))
 			schemataMap[derivedSchemaName] = baseSchemaName
+		}
+	}
+
+	return nil
+}
+
+func mergeAnyOfOneOf(schemaRef *base.SchemaProxy, baseSchema *base.Schema, baseSchemaName string, schemas *orderedmap.Map[string, *base.SchemaProxy], schemataMap map[string]string, polymorphicRel string) error {
+	reference := schemaRef.GetReference()
+	if reference != "" {
+		composedSchemaName, _ := getSchemaNameFromLocalReference(reference)
+		composedSP, present := schemas.Get(composedSchemaName)
+		composedSchema, err := composedSP.BuildSchema()
+		if err != nil {
+			return fmt.Errorf("error building schema: %w", err)
+		}
+		if !present {
+			log.Fatal().Str("schema", composedSchemaName).Msg("base schema is missing in model")
+		} else {
+			log.Debug().Str("schema", polymorphicRel).Str("into base schema ref", baseSchemaName).Msg("merging derived")
+			mergedBaseSchema, err := MergeSchema(baseSchema, composedSchema)
+			if err != nil {
+				return fmt.Errorf("error merging %s schema into base schema: %w", polymorphicRel, err)
+			}
+			// update model
+			renderedUpdatedBaseSchema, _ := mergedBaseSchema.Render()
+			log.Trace().Str("schema", baseSchemaName).Str("rendered", string(renderedUpdatedBaseSchema)).Msg("Updated base")
+			schemas.Set(baseSchemaName, base.CreateSchemaProxy(mergedBaseSchema))
+			schemataMap[composedSchemaName] = baseSchemaName
 		}
 	}
 

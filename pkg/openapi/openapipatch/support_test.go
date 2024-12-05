@@ -156,7 +156,7 @@ func TestMergePolymorphicSchemas(t *testing.T) {
                     type: string
                     description: Description G
                   propertyH: 
-                      $ref: '#/components/schemas/DerivedSchemaAny'                    
+                      $ref: '#/components/schemas/BaseSchemaAnyOf'                    
             DerivedSchemaAllOf:
                 allOf:
                     - $ref: '#/components/schemas/BaseSchemaA'
@@ -164,7 +164,7 @@ func TestMergePolymorphicSchemas(t *testing.T) {
                         additionalPropertyC:
                           type: string
                           description: Description C
-            DerivedSchemaOneOf:
+            BaseSchemaOneOf:
                 oneOf:
                     - $ref: '#/components/schemas/BaseSchemaA'
                     - $ref: '#/components/schemas/BaseSchemaB'
@@ -172,7 +172,7 @@ func TestMergePolymorphicSchemas(t *testing.T) {
                         additionalPropertyD:
                           type: string
                           description: Description D
-            DerivedSchemaAny:
+            BaseSchemaAnyOf:
                 anyOf:
                     - $ref: '#/components/schemas/BaseSchemaA'
                     - $ref: '#/components/schemas/BaseSchemaB'                    
@@ -197,15 +197,20 @@ func TestMergePolymorphicSchemas(t *testing.T) {
 	_, document, v3model, errors := document.RenderAndReload()
 	assert.Equal(t, 0, len(errors))
 
-	propsBaseAToCheck := []string{"propertyA", "propertyB", "additionalPropertyC", "additionalPropertyD", "additionalPropertyE"}
-	propsBaseBToCheck := []string{"propertyF", "propertyG", "propertyH", "additionalPropertyD", "additionalPropertyE"}
+	// renderedBytes, _ := v3Model.Model.Components.Render()
+	// t.Logf("Simplifyed Schema: %s", string(renderedBytes))
+
+	propsBaseAToCheck := []string{"propertyA", "propertyB", "additionalPropertyC"}
+	propsBaseBToCheck := []string{"propertyF", "propertyG", "propertyH"}
+	propsDerivedSchemaOneOfToCheck := []string{"propertyA", "propertyB", "additionalPropertyC", "propertyF", "propertyG", "propertyH", "additionalPropertyD"}
+	propsDerivedSchemaAnyOfToCheck := []string{"propertyA", "propertyB", "additionalPropertyC", "propertyF", "propertyG", "propertyH", "additionalPropertyE"}
 
 	_, present := v3model.Model.Components.Schemas.Get("DerivedSchemaAllOf")
 	assert.False(t, present)
-	_, present = v3model.Model.Components.Schemas.Get("DerivedSchemaOneOf")
-	assert.False(t, present)
-	_, present = v3model.Model.Components.Schemas.Get("DerivedSchemaAnyOf")
-	assert.False(t, present)
+	_, present = v3model.Model.Components.Schemas.Get("BaseSchemaOneOf")
+	assert.True(t, present)
+	_, present = v3model.Model.Components.Schemas.Get("BaseSchemaAnyOf")
+	assert.True(t, present)
 
 	for schemaMapEntry := v3model.Model.Components.Schemas.Oldest(); schemaMapEntry != nil; schemaMapEntry = schemaMapEntry.Next() {
 		schema, err := schemaMapEntry.Value.BuildSchema()
@@ -216,7 +221,8 @@ func TestMergePolymorphicSchemas(t *testing.T) {
 		assert.Nil(t, schema.OneOf, "oneOf references should be deleted")
 
 		if schemaMapEntry.Key == "BaseSchemaA" {
-			assert.Equal(t, 5, schema.Properties.Len())
+
+			assert.Equal(t, 3, schema.Properties.Len())
 
 			for _, prop := range propsBaseAToCheck {
 				_, exists := schema.Properties.Get(prop)
@@ -224,16 +230,40 @@ func TestMergePolymorphicSchemas(t *testing.T) {
 			}
 		}
 		if schemaMapEntry.Key == "BaseSchemaB" {
-			assert.Equal(t, 5, schema.Properties.Len())
+
+			assert.Equal(t, 3, schema.Properties.Len())
 
 			for _, prop := range propsBaseBToCheck {
 				propSP, exists := schema.Properties.Get(prop)
 				assert.True(t, exists, "Property \"%s\" is missing!", prop)
 				if prop == "propertyH" {
-					assert.Equal(t, "#/components/schemas/BaseSchemaB", propSP.GetReference())
+					assert.Equal(t, "#/components/schemas/BaseSchemaAnyOf", propSP.GetReference())
 				}
 			}
+		}
+		if schemaMapEntry.Key == "BaseSchemaOneOf" {
 
+			assert.Equal(t, 7, schema.Properties.Len())
+
+			for _, prop := range propsDerivedSchemaOneOfToCheck {
+				propSP, exists := schema.Properties.Get(prop)
+				assert.True(t, exists, "Property \"%s\" is missing!", prop)
+				if prop == "propertyH" {
+					assert.Equal(t, "#/components/schemas/BaseSchemaAnyOf", propSP.GetReference())
+				}
+			}
+		}
+		if schemaMapEntry.Key == "BaseSchemaAnyOf" {
+
+			assert.Equal(t, 7, schema.Properties.Len())
+
+			for _, prop := range propsDerivedSchemaAnyOfToCheck {
+				propSP, exists := schema.Properties.Get(prop)
+				assert.True(t, exists, "Property \"%s\" is missing!", prop)
+				if prop == "propertyH" {
+					assert.Equal(t, "#/components/schemas/BaseSchemaAnyOf", propSP.GetReference())
+				}
+			}
 		}
 	}
 }
