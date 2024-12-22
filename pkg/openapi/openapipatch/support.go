@@ -61,8 +61,7 @@ func MergePolymorphicProperties(v3Model *libopenapi.DocumentModel[v3.Document]) 
 /* TODO: Handle polymorphic
 responses,
 request bodies,
-parameter definitions,
-headers
+parameter definitions
 */
 
 // MissingSchemaTitle fills in missing schema titles with the schema key
