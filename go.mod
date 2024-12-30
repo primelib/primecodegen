@@ -6,6 +6,7 @@ toolchain go1.23.1
 
 require (
 	github.com/bluekeyes/go-gitdiff v0.8.0
+	github.com/cidverse/cidverseutils/core v0.0.0-20241219211714-77ae5cef4073
 	github.com/cidverse/cidverseutils/zerologconfig v0.1.0
 	github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf
 	github.com/evanphx/json-patch/v5 v5.9.0
@@ -14,7 +15,7 @@ require (
 	github.com/pb33f/libopenapi v0.18.3
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -37,7 +38,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.9-0.20240815153524-6ea36470d1bd // indirect
-	golang.org/x/net v0.30.0 // indirect
-	golang.org/x/sys v0.26.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
