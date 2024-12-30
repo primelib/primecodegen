@@ -11,9 +11,8 @@ output/*
 # test files
 openapi.*.yaml
 
-#vscode
+# vscode
 .vscode
 
-#varia
+# varia
 *.patch
-

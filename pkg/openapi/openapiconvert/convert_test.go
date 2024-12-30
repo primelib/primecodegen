@@ -12,12 +12,11 @@ func TestConvertSwaggerToOpenAPI(t *testing.T) {
 	httpmock.Activate()
 	t.Cleanup(httpmock.DeactivateAndReset)
 
-	httpmock.RegisterResponder("POST", converterEndpoint,
-		httpmock.NewStringResponder(200, `{"openapi": "3.0.0"}`))
+	httpmock.RegisterResponder("POST", converterEndpoint, httpmock.NewStringResponder(200, `{"openapi": "3.0.0"}`))
 	swaggerData := []byte(`{"swagger": "2.0"}`)
 
 	// act
-	result, err := ConvertSwaggerToOpenAPI(swaggerData, "")
+	result, err := ConvertSwaggerToOpenAPI30(swaggerData, "")
 
 	// assert
 	assert.NoError(t, err)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
+	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/rs/zerolog/log"
 )
 
@@ -81,4 +82,13 @@ func RenderDocumentFile(doc libopenapi.Document, file string) error {
 		return fmt.Errorf("failed to write document to file: %w", err)
 	}
 	return nil
+}
+
+func RenderV3Document(doc *libopenapi.DocumentModel[v3.Document]) ([]byte, error) {
+	bytes, err := doc.Model.Render()
+	if err != nil {
+		return nil, fmt.Errorf("failed to render document model: %w", err)
+	}
+
+	return bytes, nil
 }

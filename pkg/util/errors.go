@@ -9,6 +9,7 @@ var (
 	ErrNoFilesSpecified       = fmt.Errorf("no files specified")
 	ErrDocumentMerge          = fmt.Errorf("failed to merge documents")
 	ErrFailedToPatchDocument  = fmt.Errorf("failed to patch document")
+	ErrRenderDocument         = fmt.Errorf("failed to render document")
 	ErrGenerateOpenAPIV3Model = fmt.Errorf("failed to generate openapi v3 model")
 	ErrWriteDocumentToFile    = fmt.Errorf("failed to write document to file")
 	ErrWriteDocumentToStdout  = fmt.Errorf("failed to write document to stdout")

@@ -197,9 +197,6 @@ func TestMergePolymorphicSchemas(t *testing.T) {
 	_, document, v3model, errors := document.RenderAndReload()
 	assert.Equal(t, 0, len(errors))
 
-	// renderedBytes, _ := v3Model.Model.Components.Render()
-	// t.Logf("Simplifyed Schema: %s", string(renderedBytes))
-
 	propsBaseAToCheck := []string{"propertyA", "propertyB", "additionalPropertyC"}
 	propsBaseBToCheck := []string{"propertyF", "propertyG", "propertyH"}
 	propsDerivedSchemaOneOfToCheck := []string{"propertyA", "propertyB", "additionalPropertyC", "propertyF", "propertyG", "propertyH", "additionalPropertyD"}
@@ -221,7 +218,6 @@ func TestMergePolymorphicSchemas(t *testing.T) {
 		assert.Nil(t, schema.OneOf, "oneOf references should be deleted")
 
 		if schemaMapEntry.Key == "BaseSchemaA" {
-
 			assert.Equal(t, 3, schema.Properties.Len())
 
 			for _, prop := range propsBaseAToCheck {
@@ -230,7 +226,6 @@ func TestMergePolymorphicSchemas(t *testing.T) {
 			}
 		}
 		if schemaMapEntry.Key == "BaseSchemaB" {
-
 			assert.Equal(t, 3, schema.Properties.Len())
 
 			for _, prop := range propsBaseBToCheck {
@@ -242,7 +237,6 @@ func TestMergePolymorphicSchemas(t *testing.T) {
 			}
 		}
 		if schemaMapEntry.Key == "BaseSchemaOneOf" {
-
 			assert.Equal(t, 7, schema.Properties.Len())
 
 			for _, prop := range propsDerivedSchemaOneOfToCheck {
@@ -254,7 +248,6 @@ func TestMergePolymorphicSchemas(t *testing.T) {
 			}
 		}
 		if schemaMapEntry.Key == "BaseSchemaAnyOf" {
-
 			assert.Equal(t, 7, schema.Properties.Len())
 
 			for _, prop := range propsDerivedSchemaAnyOfToCheck {

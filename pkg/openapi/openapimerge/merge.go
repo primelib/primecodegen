@@ -1,63 +1,73 @@
 package openapimerge
 
 import (
+	"errors"
 	"fmt"
-	"github.com/cidverse/cidverseutils/filesystem"
 	"os"
+	"strings"
+
+	"github.com/primelib/primecodegen/pkg/util"
 
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/rs/zerolog/log"
-
-	str "strings"
 )
 
-// MergeOpenAPISpecs merges multiple OpenAPI specs into a single OpenAPI spec
-func MergeOpenAPISpecs(emptySpec string, paths []string) (*libopenapi.DocumentModel[v3.Document], error) {
-	var mergedSpec *libopenapi.DocumentModel[v3.Document]
+// MergeOpenAPI3Files merges multiple OpenAPI specs into a single OpenAPI spec
+func MergeOpenAPI3Files(paths []string) (*libopenapi.DocumentModel[v3.Document], error) {
+	var specs [][]byte
 
 	for _, path := range paths {
-		// Load OpenAPI spec file
-		bytes, err := os.ReadFile(path)
+		spec, err := os.ReadFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read file %s: %w", path, err)
 		}
-		// Parse OpenAPI spec
-		doc, err := openapidocument.OpenDocument(bytes)
+		specs = append(specs, spec)
+	}
+
+	return MergeOpenAPI3(specs)
+}
+
+// MergeOpenAPI3 merges multiple OpenAPI specs into a single OpenAPI spec
+func MergeOpenAPI3(specs [][]byte) (*libopenapi.DocumentModel[v3.Document], error) {
+	var mergedSpec *libopenapi.DocumentModel[v3.Document]
+
+	for _, spec := range specs {
+		// open document
+		doc, err := openapidocument.OpenDocument(spec)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to open document")
 		}
+
+		// build v3 model
 		v3Model, errs := doc.BuildV3Model()
 		if len(errs) > 0 {
-			log.Fatal().Errs("spec", errs).Msgf("failed to build v3 high level model")
+			return mergedSpec, errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
 		}
-		// Initialize mergedSpec if it is nil
+
+		// use the first document as the base
 		if mergedSpec == nil {
-			if emptySpec != "" && filesystem.FileExists(emptySpec) {
-				log.Trace().Str("filepath", emptySpec).Msg("Creating empty doc model from empty spec in")
-				// Empty OpenAPI spec from file (for clean info-block build-up)
-				_, mergedSpec, _ = CreateEmptySpec(emptySpec)
-			} else {
-				mergedSpec = v3Model
-			}
+			mergedSpec = v3Model
+			continue
 		}
-		// Merge OpenAPI elements
+
+		// merge elements
 		mergeInfo(&mergedSpec.Model, &v3Model.Model)
 		mergeServers(&mergedSpec.Model, &v3Model.Model)
 		mergeTags(&mergedSpec.Model, &v3Model.Model)
 		mergePaths(&mergedSpec.Model, &v3Model.Model)
 		mergeComponents(&mergedSpec.Model, &v3Model.Model)
 
-		// Reload document
+		// reload document
 		_, doc, _, errs = doc.RenderAndReload()
 		if len(errs) > 0 {
-			log.Error().Errs("spec", errs).Msgf("failed to reload document after patching")
+			return mergedSpec, errors.Join(util.ErrRenderDocument, errors.Join(errs...))
 		}
 		v3Model, errs = doc.BuildV3Model()
 		if len(errs) > 0 {
-			log.Error().Errs("spec", errs).Msgf("failed to build v3 high level model")
+			return mergedSpec, errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
 		}
 	}
 
@@ -81,35 +91,35 @@ func mergeInfo(dest, src *v3.Document) {
 	}
 	if src.Info.Summary != "" {
 		if dest.Info.Summary != "" {
-			dest.Info.Summary = dest.Info.Summary + "\n\n" + str.ToUpper(src.Info.Title) + ": " + src.Info.Summary
+			dest.Info.Summary = dest.Info.Summary + "\n\n" + strings.ToUpper(src.Info.Title) + ": " + src.Info.Summary
 		} else {
-			dest.Info.Summary = str.ToUpper(src.Info.Title) + ": " + src.Info.Summary
+			dest.Info.Summary = strings.ToUpper(src.Info.Title) + ": " + src.Info.Summary
 		}
 	}
 	if src.Info.Description != "" {
 		if dest.Info.Description != "" {
-			dest.Info.Description = dest.Info.Description + "\n\n" + str.ToUpper(src.Info.Title) + " \n\n" + src.Info.Description
+			dest.Info.Description = dest.Info.Description + "\n\n" + strings.ToUpper(src.Info.Title) + " \n\n" + src.Info.Description
 		} else {
-			dest.Info.Description = str.ToUpper(src.Info.Title) + " \n\n" + src.Info.Description
+			dest.Info.Description = strings.ToUpper(src.Info.Title) + " \n\n" + src.Info.Description
 		}
 	}
 	if src.Info.TermsOfService != "" {
 		if dest.Info.TermsOfService != "" {
-			dest.Info.TermsOfService = dest.Info.TermsOfService + "\n\n" + str.ToUpper(src.Info.Title) + " \n\n" + src.Info.TermsOfService
+			dest.Info.TermsOfService = dest.Info.TermsOfService + "\n\n" + strings.ToUpper(src.Info.Title) + " \n\n" + src.Info.TermsOfService
 		} else {
-			dest.Info.TermsOfService = str.ToUpper(src.Info.Title) + " \n\n" + src.Info.TermsOfService
+			dest.Info.TermsOfService = strings.ToUpper(src.Info.Title) + " \n\n" + src.Info.TermsOfService
 		}
 	}
 	if src.Info.Contact != nil {
 		if dest.Info.Contact != nil {
-			dest.Info.Contact.Name = dest.Info.Contact.Name + "\n" + str.ToUpper(src.Info.Title) + ": " + src.Info.Contact.Name
-			dest.Info.Contact.Email = dest.Info.Contact.Email + "\n" + str.ToUpper(src.Info.Title) + ": " + src.Info.Contact.Email
-			dest.Info.Contact.URL = dest.Info.Contact.URL + "\n" + str.ToUpper(src.Info.Title) + ": " + src.Info.Contact.URL
+			dest.Info.Contact.Name = dest.Info.Contact.Name + "\n" + strings.ToUpper(src.Info.Title) + ": " + src.Info.Contact.Name
+			dest.Info.Contact.Email = dest.Info.Contact.Email + "\n" + strings.ToUpper(src.Info.Title) + ": " + src.Info.Contact.Email
+			dest.Info.Contact.URL = dest.Info.Contact.URL + "\n" + strings.ToUpper(src.Info.Title) + ": " + src.Info.Contact.URL
 		} else {
 			dest.Info.Contact = &base.Contact{
-				Name:  str.ToUpper(src.Info.Title) + ": " + src.Info.Contact.Name,
-				Email: str.ToUpper(src.Info.Title) + ": " + src.Info.Contact.Email,
-				URL:   str.ToUpper(src.Info.Title) + ": " + src.Info.Contact.URL,
+				Name:  strings.ToUpper(src.Info.Title) + ": " + src.Info.Contact.Name,
+				Email: strings.ToUpper(src.Info.Title) + ": " + src.Info.Contact.Email,
+				URL:   strings.ToUpper(src.Info.Title) + ": " + src.Info.Contact.URL,
 			}
 		}
 	}
@@ -276,32 +286,4 @@ func mergeComponents(dest, src *v3.Document) {
 		dest.Components = src.Components
 		return
 	}
-}
-
-// Create an empty OpenAPI spec to be filled with specs to be merged
-func CreateEmptySpec(path string) (libopenapi.Document, *libopenapi.DocumentModel[v3.Document], error) {
-	_, error := os.Stat(path)
-	if os.IsNotExist(error) {
-		return nil, nil, fmt.Errorf("file does not exist %s", path)
-	}
-	// Load the OpenAPI spec file
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read file %s: %w", path, err)
-	}
-	// Parse the OpenAPI spec
-	doc, err := openapidocument.OpenDocument(bytes)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to open document")
-	}
-	v3Model, errors := doc.BuildV3Model()
-	// if anything went wrong when building the v3 model, a slice of errors will be returned
-	if len(errors) > 0 {
-		for i := range errors {
-			fmt.Printf("error: %e\n", errors[i])
-		}
-		panic(fmt.Sprintf("cannot create v3 model from document: %d errors reported", len(errors)))
-	}
-
-	return doc, v3Model, nil
 }

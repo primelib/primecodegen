@@ -10,7 +10,7 @@ type V3Config struct {
 	Description    string
 	Enabled        bool
 	CodeGeneration bool // required for code generation
-	Func           func(model *libopenapi.DocumentModel[v3.Document]) error
+	Func           func(doc *libopenapi.DocumentModel[v3.Document]) error
 }
 
 var V3Patchers = map[string]V3Config{

@@ -57,7 +57,7 @@ func runPatchCmd(inputFiles []string, output string, patches []string, patchFile
 	}
 	output = util.ResolvePath(output)
 
-	// Check for pre-merge patches and apply them
+	// apply pre-merge patches - TODO: flag to control pre-post application of patches
 	_, patches, inputFiles, err := applyPreMergePatches(inputFiles, output, patches)
 	if err != nil {
 		return "", errors.Join(util.ErrDocumentMerge, err)
@@ -131,7 +131,7 @@ func applyPreMergePatches(inputFiles []string, output string, patches []string) 
 	return "", patches, inputFiles, nil
 }
 
-// For each spec replace all operation tags with a tag generated from the spec title
+// For each spec replace all operation tags with a tag generated from the spec title - TODO: move this + applyPreMergePatches into openapipatch
 func createOperationTagsFromDocTitle(inputFiles []string, output string, patches []string, patch string) (string, []string, []string, error) {
 	var resultFiles []string
 

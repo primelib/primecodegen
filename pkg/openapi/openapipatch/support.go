@@ -15,20 +15,20 @@ import (
 
 // MergePolymorphicSchemas merges polymorphic schemas (anyOf, oneOf, allOf) into a single flat schema
 func MergePolymorphicSchemas(v3Model *libopenapi.DocumentModel[v3.Document]) error {
-
 	// Remember derived schemata (key) to be replaced by their base schemata (value)
 	derivedSchemaReplacementMap := make(map[string]string)
 
 	// component schemas
 	for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-
-		log.Debug().Str("components.schema", schema.Key).Msg("merging ")
+		log.Debug().Str("components.schema", schema.Key).Msg("merging")
 		var err error
 		schema.Value, err = openapidocument.SimplifyPolymorphism(schema.Key, schema.Value, v3Model.Model.Components.Schemas, derivedSchemaReplacementMap)
 		if err != nil {
 			return err
 		}
 	}
+
+	// TODO: Handle polymorphic responses, request bodies, parameter definitions
 
 	// Delete empty schemas
 	deleteEmptySchemas(v3Model, derivedSchemaReplacementMap)
@@ -58,12 +58,6 @@ func MergePolymorphicProperties(v3Model *libopenapi.DocumentModel[v3.Document]) 
 	return nil
 }
 
-/* TODO: Handle polymorphic
-responses,
-request bodies,
-parameter definitions
-*/
-
 // MissingSchemaTitle fills in missing schema titles with the schema key
 func MissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document]) error {
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
@@ -79,17 +73,24 @@ func MissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document]) error {
 // CreateOperationTagsFromDocTitle removes all tags and creates one new tag per API spec doc from document title setting it on each operation.
 // Note: This patch must be applied before merging specs.
 func CreateOperationTagsFromDocTitle(doc *libopenapi.DocumentModel[v3.Document]) error {
-	doc.Model.Tags = nil
-	PruneOperationTags(doc)
-	documenttag := doc.Model.Info.Title
-	doc.Model.Tags = append(doc.Model.Tags, &base.Tag{Name: documenttag, Description: "See document description"})
+	err := PruneDocumentTags(doc)
+	if err != nil {
+		return err
+	}
+	err = PruneOperationTags(doc)
+	if err != nil {
+		return err
+	}
+
+	specTitle := openapidocument.SpecTitle(doc, "default")
+	doc.Model.Tags = append(doc.Model.Tags, &base.Tag{Name: specTitle, Description: "See document description"})
 
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 			if len(op.Value.Tags) == 0 {
 				// add default tag, if missing
-				log.Trace().Str("path", strings.ToUpper(op.Key)+" "+path.Key).Str("tag", documenttag).Msg("operation is missing tags, adding default tag:")
-				op.Value.Tags = append(op.Value.Tags, documenttag)
+				log.Trace().Str("path", strings.ToUpper(op.Key)+" "+path.Key).Str("tag", specTitle).Msg("operation is missing tags, adding default tag:")
+				op.Value.Tags = append(op.Value.Tags, specTitle)
 			} else {
 				log.Warn().Strs("Operation Tag", op.Value.Tags).Msg("Found non-empty operation tag - ")
 			}
@@ -125,6 +126,11 @@ func FixOperationTags(doc *libopenapi.DocumentModel[v3.Document]) error {
 		}
 	}
 
+	return nil
+}
+
+func PruneDocumentTags(doc *libopenapi.DocumentModel[v3.Document]) error {
+	doc.Model.Tags = nil
 	return nil
 }
 
@@ -265,7 +271,6 @@ func isEmptySchema(schema *base.Schema) bool {
 
 // Replace refs to schemas merged into their base-schemas with refs to these base-schemas everywhere
 func replaceEmptySchemaRefsByBaseSchemaRefs(derivedEmptySchema string, baseSchemaReplacement string, v3Model *libopenapi.DocumentModel[v3.Document]) error {
-
 	derivedEmptySchemaRef := "#/components/schemas/" + derivedEmptySchema
 	baseSchemaReplacementRef := "#/components/schemas/" + baseSchemaReplacement
 
