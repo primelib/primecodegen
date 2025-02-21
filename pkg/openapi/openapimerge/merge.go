@@ -6,16 +6,20 @@ import (
 	"os"
 	"strings"
 
-	"github.com/primelib/primecodegen/pkg/util"
-
+	"github.com/cidverse/go-ptr"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
+	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 )
 
-// MergeOpenAPI3Files merges multiple OpenAPI specs into a single OpenAPI spec
+var (
+	ErrOpenAPICrossVersionMergeUnsupported = fmt.Errorf("cross-version merge for openapi specs is not supported")
+)
+
+// MergeOpenAPI3Files merges multiple OpenAPI spec files into a single OpenAPI document
 func MergeOpenAPI3Files(paths []string) (*libopenapi.DocumentModel[v3.Document], error) {
 	var specs [][]byte
 
@@ -32,7 +36,8 @@ func MergeOpenAPI3Files(paths []string) (*libopenapi.DocumentModel[v3.Document],
 
 // MergeOpenAPI3 merges multiple OpenAPI specs into a single OpenAPI spec
 func MergeOpenAPI3(specs [][]byte) (*libopenapi.DocumentModel[v3.Document], error) {
-	var mergedSpec *libopenapi.DocumentModel[v3.Document]
+	var mergedSpec = ptr.Ptr(openapidocument.EmptyDocument())
+	specVersion := ""
 
 	for _, spec := range specs {
 		// open document
@@ -41,16 +46,16 @@ func MergeOpenAPI3(specs [][]byte) (*libopenapi.DocumentModel[v3.Document], erro
 			log.Fatal().Err(err).Msg("failed to open document")
 		}
 
+		if specVersion == "" {
+			specVersion = doc.GetVersion()
+		} else if specVersion != doc.GetVersion() {
+			return mergedSpec, errors.Join(ErrOpenAPICrossVersionMergeUnsupported, fmt.Errorf("spec version mismatch: %s != %s", specVersion, doc.GetVersion()))
+		}
+
 		// build v3 model
 		v3Model, errs := doc.BuildV3Model()
 		if len(errs) > 0 {
 			return mergedSpec, errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
-		}
-
-		// use the first document as the base
-		if mergedSpec == nil {
-			mergedSpec = v3Model
-			continue
 		}
 
 		// merge elements
@@ -75,66 +80,36 @@ func MergeOpenAPI3(specs [][]byte) (*libopenapi.DocumentModel[v3.Document], erro
 }
 
 func mergeInfo(dest, src *v3.Document) {
-	if src.Info.Title != "" {
-		if dest.Info.Title != "" {
-			dest.Info.Title = dest.Info.Title + ", " + src.Info.Title
-		} else {
-			dest.Info.Title = src.Info.Title
-		}
+	if src.Info == nil {
+		return
 	}
-	if src.Info.Version != "" {
-		if dest.Info.Version != "" {
-			dest.Info.Version = dest.Info.Version + "\n" + src.Info.Version + " (" + src.Info.Title + ")"
-		} else {
-			dest.Info.Version = src.Info.Version + " (" + src.Info.Title + ")"
-		}
+	if dest.Info == nil {
+		dest.Info = &base.Info{}
 	}
-	if src.Info.Summary != "" {
-		if dest.Info.Summary != "" {
-			dest.Info.Summary = dest.Info.Summary + "\n\n" + strings.ToUpper(src.Info.Title) + ": " + src.Info.Summary
-		} else {
-			dest.Info.Summary = strings.ToUpper(src.Info.Title) + ": " + src.Info.Summary
-		}
-	}
-	if src.Info.Description != "" {
-		if dest.Info.Description != "" {
-			dest.Info.Description = dest.Info.Description + "\n\n" + strings.ToUpper(src.Info.Title) + " \n\n" + src.Info.Description
-		} else {
-			dest.Info.Description = strings.ToUpper(src.Info.Title) + " \n\n" + src.Info.Description
-		}
-	}
-	if src.Info.TermsOfService != "" {
-		if dest.Info.TermsOfService != "" {
-			dest.Info.TermsOfService = dest.Info.TermsOfService + "\n\n" + strings.ToUpper(src.Info.Title) + " \n\n" + src.Info.TermsOfService
-		} else {
-			dest.Info.TermsOfService = strings.ToUpper(src.Info.Title) + " \n\n" + src.Info.TermsOfService
-		}
-	}
+
+	titleUpper := strings.ToUpper(src.Info.Title)
+	util.AppendOrSetString(&dest.Info.Title, src.Info.Title, "", ", ")
+	util.AppendOrSetString(&dest.Info.Version, src.Info.Version, "("+src.Info.Title+") ", "\n")
+	util.AppendOrSetString(&dest.Info.Summary, src.Info.Summary, titleUpper+": ", "\n\n")
+	util.AppendOrSetString(&dest.Info.Description, src.Info.Description, "# "+titleUpper+"\n\n", "\n\n")
+	util.AppendOrSetString(&dest.Info.TermsOfService, src.Info.TermsOfService, titleUpper+"\n\n", "\n\n")
+
 	if src.Info.Contact != nil {
-		if dest.Info.Contact != nil {
-			dest.Info.Contact.Name = dest.Info.Contact.Name + "\n" + strings.ToUpper(src.Info.Title) + ": " + src.Info.Contact.Name
-			dest.Info.Contact.Email = dest.Info.Contact.Email + "\n" + strings.ToUpper(src.Info.Title) + ": " + src.Info.Contact.Email
-			dest.Info.Contact.URL = dest.Info.Contact.URL + "\n" + strings.ToUpper(src.Info.Title) + ": " + src.Info.Contact.URL
-		} else {
-			dest.Info.Contact = &base.Contact{
-				Name:  strings.ToUpper(src.Info.Title) + ": " + src.Info.Contact.Name,
-				Email: strings.ToUpper(src.Info.Title) + ": " + src.Info.Contact.Email,
-				URL:   strings.ToUpper(src.Info.Title) + ": " + src.Info.Contact.URL,
-			}
+		if dest.Info.Contact == nil {
+			dest.Info.Contact = &base.Contact{}
 		}
+		util.AppendOrSetString(&dest.Info.Contact.Name, src.Info.Contact.Name, titleUpper+": ", "\n")
+		util.AppendOrSetString(&dest.Info.Contact.Email, src.Info.Contact.Email, titleUpper+": ", "\n")
+		util.AppendOrSetString(&dest.Info.Contact.URL, src.Info.Contact.URL, titleUpper+": ", "\n")
 	}
+
 	if src.Info.License != nil {
-		if dest.Info.License != nil {
-			dest.Info.License.Name = dest.Info.License.Name + "\n" + src.Info.Title + ": " + src.Info.License.Name
-			dest.Info.License.URL = dest.Info.License.URL + "\n" + src.Info.Title + ": " + src.Info.License.URL
-			dest.Info.License.Identifier = dest.Info.License.Identifier + "\n" + src.Info.Title + ": " + src.Info.License.Identifier
-		} else {
-			dest.Info.License = &base.License{
-				Name:       src.Info.Title + ": " + src.Info.License.Name,
-				URL:        src.Info.Title + ": " + src.Info.License.URL,
-				Identifier: src.Info.Title + ": " + src.Info.License.Identifier,
-			}
+		if dest.Info.License == nil {
+			dest.Info.License = &base.License{}
 		}
+		util.AppendOrSetString(&dest.Info.License.Name, src.Info.License.Name, src.Info.Title+": ", "\n")
+		util.AppendOrSetString(&dest.Info.License.URL, src.Info.License.URL, src.Info.Title+": ", "\n")
+		util.AppendOrSetString(&dest.Info.License.Identifier, src.Info.License.Identifier, src.Info.Title+": ", "\n")
 	}
 }
 
@@ -147,22 +122,22 @@ func mergeTags(dest, src *v3.Document) {
 }
 
 func mergePaths(dest, src *v3.Document) {
-	if src.Paths != nil {
-		if dest.Paths == nil {
-			dest.Paths = src.Paths
-			return
+	if src.Paths == nil {
+		return
+	}
+	if dest.Paths == nil {
+		dest.Paths = src.Paths
+		return
+	}
+
+	for pathItem := src.Paths.PathItems.First(); pathItem != nil; pathItem = pathItem.Next() {
+		pathName, pathValue := pathItem.Key(), pathItem.Value()
+
+		if _, exists := dest.Paths.PathItems.Get(pathName); !exists {
+			dest.Paths.PathItems.Set(pathName, pathValue)
 		} else {
-			for pathairs := src.Paths.PathItems.First(); pathairs != nil; pathairs = pathairs.Next() {
-				pathname := pathairs.Key()
-				pathitem := pathairs.Value()
-				if _, present := dest.Paths.PathItems.Get(pathname); !present {
-					dest.Paths.PathItems.Set(pathname, pathitem)
-				} else {
-					log.Error().Str("mergePaths: Path Item already exists: ", pathname)
-					// TODO: Handle duplicate (rename|prefix)
-				}
-			}
-			return
+			log.Error().Str("path", pathName).Msg("mergePaths: Path Item already exists")
+			// TODO: Handle duplicate (rename | prefix)
 		}
 	}
 }
@@ -171,119 +146,20 @@ func mergeComponents(dest, src *v3.Document) {
 	if src.Components == nil {
 		return
 	}
-	if dest.Components != nil {
-		// Schema
-		for schema := src.Components.Schemas.First(); schema != nil; schema = schema.Next() {
-			schemaname := schema.Key()
-			schemavalue := schema.Value()
-			if _, present := dest.Components.Schemas.Get(schemaname); !present {
-				dest.Components.Schemas.Set(schemaname, schemavalue)
-			} else {
-				log.Error().Str("Schema already exists: ", schemaname)
-				// TODO: Handle duplicate (rename|prefix)
-			}
-		}
-		// Security Schema
-		for securityschema := src.Components.SecuritySchemes.First(); securityschema != nil; securityschema = securityschema.Next() {
-			securityschemaname := securityschema.Key()
-			securityschemavalue := securityschema.Value()
-			if _, present := dest.Components.SecuritySchemes.Get(securityschemaname); !present {
-				dest.Components.SecuritySchemes.Set(securityschemaname, securityschemavalue)
-			} else {
-				log.Error().Str("Security Schema already exists: ", securityschemaname)
-				// TODO: Handle duplicate (rename|prefix)
-			}
-		}
-		// Responses
-		for response := src.Components.Responses.First(); response != nil; response = response.Next() {
-			responsename := response.Key()
-			responsevalue := response.Value()
-			if _, present := dest.Components.Responses.Get(responsename); !present {
-				dest.Components.Responses.Set(responsename, responsevalue)
-			} else {
-				log.Error().Str("Response already exists: ", responsename)
-				// TODO: Handle duplicate (rename|prefix)
-			}
-		}
-		// Parameters
-		for parameter := src.Components.Parameters.First(); parameter != nil; parameter = parameter.Next() {
-			responsename := parameter.Key()
-			responsevalue := parameter.Value()
-			if _, present := dest.Components.Parameters.Get(responsename); !present {
-				dest.Components.Parameters.Set(responsename, responsevalue)
-			} else {
-				log.Error().Str("Parameter already exists: ", responsename)
-				// TODO: Handle duplicate (rename|prefix)
-			}
-		}
-		// Examples
-		for example := src.Components.Examples.First(); example != nil; example = example.Next() {
-			examplename := example.Key()
-			examplevalue := example.Value()
-			if _, present := dest.Components.Examples.Get(examplename); !present {
-				dest.Components.Examples.Set(examplename, examplevalue)
-			} else {
-				log.Error().Str("Example already exists: ", examplename)
-				// TODO: Handle duplicate (rename|prefix)
-			}
-		}
-		// Request Bodies
-		for requestbody := src.Components.RequestBodies.First(); requestbody != nil; requestbody = requestbody.Next() {
-			requestbodyname := requestbody.Key()
-			requestbodyvalue := requestbody.Value()
-			if _, present := dest.Components.RequestBodies.Get(requestbodyname); !present {
-				dest.Components.RequestBodies.Set(requestbodyname, requestbodyvalue)
-			} else {
-				log.Error().Str("Request Body already exists: ", requestbodyname)
-				// TODO: Handle duplicate (rename|prefix)
-			}
-		}
-		// Headers
-		for header := src.Components.Headers.First(); header != nil; header = header.Next() {
-			headername := header.Key()
-			headervalue := header.Value()
-			if _, present := dest.Components.Headers.Get(headername); !present {
-				dest.Components.Headers.Set(headername, headervalue)
-			} else {
-				log.Error().Str("Header already exists: ", headername)
-				// TODO: Handle duplicate (rename|prefix)
-			}
-		}
-		// Links
-		for link := src.Components.Links.First(); link != nil; link = link.Next() {
-			linkname := link.Key()
-			linkvalue := link.Value()
-			if _, present := dest.Components.Links.Get(linkname); !present {
-				dest.Components.Links.Set(linkname, linkvalue)
-			} else {
-				log.Error().Str("Link already exists: ", linkname)
-				// TODO: Handle duplicate (rename|prefix)
-			}
-		}
-		// Callbacks
-		for callback := src.Components.Callbacks.First(); callback != nil; callback = callback.Next() {
-			callbackname := callback.Key()
-			callbackvalue := callback.Value()
-			if _, present := dest.Components.Callbacks.Get(callbackname); !present {
-				dest.Components.Callbacks.Set(callbackname, callbackvalue)
-			} else {
-				log.Error().Str("Callback already exists: ", callbackname)
-				// TODO: Handle duplicate (rename|prefix)
-			}
-		}
-		// Path Items
-		for pathitem := src.Components.PathItems.First(); pathitem != nil; pathitem = pathitem.Next() {
-			pathitemname := pathitem.Key()
-			pathitemvalue := pathitem.Value()
-			if _, present := dest.Components.PathItems.Get(pathitemname); !present {
-				dest.Components.PathItems.Set(pathitemname, pathitemvalue)
-			} else {
-				log.Error().Str("Path Item already exists: ", pathitemname)
-				// TODO: Handle duplicate (rename|prefix)
-			}
-		}
-	} else {
+	if dest.Components == nil {
 		dest.Components = src.Components
 		return
 	}
+
+	// Merge all component types
+	util.MergeComponentMap(dest.Components.Schemas, src.Components.Schemas, "Schema")
+	util.MergeComponentMap(dest.Components.SecuritySchemes, src.Components.SecuritySchemes, "Security Schema")
+	util.MergeComponentMap(dest.Components.Responses, src.Components.Responses, "Response")
+	util.MergeComponentMap(dest.Components.Parameters, src.Components.Parameters, "Parameter")
+	util.MergeComponentMap(dest.Components.Examples, src.Components.Examples, "Example")
+	util.MergeComponentMap(dest.Components.RequestBodies, src.Components.RequestBodies, "Request Body")
+	util.MergeComponentMap(dest.Components.Headers, src.Components.Headers, "Header")
+	util.MergeComponentMap(dest.Components.Links, src.Components.Links, "Link")
+	util.MergeComponentMap(dest.Components.Callbacks, src.Components.Callbacks, "Callback")
+	util.MergeComponentMap(dest.Components.PathItems, src.Components.PathItems, "Path Item")
 }

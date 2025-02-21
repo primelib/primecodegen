@@ -233,7 +233,7 @@ func moveSchemaIntoComponents(doc *libopenapi.DocumentModel[v3.Document], key st
 }
 
 func deleteEmptySchemas(v3Model *libopenapi.DocumentModel[v3.Document], schemataMap map[string]string) {
-	keysForDeletion := []string{}
+	var keysForDeletion []string
 
 	for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
 		log.Trace().Str("components.schema", schema.Key).Msg("checking for empty schemas")
