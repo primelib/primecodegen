@@ -16,10 +16,13 @@ func TestMergeSchema(t *testing.T) {
 		Required:    []string{"name"},
 	}
 
-	err := MergeSchema(base.CreateSchemaProxy(&b), base.CreateSchemaProxy(&ow))
+	mergedSchema, err := MergeSchemaProxy(base.CreateSchemaProxy(&b), base.CreateSchemaProxy(&ow))
 	assert.NoError(t, err)
 
-	assert.Equal(t, ow.Type, b.Type)
+	assert.NotNil(t, mergedSchema)
+	assert.Equal(t, len(ow.Type), 2)
+	assert.Equal(t, len(b.Type), 3)
+	assert.Equal(t, len(mergedSchema.Type), 3)
 	assert.Equal(t, ow.Format, b.Format)
 	assert.Equal(t, ow.Description, b.Description)
 	assert.Equal(t, ow.Required, b.Required)

@@ -13,6 +13,93 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// MergePolymorphicSchemas merges polymorphic schemas (anyOf, oneOf, allOf) into a single flat schema
+func MergePolymorphicSchemas(v3Model *libopenapi.DocumentModel[v3.Document]) error {
+	// Remember derived schemata (key) to be replaced by their base schemata (value)
+	derivedSchemaReplacementMap := make(map[string]string)
+
+	// component schemas
+	for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
+		log.Debug().Str("components.schema", schema.Key).Msg("merging")
+		var err error
+		schema.Value, err = openapidocument.SimplifyPolymorphism(schema.Key, schema.Value, v3Model.Model.Components.Schemas, derivedSchemaReplacementMap)
+		if err != nil {
+			return err
+		}
+	}
+
+	// TODO: Handle polymorphic responses, request bodies, parameter definitions
+
+	// Delete empty schemas
+	deleteEmptySchemas(v3Model, derivedSchemaReplacementMap)
+
+	return nil
+}
+
+// MergePolymorphicProperties merges polymorphic property values (anyOf, oneOf, allOf) into a single flat schema referenced by resp. properties
+func MergePolymorphicProperties(v3Model *libopenapi.DocumentModel[v3.Document]) error {
+	// schema properties
+	for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
+
+		if schema.Value.Schema().Properties != nil {
+			for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
+				/* TODO:
+				Probably new method:
+					A: Iterate over polymorphic properties
+					B: Create a new schema for union of all properties in any-,all- and oneOf referenced schemas
+					C: Iterate over all schema references introduced by any-,all- or oneOf and copy all of their properties into new schema
+					D: Replace polymorphic relation (any-,all-, oneOf) with schema reference to newly created union schema
+				Open: Avoid duplication for identical polymorphic relations in property values
+				*/
+			}
+		}
+	}
+
+	return nil
+}
+
+// MissingSchemaTitle fills in missing schema titles with the schema key
+func MissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document]) error {
+	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
+		if schema.Value.Schema().Title == "" {
+			schema.Value.Schema().Title = schema.Key
+			log.Trace().Str("schema", schema.Key).Msg("missing schema title, setting to schema key")
+		}
+	}
+
+	return nil
+}
+
+// CreateOperationTagsFromDocTitle removes all tags and creates one new tag per API spec doc from document title setting it on each operation.
+// Note: This patch must be applied before merging specs.
+func CreateOperationTagsFromDocTitle(doc *libopenapi.DocumentModel[v3.Document]) error {
+	err := PruneDocumentTags(doc)
+	if err != nil {
+		return err
+	}
+	err = PruneOperationTags(doc)
+	if err != nil {
+		return err
+	}
+
+	specTitle := openapidocument.SpecTitle(doc, "default")
+	doc.Model.Tags = append(doc.Model.Tags, &base.Tag{Name: specTitle, Description: "See document description"})
+
+	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
+		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
+			if len(op.Value.Tags) == 0 {
+				// add default tag, if missing
+				log.Trace().Str("path", strings.ToUpper(op.Key)+" "+path.Key).Str("tag", specTitle).Msg("operation is missing tags, adding default tag:")
+				op.Value.Tags = append(op.Value.Tags, specTitle)
+			} else {
+				log.Warn().Strs("Operation Tag", op.Value.Tags).Msg("Found non-empty operation tag - ")
+			}
+		}
+	}
+
+	return nil
+}
+
 // FixOperationTags ensures all operations have tags, and that tags are documented in the document
 func FixOperationTags(doc *libopenapi.DocumentModel[v3.Document]) error {
 	documentedTags := make(map[string]bool)
@@ -39,6 +126,11 @@ func FixOperationTags(doc *libopenapi.DocumentModel[v3.Document]) error {
 		}
 	}
 
+	return nil
+}
+
+func PruneDocumentTags(doc *libopenapi.DocumentModel[v3.Document]) error {
+	doc.Model.Tags = nil
 	return nil
 }
 
@@ -103,43 +195,6 @@ func GenerateOperationIds(doc *libopenapi.DocumentModel[v3.Document]) error {
 	return nil
 }
 
-// MergePolymorphicSchemas merges polymorphic schemas (anyOf, oneOf, allOf) into a single flat schema
-func MergePolymorphicSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
-	// component schemas
-	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-		// TODO: remove
-		log.Debug().Str("schema", schema.Key).Msg("merging components.schema")
-
-		_, err := openapidocument.SimplifyPolymorphism(schema.Value)
-		if err != nil {
-			return err
-		}
-
-		if schema.Value.Schema().Properties != nil {
-			for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
-				_, propErr := openapidocument.SimplifyPolymorphism(p.Value)
-				if propErr != nil {
-					return propErr
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-// MissingSchemaTitle fills in missing schema titles with the schema key
-func MissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document]) error {
-	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-		if schema.Value.Schema().Title == "" {
-			schema.Value.Schema().Title = schema.Key
-			log.Trace().Str("schema", schema.Key).Msg("missing schema title, setting to schema key")
-		}
-	}
-
-	return nil
-}
-
 // InvalidMaxValue fixes integers and longs, where the maximum value is out of bounds for the type
 func InvalidMaxValue(doc *libopenapi.DocumentModel[v3.Document]) error {
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
@@ -175,4 +230,82 @@ func moveSchemaIntoComponents(doc *libopenapi.DocumentModel[v3.Document], key st
 
 	// return reference to new schema
 	return base.CreateSchemaProxyRef("#/components/schemas/" + key), nil
+}
+
+func deleteEmptySchemas(v3Model *libopenapi.DocumentModel[v3.Document], schemataMap map[string]string) {
+	keysForDeletion := []string{}
+
+	for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
+		log.Trace().Str("components.schema", schema.Key).Msg("checking for empty schemas")
+		value, present := v3Model.Model.Components.Schemas.Get(schema.Key)
+		if !present {
+			continue
+		}
+		if isEmptySchema(value.Schema()) {
+			keysForDeletion = append(keysForDeletion, schema.Key)
+		}
+	}
+	for deleteKeyIdx := range keysForDeletion {
+		derivedSchemaReplacement := schemataMap[keysForDeletion[deleteKeyIdx]]
+		log.Info().Str("key", keysForDeletion[deleteKeyIdx]).Str("replacement", derivedSchemaReplacement).Msg("Replacement for empty schema")
+		log.Info().Str("key", keysForDeletion[deleteKeyIdx]).Msg("Deleting empty schema")
+		replaceEmptySchemaRefsByBaseSchemaRefs(keysForDeletion[deleteKeyIdx], derivedSchemaReplacement, v3Model)
+		v3Model.Model.Components.Schemas.Delete(keysForDeletion[deleteKeyIdx])
+	}
+}
+
+func isEmptySchema(schema *base.Schema) bool {
+	if schema == nil {
+		return true
+	}
+
+	return schema.Properties == nil &&
+		schema.Type == nil &&
+		schema.Items == nil &&
+		schema.AdditionalProperties == nil &&
+		schema.Enum == nil &&
+		schema.AllOf == nil &&
+		schema.AnyOf == nil &&
+		schema.OneOf == nil
+}
+
+// Replace refs to schemas merged into their base-schemas with refs to these base-schemas everywhere
+func replaceEmptySchemaRefsByBaseSchemaRefs(derivedEmptySchema string, baseSchemaReplacement string, v3Model *libopenapi.DocumentModel[v3.Document]) error {
+	derivedEmptySchemaRef := "#/components/schemas/" + derivedEmptySchema
+	baseSchemaReplacementRef := "#/components/schemas/" + baseSchemaReplacement
+
+	log.Debug().Str("schema", derivedEmptySchema).Msg("checking references of empty")
+
+	// properties
+	for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
+
+		if schema.Value.Schema().Properties != nil {
+			for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
+				if p.Value.GetReference() == derivedEmptySchemaRef {
+					log.Info().Str("schema", derivedEmptySchema).Str("with base schema", baseSchemaReplacement).Msg("replacing derived empty")
+					schemaRefReplacementSP := base.CreateSchemaProxyRef(baseSchemaReplacementRef)
+					p.Value = schemaRefReplacementSP
+				}
+			}
+		}
+	}
+	// component.responses
+	for response := v3Model.Model.Components.Responses.Oldest(); response != nil; response = response.Next() {
+		// TODO
+	}
+	// component.requestbodies
+	for reqBody := v3Model.Model.Components.RequestBodies.Oldest(); reqBody != nil; reqBody = reqBody.Next() {
+		// TODO
+	}
+
+	// component.headers
+	for header := v3Model.Model.Components.Headers.Oldest(); header != nil; header = header.Next() {
+		// TODO
+	}
+	// component.parameters
+	for param := v3Model.Model.Components.Parameters.Oldest(); param != nil; param = param.Next() {
+		// TODO
+	}
+
+	return nil
 }
