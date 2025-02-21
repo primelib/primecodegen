@@ -14,7 +14,7 @@ import (
 func ConvertCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "openapi-convert",
-		Short:   "Converts input - into output format (currently Swagger 2.0 to OpenAPI 3.0 is supported)",
+		Short:   "Convert between OpenAPI Specification formats",
 		GroupID: "openapi",
 		Run: func(cmd *cobra.Command, args []string) {
 			// input
@@ -50,7 +50,7 @@ func ConvertCmd() *cobra.Command {
 
 	cmd.Flags().StringSliceP("input", "i", []string{}, "Input Specification(s) (YAML or JSON)")
 	cmd.Flags().StringP("output-dir", "o", "", "Output Directory")
-	cmd.Flags().StringP("format-in", "f", "swagger20", "Input format (currently swagger20 is supported)")
-	cmd.Flags().StringP("format-out", "r", "openapi30", "Output format (currently openapi30 is supported)")
+	cmd.Flags().StringP("format-in", "f", "swagger20", fmt.Sprintf("Input format (supported: %s)", strings.Join(openapiconvert.SupportedInputFormats, ", ")))
+	cmd.Flags().StringP("format-out", "r", "openapi30", fmt.Sprintf("Output format (supported: %s)", strings.Join(openapiconvert.SupportedOutputFormats, ", ")))
 	return cmd
 }
