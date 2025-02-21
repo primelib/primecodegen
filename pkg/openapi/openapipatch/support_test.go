@@ -43,21 +43,21 @@ func TestCreateOperationTagsFromDocTitle(t *testing.T) {
 	// arrange
 	const spec = `
     openapi: 3.0.3
-    info: 
+    info:
       title: Sample API
-      description: 
+      description:
       version: v1.0.0
     tags:
       - name: pet
         description: Everything about your Pets
         externalDocs:
           description: Find out more
-          url: http://swagger.io      
+          url: http://swagger.io
     paths:
       /sample-resource1:
         get:
           tags:
-            - pet        
+            - pet
           responses:
            '200':
              description: OK
@@ -66,14 +66,14 @@ func TestCreateOperationTagsFromDocTitle(t *testing.T) {
            '200':
              description: OK
           requestBody:
-           content: 
-    
+           content:
+
         post:
           responses:
            '200':
              description: OK
           requestBody:
-           content: 
+           content:
       /sampel-resource2:
         get:
           responses:
@@ -81,21 +81,21 @@ func TestCreateOperationTagsFromDocTitle(t *testing.T) {
              description: OK
         put:
           tags:
-           - pet          
+           - pet
           responses:
            '200':
              description: OK
           requestBody:
-           content: 
-    
+           content:
+
         post:
           tags:
-            - pet  
+            - pet
           responses:
            '200':
              description: OK
           requestBody:
-           content: 
+           content:
     `
 	document, err := openapidocument.OpenDocument([]byte(spec))
 	if err != nil {
@@ -113,8 +113,8 @@ func TestCreateOperationTagsFromDocTitle(t *testing.T) {
 	assert.Equal(t, 0, len(errors))
 	v3doc, errors = document.BuildV3Model()
 	assert.Equal(t, 0, len(errors))
-	patchedAPISepc := v3doc.Model.RenderWithIndention(4)
-	fmt.Printf("Patched API spec: %s", string(patchedAPISepc))
+	patchedAPISpec := v3doc.Model.RenderWithIndention(4)
+	fmt.Printf("Patched API spec: %s", string(patchedAPISpec))
 
 	// Verify the document tag
 	assert.Len(t, v3doc.Model.Tags, 1)
@@ -155,8 +155,8 @@ func TestMergePolymorphicSchemas(t *testing.T) {
                   propertyG:
                     type: string
                     description: Description G
-                  propertyH: 
-                      $ref: '#/components/schemas/BaseSchemaAnyOf'                    
+                  propertyH:
+                      $ref: '#/components/schemas/BaseSchemaAnyOf'
             DerivedSchemaAllOf:
                 allOf:
                     - $ref: '#/components/schemas/BaseSchemaA'
@@ -175,11 +175,11 @@ func TestMergePolymorphicSchemas(t *testing.T) {
             BaseSchemaAnyOf:
                 anyOf:
                     - $ref: '#/components/schemas/BaseSchemaA'
-                    - $ref: '#/components/schemas/BaseSchemaB'                    
+                    - $ref: '#/components/schemas/BaseSchemaB'
                     - properties:
                         additionalPropertyE:
                           type: string
-                          description: Description E                             
+                          description: Description E
     `
 	document, err := openapidocument.OpenDocument([]byte(spec))
 	if err != nil {

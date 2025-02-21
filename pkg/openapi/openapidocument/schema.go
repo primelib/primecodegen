@@ -12,8 +12,8 @@ import (
 type SchemaMatchFunc func(schema *base.Schema) bool
 
 func SimplifyPolymorphism(schemaName string, schemaProxy *base.SchemaProxy, schemas *orderedmap.Map[string, *base.SchemaProxy], schemataMap map[string]string) (*base.SchemaProxy, error) {
+	log.Debug().Str("schema", schemaName).Msg("Processing")
 
-	log.Debug().Str("schema:", schemaName).Msg("Processing")
 	schemataMap[schemaName] = ""
 	schema, err := schemaProxy.BuildSchema()
 	if err != nil {
