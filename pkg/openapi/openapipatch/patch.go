@@ -13,7 +13,8 @@ import (
 func PatchV3(patchIds []string, doc libopenapi.Document, v3doc *libopenapi.DocumentModel[v3.Document]) (libopenapi.Document, *libopenapi.DocumentModel[v3.Document], error) {
 	for _, patchId := range patchIds {
 		if patch, ok := V3Patchers[patchId]; ok {
-			log.Debug().Str("id", patch.ID).Msg("running spec patcher")
+			log.Debug().Str("id", patch.ID).Msg("applying patch to spec")
+
 			patchErr := patch.Func(v3doc)
 			if patchErr != nil {
 				return doc, v3doc, fmt.Errorf("failed to patch document with [%s]: %w", patch.ID, patchErr)

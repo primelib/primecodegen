@@ -3,6 +3,7 @@ package openapicmd
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/primelib/primecodegen/pkg/commonmerge"
 	"github.com/primelib/primecodegen/pkg/commonpatch"
@@ -56,6 +57,15 @@ func runPatchCmd(inputFiles []string, output string, patches []string, patchFile
 	}
 	output = util.ResolvePath(output)
 
+	// apply pre-merge patches - TODO: flag to control pre-post application of patches
+	_, patches, inputFiles, err := applyPreMergePatches(inputFiles, output, patches)
+	if err != nil {
+		return "", errors.Join(util.ErrDocumentMerge, err)
+	}
+	if len(patches) == 0 {
+		return "", nil
+	}
+
 	// read and merge documents
 	bytes, err := commonmerge.ReadAndMergeFiles(inputFiles)
 	if err != nil {
@@ -103,4 +113,69 @@ func runPatchCmd(inputFiles []string, output string, patches []string, patchFile
 	}
 
 	return "", nil
+}
+
+func applyPreMergePatches(inputFiles []string, output string, patches []string) (string, []string, []string, error) {
+	var resultFiles []string
+
+	for _, v := range patches {
+		if v == "createOperationTagsFromDocTitle" {
+			var err error
+			_, patches, resultFiles, err = createOperationTagsFromDocTitle(inputFiles, output, patches, v)
+			if err != nil {
+				return "", []string{}, []string{}, fmt.Errorf("failed to create operation tags: %w", err)
+			}
+			inputFiles = resultFiles
+		}
+	}
+	return "", patches, inputFiles, nil
+}
+
+// For each spec replace all operation tags with a tag generated from the spec title - TODO: move this + applyPreMergePatches into openapipatch
+func createOperationTagsFromDocTitle(inputFiles []string, output string, patches []string, patch string) (string, []string, []string, error) {
+	var resultFiles []string
+
+	for _, path := range inputFiles {
+		doc, err := openapidocument.OpenDocumentFile(path)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to open document")
+		}
+		v3Model, errs := doc.BuildV3Model()
+		if len(errs) > 0 {
+			return "", []string{}, []string{}, errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
+		}
+		doc, v3Model, err = openapipatch.PatchV3([]string{patch}, doc, v3Model)
+		if err != nil {
+			return "", []string{}, []string{}, errors.Join(util.ErrFailedToPatchDocument, err)
+		}
+
+		// write document
+		if output != "" {
+			fileName := filepath.Base(path)
+			filePath := filepath.Join(output, fileName)
+			writeErr := openapidocument.RenderDocumentFile(doc, filePath)
+			if writeErr != nil {
+				return "", []string{}, []string{}, errors.Join(util.ErrWriteDocumentToFile, writeErr)
+			}
+			resultFiles = append(resultFiles, filePath)
+		} else {
+			outBytes, outErr := openapidocument.RenderDocument(doc)
+			if outErr != nil {
+				return "", []string{}, []string{}, errors.Join(util.ErrWriteDocumentToStdout, outErr)
+			}
+			return string(outBytes), []string{}, []string{}, nil
+		}
+	}
+
+	// Delete this patch from list
+	for i, v := range patches {
+		if v == "createOperationTagsFromDocTitle" {
+			patches = append(patches[:i], patches[i+1:]...)
+		}
+	}
+	if len(patches) == 0 {
+		return "", []string{}, resultFiles, nil
+	}
+
+	return "", patches, resultFiles, nil
 }
