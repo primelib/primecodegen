@@ -15,32 +15,11 @@ TODO: add installation instructions
 
 The following commands are available:
 
-- `openapi-generate` - generate code from an OpenAPI specification
-- `openapi-merge` - merge multiple OpenAPI specifications
-- `openapi-convert` - convert between different OpenAPI versions
-- `openapi-patch` - apply automatic modifications, merge multiple specifications, and apply custom patches to the OpenAPI specification
-- `openapi-export-template-data` - export template data from an OpenAPI specification
-
-## OpenAPI Code Generator
-
-The `openapi-generate` command can be used to generate code from an OpenAPI specification, using a built-in or custom template.
-
-| Command                                                                 | Description                                                   |
-|-------------------------------------------------------------------------|---------------------------------------------------------------|
-| `primecodegen openapi-generate -i openapi.yaml -g go -t client -o /out` | run code generation with generator `go` and template `client` |
-
-Environment Variables:
-
-- `PRIMECODEGEN_DEBUG_SPEC` - if set, the final OpenAPI specification is written to stdout.
-- `PRIMECODEGEN_DEBUG_TEMPLATEDATA` - if set, the template data passed to the code generator is written to stdout.
-
-## OpenAPI Merge
-
-The `openapi-merge` command can be used to merge multiple OpenAPI specifications into one.
-
-| Command                                                     | Description                                                                                                                                                                                                                               |
-|-------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `primecodegen openapi-merge --input /in --output-dir /out ` | Merge OpenAPI specifications to be compatible with code generation tool. Provide an empty OpenAPI 3.0 spec to build up a clean info-block. As an alternative use the built-in merge when using `openapi-patch` with multiple input specs. |
+- `openapi-convert` - Convert OpenAPI specifications between different versions.
+- `openapi-merge` - Combine multiple OpenAPI specifications into a single document.
+- `openapi-patch` - Apply automatic modifications, merge multiple specifications, and incorporate custom patches.
+- `openapi-export-template-data` - Extract and export template-related data useful for code generation from an OpenAPI specification.
+- `openapi-generate` - Generate code from an OpenAPI specification.
 
 ## OpenAPI Convert
 
@@ -56,15 +35,13 @@ Environment Variables:
 
 - `PRIMECODEGEN_SWAGGER_CONVERTER` - used to specify a custom [swagger-converter](https://github.com/swagger-api/swagger-converter) convert endpoint, used for Swagger 2.0 to OpenAPI 3.0 conversion.
 
-## OpenAPI Template Data
+## OpenAPI Merge
 
-The `openapi-generate-template` command can be used to pre-process the openapi spec and pass the resulting template data to an external code generator.
-The command supports the following options:
+The `openapi-merge` command can be used to merge multiple OpenAPI specifications into one.
 
-| Command                                                                                      | Description                            |
-|----------------------------------------------------------------------------------------------|----------------------------------------|
-| `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client`                  | generate go template data, stdout      |
-| `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client -o template.yaml` | generate go template data, file output |
+| Command                                                     | Description                                                                                                                                                                                                                               |
+|-------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `primecodegen openapi-merge --input /in --output-dir /out ` | Merge OpenAPI specifications to be compatible with code generation tool. Provide an empty OpenAPI 3.0 spec to build up a clean info-block. As an alternative use the built-in merge when using `openapi-patch` with multiple input specs. |
 
 ## OpenAPI Patch
 
@@ -94,7 +71,30 @@ The following built-in patches are available:
 | `createOperationTagsFromDocTitle` | false   | Removes all tags and creates one new tag per API spec from the document title, setting it on each operation. This patch will be applied before merging specs. |
 | `inlineAllOfHierarchies`          | false   | Inlines properties of allOf-referenced schemas and removes allOf-references in schemas                                                                        |
 
-**Note**: The patches are applied in the order you specify them in. `createOperationTagsFromDocTitle` is an exception to that rule because it is always applied first before specs are possibly merged. If none are specified, the patches flagged as `default` are applied. 
+**Note**: The patches are applied in the order you specify them in. `createOperationTagsFromDocTitle` is an exception to that rule because it is always applied first before specs are possibly merged. If none are specified, the patches flagged as `default` are applied.
+
+## OpenAPI Template Data
+
+The `openapi-generate-template` command can be used to pre-process the openapi spec and pass the resulting template data to an external code generator.
+The command supports the following options:
+
+| Command                                                                                      | Description                            |
+|----------------------------------------------------------------------------------------------|----------------------------------------|
+| `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client`                  | generate go template data, stdout      |
+| `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client -o template.yaml` | generate go template data, file output |
+
+## OpenAPI Code Generator
+
+The `openapi-generate` command can be used to generate code from an OpenAPI specification, using a built-in or custom template.
+
+| Command                                                                 | Description                                                   |
+|-------------------------------------------------------------------------|---------------------------------------------------------------|
+| `primecodegen openapi-generate -i openapi.yaml -g go -t client -o /out` | run code generation with generator `go` and template `client` |
+
+Environment Variables:
+
+- `PRIMECODEGEN_DEBUG_SPEC` - if set, the final OpenAPI specification is written to stdout.
+- `PRIMECODEGEN_DEBUG_TEMPLATEDATA` - if set, the template data passed to the code generator is written to stdout.
 
 ## Roadmap
 

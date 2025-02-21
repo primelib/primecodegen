@@ -31,11 +31,11 @@ func rootCmd() *cobra.Command {
 	cmd.AddCommand(versionCmd())
 
 	cmd.AddGroup(&cobra.Group{ID: "openapi", Title: "OpenAPI Generation"})
-	cmd.AddCommand(openapicmd.GenerateCmd())
-	cmd.AddCommand(openapicmd.GenerateTemplateCmd())
-	cmd.AddCommand(openapicmd.PatchCmd())
 	cmd.AddCommand(openapicmd.ConvertCmd())
 	cmd.AddCommand(openapicmd.MergeCmd())
+	cmd.AddCommand(openapicmd.PatchCmd())
+	cmd.AddCommand(openapicmd.GenerateCmd())
+	cmd.AddCommand(openapicmd.GenerateTemplateCmd())
 	return cmd
 }
 
