@@ -18,7 +18,6 @@ var generators = []openapigenerator.CodeGenerator{
 	openapi_go.NewGenerator(),
 	openapi_java.NewGenerator(),
 }
-var generatorPatches = []string{"fixOperationTags", "generateOperationIds", "flattenSchemas", "mergePolymorphicSchemas", "missingSchemaTitle"}
 
 func GenerateCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -32,6 +31,7 @@ func GenerateCmd() *cobra.Command {
 			out, _ := cmd.Flags().GetString("output")
 			generatorId, _ := cmd.Flags().GetString("generator")
 			templateId, _ := cmd.Flags().GetString("template")
+			patches, _ := cmd.Flags().GetStringArray("patches")
 			in = util.ResolvePath(in)
 			out = util.ResolvePath(out)
 			if in == "" {
@@ -60,7 +60,7 @@ func GenerateCmd() *cobra.Command {
 			}
 
 			// patch document
-			doc, v3doc, err = openapipatch.PatchV3(generatorPatches, doc, v3doc)
+			doc, v3doc, err = openapipatch.PatchV3(patches, doc, v3doc)
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to patch document")
 			}
@@ -99,6 +99,7 @@ func GenerateCmd() *cobra.Command {
 	cmd.Flags().StringP("output", "o", "", "Output Directory")
 	cmd.Flags().StringP("generator", "g", "", "Code Generation Generator ID")
 	cmd.Flags().StringP("template", "t", "", "Code Generation Template ID")
+	cmd.Flags().StringArray("patches", openapigenerator.DefaultCodeGenerationPatches, "Code Generation Patches")
 	cmd.Flags().String("md-group-id", "", "Artifact Group ID")
 	cmd.Flags().String("md-artifact-id", "", "Artifact ID")
 	cmd.Flags().String("md-repository-url", "", "Repository URL (without protocol or .git suffix)")
