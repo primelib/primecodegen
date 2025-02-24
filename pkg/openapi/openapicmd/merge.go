@@ -27,7 +27,7 @@ func MergeCmd() *cobra.Command {
 			output = util.ResolvePath(output)
 			log.Info().Strs("input", inputFiles).Str("output", output).Msg("Merging Specifications")
 
-			// merge
+			// read and merge documents
 			mergedSpec, err := openapimerge.MergeOpenAPI3Files(inputFiles)
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to merge api specs")

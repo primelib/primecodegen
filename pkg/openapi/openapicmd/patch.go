@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/primelib/primecodegen/pkg/commonmerge"
 	"github.com/primelib/primecodegen/pkg/commonpatch"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
+	"github.com/primelib/primecodegen/pkg/openapi/openapimerge"
 	"github.com/primelib/primecodegen/pkg/openapi/openapipatch"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
@@ -67,9 +67,13 @@ func runPatchCmd(inputFiles []string, output string, patches []string, patchFile
 	}
 
 	// read and merge documents
-	bytes, err := commonmerge.ReadAndMergeFiles(inputFiles)
+	mergedSpec, err := openapimerge.MergeOpenAPI3Files(inputFiles)
 	if err != nil {
 		return "", errors.Join(util.ErrDocumentMerge, err)
+	}
+	bytes, err := openapidocument.RenderV3Document(mergedSpec)
+	if err != nil {
+		return "", errors.Join(util.ErrRenderDocument, err)
 	}
 
 	// patch document (external files)
