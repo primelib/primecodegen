@@ -151,13 +151,6 @@ var allTemplates = []Config{
 				Type:            TypeSupportOnce,
 			},
 			{
-				SourceUrl:       "https://github.com/PhilippHeuer/events4j/raw/main/gradle/wrapper/gradle-wrapper.jar",
-				Snippets:        defaultSnippets,
-				TargetDirectory: "gradle/wrapper",
-				TargetFileName:  "gradle-wrapper.jar",
-				Type:            TypeSupportOnce,
-			},
-			{
 				SourceUrl:       "https://raw.githubusercontent.com/PhilippHeuer/events4j/main/gradlew",
 				Snippets:        defaultSnippets,
 				TargetDirectory: "",

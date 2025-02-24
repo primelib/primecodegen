@@ -337,6 +337,11 @@ func (g *JavaGenerator) PostProcessContent(name string, content []byte) []byte {
 const fmtBinary = "google-java-format"
 
 func (g *JavaGenerator) PostProcessing(files []template.RenderedFile) error {
+	if os.Getenv("PRIMECODEGEN_SKIP_POST_PROCESSING") == "true" {
+		slog.Debug("Skipping post processing java files")
+		return nil
+	}
+
 	_, err := exec.LookPath(fmtBinary)
 	if err != nil {
 		slog.Warn(fmtBinary + " not found in PATH, skipping formatting")

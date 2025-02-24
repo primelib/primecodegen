@@ -24,6 +24,7 @@ func GenerateTemplateCmd() *cobra.Command {
 			in, _ := cmd.Flags().GetString("input")
 			out, _ := cmd.Flags().GetString("output")
 			generatorId, _ := cmd.Flags().GetString("generator")
+			patches, _ := cmd.Flags().GetStringArray("patches")
 			in = util.ResolvePath(in)
 			out = util.ResolvePath(out)
 			if in == "" {
@@ -42,7 +43,7 @@ func GenerateTemplateCmd() *cobra.Command {
 			}
 
 			// patch document
-			doc, v3doc, err = openapipatch.PatchV3(generatorPatches, doc, v3doc)
+			doc, v3doc, err = openapipatch.PatchV3(patches, doc, v3doc)
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to patch document")
 			}
@@ -80,6 +81,7 @@ func GenerateTemplateCmd() *cobra.Command {
 	cmd.Flags().StringP("input", "i", "", "Input Specification")
 	cmd.Flags().StringP("output", "o", "", "Output File")
 	cmd.Flags().StringP("generator", "g", "", "Code Generation Generator ID")
+	cmd.Flags().StringArray("patches", openapigenerator.DefaultCodeGenerationPatches, "Code Generation Patches")
 
 	return cmd
 }
