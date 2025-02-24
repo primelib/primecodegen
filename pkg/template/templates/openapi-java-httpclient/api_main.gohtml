@@ -40,7 +40,7 @@ public interface {{ .Metadata.Name }}Api {
     {{- end }}
     {{- end }}
     {{- if $op.Deprecated }}
-    * @deprecated{{ if $op.DeprecatedDescription }} {{ $op.DeprecatedDescription }}{{ end }}
+    * @deprecated{{ if $op.DeprecatedReason }} {{ $op.DeprecatedReason }}{{ end }}
     {{- end }}
     */
     {{- if eq $op.Stability "experimental" }}
@@ -50,9 +50,12 @@ public interface {{ .Metadata.Name }}Api {
     {{- if $op.HeaderParameters }}
     @Headers({
     {{- range $i, $p := $op.HeaderParameters }}
-        "{{ $p.Name }}: {{ $p.FieldName }}{{ if notLast $op.HeaderParameters $i }},{{ end }}"
+        "{{ $p.Name }}: {{ $p.FieldName | wrapIn "{" "}"}}"{{ if notLast $op.HeaderParameters $i }},{{ end }}
     {{- end }}
     })
+    {{- end }}
+    {{- if $op.Deprecated }}
+    @Deprecated
     {{- end }}
     {{ $op.ReturnType.QualifiedType }} {{ $op.Name }}{{- if gt (len $op.Parameters) 0 }}(
         {{- range $i, $param := $op.Parameters }}

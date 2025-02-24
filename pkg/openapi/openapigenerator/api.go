@@ -34,6 +34,9 @@ type CodeGenerator interface {
 	// ToParameterName converts a name to a language-specific parameter name
 	ToParameterName(name string) string
 
+	// ToConstantName converts a name to a language-specific constant name
+	ToConstantName(name string) string
+
 	// ToCodeType converts a schema to a language-specific type
 	ToCodeType(schema *base.Schema, schemaType CodeTypeSchemaType, required bool) (CodeType, error)
 

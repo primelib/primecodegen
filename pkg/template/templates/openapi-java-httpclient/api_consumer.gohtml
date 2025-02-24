@@ -56,11 +56,14 @@ public class {{ .Metadata.Name }}ConsumerApi {
     {{- end }}
     {{- end }}
     {{- if $op.Deprecated }}
-    * @deprecated{{ if $op.DeprecatedDescription }} {{ $op.DeprecatedDescription | commentSingleLine }}{{ end }}
+    * @deprecated{{ if $op.DeprecatedReason }} {{ $op.DeprecatedReason | commentSingleLine }}{{ end }}
     {{- end }}
     */
     {{- if eq $op.Stability "experimental" }}
     @ApiStatus.Experimental
+    {{- end }}
+    {{- if $op.Deprecated }}
+    @Deprecated
     {{- end }}
     {{- if $op.Parameters }}
     public {{ $op.ReturnType.QualifiedType }} {{ $op.Name }}(Consumer<{{ $op.Name }}OperationSpec> spec) {

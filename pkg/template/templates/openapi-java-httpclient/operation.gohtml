@@ -33,7 +33,7 @@ import javax.annotation.processing.Generated;
 {{- end }}
  *
 {{- if .Operation.Deprecated }}
-* @deprecated{{ if .Operation.DeprecatedDescription }} {{ .Operation.DeprecatedDescription }}{{ end }}
+* @deprecated{{ if .Operation.DeprecatedReason }} {{ .Operation.DeprecatedReason }}{{ end }}
 {{- end }}
  */
 @Getter

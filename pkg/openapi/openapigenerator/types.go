@@ -160,17 +160,19 @@ type Model struct {
 	OneOf            []Model    `yaml:"oneOf,omitempty"`
 	Imports          []string   `yaml:"imports,omitempty"`
 	Deprecated       bool       `yaml:"deprecated,omitempty"`
-	IsTypeAlias      bool       `yaml:"isTypeAlias,omitempty"`
 	DeprecatedReason string     `yaml:"deprecatedReason,omitempty"`
+	IsTypeAlias      bool       `yaml:"isTypeAlias,omitempty"`
 }
 
 type Enum struct {
-	Name          string                                  `yaml:"name"`
-	Description   string                                  `yaml:"description,omitempty"`
-	Parent        CodeType                                `yaml:"parent,omitempty"`
-	ValueType     CodeType                                `yaml:"valueType,omitempty"`
-	AllowedValues map[string]openapidocument.AllowedValue `yaml:"allowedValues,omitempty"`
-	Imports       []string                                `yaml:"imports,omitempty"`
+	Name             string                                  `yaml:"name"`
+	Description      string                                  `yaml:"description,omitempty"`
+	Parent           CodeType                                `yaml:"parent,omitempty"`
+	ValueType        CodeType                                `yaml:"valueType,omitempty"`
+	AllowedValues    map[string]openapidocument.AllowedValue `yaml:"allowedValues,omitempty"`
+	Imports          []string                                `yaml:"imports,omitempty"`
+	Deprecated       bool                                    `yaml:"deprecated,omitempty"`
+	DeprecatedReason string                                  `yaml:"deprecatedReason,omitempty"`
 }
 
 type Property struct {

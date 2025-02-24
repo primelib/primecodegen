@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 {{- end }}
  *
 {{- if .Model.Deprecated }}
-* @deprecated{{ if .Model.DeprecatedDescription }} {{ .Model.DeprecatedDescription }}{{ end }}
+* @deprecated{{ if .Model.DeprecatedReason }} {{ .Model.DeprecatedReason }}{{ end }}
 {{- end }}
  */
 @Getter

@@ -49,6 +49,10 @@ func ToPascalCase(input string) string {
 	return UppercaseAcronyms(strcase.ToCamel(input))
 }
 
+func ToUpperSnakeCase(input string) string {
+	return strcase.ToScreamingSnake(input)
+}
+
 func ToSnakeCase(input string) string {
 	return strcase.ToSnake(input)
 }

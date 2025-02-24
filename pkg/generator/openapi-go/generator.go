@@ -143,6 +143,15 @@ func (g *GoGenerator) ToParameterName(name string) string {
 	return name
 }
 
+func (g *GoGenerator) ToConstantName(name string) string {
+	name = util.ToPascalCase(name)
+
+	if slices.Contains(g.reservedWords, name) {
+		return name + "Prop"
+	}
+	return name
+}
+
 func (g *GoGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerator.CodeTypeSchemaType, required bool) (openapigenerator.CodeType, error) {
 	isNullable := ptr.ValueOrDefault(schema.Nullable, true) == true
 

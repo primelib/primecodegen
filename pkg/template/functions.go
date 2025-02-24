@@ -79,10 +79,22 @@ var templateFunctions = template.FuncMap{
 		return strings.ReplaceAll(input, ".", string(os.PathSeparator))
 	},
 	// notLast is used to determine if the current index is not the last index in a slice
-	"notLast": func(data interface{}, idx int) bool {
+	"notLast": func(data interface{}, idx interface{}) bool {
 		val := reflect.ValueOf(data)
 		if val.Kind() == reflect.Slice {
-			return idx < val.Len()-1
+			idxInt, ok := idx.(int)
+			if !ok {
+				return false
+			}
+
+			return idxInt < val.Len()-1
+		} else if val.Kind() == reflect.Map {
+			idxStr, ok := idx.(string)
+			if !ok {
+				return false
+			}
+
+			return idxStr != val.MapKeys()[val.Len()-1].String()
 		}
 
 		return false
