@@ -157,7 +157,12 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 			}
 
 			// operation parameters
+			var addedParameters []string
 			for _, param := range op.Value.Parameters {
+				if slices.Contains(addedParameters, gen.ToParameterName(param.Name)) {
+					continue
+				}
+
 				pSchema, err := param.Schema.BuildSchema()
 				if err != nil {
 					return operations, fmt.Errorf("error building property schema: %w", err)
@@ -169,21 +174,27 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				}
 				pType = gen.PostProcessType(pType)
 
+				deprecatedReason := ""
+				deprecatedReasonNode := param.Extensions.GetOrZero("x-deprecated")
+				if deprecatedReasonNode != nil {
+					deprecatedReason = deprecatedReasonNode.Value
+				}
+
 				allowedValues, err := openapidocument.EnumToAllowedValues(pSchema)
 				if err != nil {
 					return operations, fmt.Errorf("error processing enum definitions: %w", err)
 				}
 				p := Parameter{
-					Name:            gen.ToParameterName(param.Name),
-					FieldName:       param.Name,
-					In:              param.In,
-					Description:     param.Description,
-					Type:            pType,
-					IsPrimitiveType: gen.IsPrimitiveType(pType.Name),
-					AllowedValues:   allowedValues,
-					Required:        getBoolValue(param.Required, false),
-					Deprecated:      param.Deprecated,
-					// DeprecatedReason: param.Value.Extensions.Get("x-deprecated"),
+					Name:             gen.ToParameterName(param.Name),
+					FieldName:        param.Name,
+					In:               param.In,
+					Description:      param.Description,
+					Type:             pType,
+					IsPrimitiveType:  gen.IsPrimitiveType(pType.Name),
+					AllowedValues:    allowedValues,
+					Required:         getBoolValue(param.Required, false),
+					Deprecated:       param.Deprecated,
+					DeprecatedReason: deprecatedReason,
 				}
 				operation.Parameters = append(operation.Parameters, p)
 				if p.In == "path" {
@@ -196,6 +207,8 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					operation.CookieParameters = append(operation.CookieParameters, p)
 				}
 				operation.Imports = append(operation.Imports, gen.TypeToImport(pType))
+
+				addedParameters = append(addedParameters, gen.ToParameterName(param.Name))
 			}
 
 			// request body
@@ -269,7 +282,13 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 			Description: s.Description,
 		}
 		if slices.Contains(s.Type, "object") && s.Properties != nil {
+			var addedProperties []string
+
 			for p := s.Properties.Oldest(); p != nil; p = p.Next() {
+				if slices.Contains(addedProperties, gen.ToPropertyName(p.Key)) {
+					continue
+				}
+
 				pSchema, pErr := p.Value.BuildSchema()
 				if pErr != nil {
 					return models, fmt.Errorf("error building property schema: %w", err)
@@ -295,8 +314,9 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 					Nullable:        openapiutil.IsSchemaNullable(pSchema),
 					AllowedValues:   allowedValues,
 				})
-
 				add.Imports = append(add.Imports, gen.TypeToImport(pType))
+
+				addedProperties = append(addedProperties, gen.ToPropertyName(p.Key))
 			}
 		} else if slices.Contains(s.Type, "array") {
 			mParent, err := gen.ToCodeType(s, CodeTypeSchemaArray, false)
@@ -348,17 +368,19 @@ func BuildEnums(opts ModelOpts) ([]Enum, error) {
 		vType = gen.PostProcessType(vType)
 
 		add := Enum{
-			Name:          gen.ToClassName(s.Title),
-			Description:   s.Description,
-			ValueType:     vType,
-			AllowedValues: make(map[string]openapidocument.AllowedValue),
+			Name:             gen.ToClassName(s.Title),
+			Description:      s.Description,
+			ValueType:        vType,
+			AllowedValues:    make(map[string]openapidocument.AllowedValue),
+			Deprecated:       getBoolValue(s.Deprecated, false),
+			DeprecatedReason: getOrDefault(s.Extensions, "x-deprecated", ""),
 		}
 		allowedValues, err := openapidocument.EnumToAllowedValues(s)
 		if err != nil {
 			return enums, fmt.Errorf("error building enum definitions: %w", err)
 		}
 		for k, v := range allowedValues {
-			v.Name = gen.ToPropertyName(v.Name)
+			v.Name = gen.ToConstantName(v.Name)
 			add.AllowedValues[k] = v
 		}
 		add.Imports = uniqueSortImports(add.Imports)

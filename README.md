@@ -29,7 +29,7 @@ The `openapi-convert` command can be used to convert between different OpenAPI v
 |-------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
 | `primecodegen openapi-convert --format-in swagger20 --format-out openapi30 --input /in --output-dir /out  ` | Converts input - into output format (currently Swagger 2.0 to OpenAPI 3.0 is supported) |
 
-**Note**: If PRIMECODEGEN_SWAGGER_CONVERTER` is not set, the default swagger converter `https://converter.swagger.io/api/convert` will be used.
+**Note**: If `PRIMECODEGEN_SWAGGER_CONVERTER` is not set, the default swagger converter `https://converter.swagger.io/api/convert` will be used.
 
 Environment Variables:
 

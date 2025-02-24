@@ -164,6 +164,15 @@ func (g *JavaGenerator) ToParameterName(name string) string {
 	return name
 }
 
+func (g *JavaGenerator) ToConstantName(name string) string {
+	name = util.ToUpperSnakeCase(name)
+
+	if slices.Contains(g.reservedWords, name) {
+		return name
+	}
+	return name
+}
+
 func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerator.CodeTypeSchemaType, required bool) (openapigenerator.CodeType, error) {
 	// multiple types
 	if util.CountExcluding(schema.Type, "null") > 1 {
@@ -187,9 +196,13 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 		return openapigenerator.CodeType{Name: "Instant", ImportPath: "java.time"}, nil
 	case slices.Contains(schema.Type, "string") && schema.Format == "date-time":
 		return openapigenerator.CodeType{Name: "Instant", ImportPath: "java.time"}, nil
+	case slices.Contains(schema.Type, "string") && schema.Format != "": // account for made-up formats
+		return openapigenerator.CodeType{Name: "String"}, nil
 	case slices.Contains(schema.Type, "boolean"):
 		return openapigenerator.NewSimpleCodeType(g.BoxType("boolean", isNullable), schema), nil
 	case slices.Contains(schema.Type, "integer") && schema.Format == "":
+		return openapigenerator.NewSimpleCodeType(g.BoxType("int", isNullable), schema), nil
+	case slices.Contains(schema.Type, "integer") && schema.Format == "int16":
 		return openapigenerator.NewSimpleCodeType(g.BoxType("int", isNullable), schema), nil
 	case slices.Contains(schema.Type, "integer") && schema.Format == "int32":
 		return openapigenerator.NewSimpleCodeType(g.BoxType("int", isNullable), schema), nil

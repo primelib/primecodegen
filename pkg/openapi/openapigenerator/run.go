@@ -5,9 +5,12 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/primelib/primecodegen/pkg/template"
 	"github.com/primelib/primecodegen/pkg/util"
+	"github.com/rs/zerolog/log"
+	"github.com/shomali11/parallelizer"
 	"gopkg.in/yaml.v3"
 )
 
@@ -22,7 +25,9 @@ func GeneratorById(id string, allGenerators []CodeGenerator) (CodeGenerator, err
 }
 
 func GenerateFiles(templateId string, outputDir string, templateData DocumentModel, renderOpts template.RenderOpts, generatorOpts GenerateOpts) ([]template.RenderedFile, error) {
+	log.Debug().Str("template-id", templateId).Str("output-dir", outputDir).Msg("Generating files")
 	var files []template.RenderedFile
+	var filesMutex sync.Mutex
 
 	// print template data
 	if os.Getenv("PRIMECODEGEN_DEBUG_TEMPLATEDATA") == "true" {
@@ -98,40 +103,52 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 		data = append(data, EnumEachTemplate{
 			Metadata: metadata,
 			Common:   common,
-			Package:  common.Packages.Models,
+			Package:  common.Packages.Enums,
 			Name:     enum.Name,
 			Enum:     enum,
 		})
 	}
 
 	// render files
+	log.Debug().Str("templateId", templateId).Str("outputDir", outputDir).Int("files", len(data)).Msg("rendering template files")
+	group := parallelizer.NewGroup(parallelizer.WithPoolSize(32))
+	defer group.Close()
+
 	for _, d := range data {
-		var renderedFiles []template.RenderedFile
-		var renderErr error
+		group.Add(func() error {
+			var renderedFiles []template.RenderedFile
+			var renderErr error
 
-		if _, ok := d.(SupportOnceTemplate); ok {
-			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeSupportOnce, d, renderOpts)
-		}
-		if _, ok := d.(APIOnceTemplate); ok {
-			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeAPIOnce, d, renderOpts)
-		}
-		if _, ok := d.(APIEachTemplate); ok {
-			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeAPIEach, d, renderOpts)
-		}
-		if _, ok := d.(OperationEachTemplate); ok {
-			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeOperationEach, d, renderOpts)
-		}
-		if _, ok := d.(ModelEachTemplate); ok {
-			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeModelEach, d, renderOpts)
-		}
-		if _, ok := d.(EnumEachTemplate); ok {
-			renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeEnumEach, d, renderOpts)
-		}
+			switch d.(type) {
+			case SupportOnceTemplate:
+				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeSupportOnce, d, renderOpts)
+			case APIOnceTemplate:
+				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeAPIOnce, d, renderOpts)
+			case APIEachTemplate:
+				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeAPIEach, d, renderOpts)
+			case OperationEachTemplate:
+				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeOperationEach, d, renderOpts)
+			case ModelEachTemplate:
+				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeModelEach, d, renderOpts)
+			case EnumEachTemplate:
+				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeEnumEach, d, renderOpts)
+			}
 
-		if renderErr != nil {
-			return nil, fmt.Errorf("failed to render template: %w", renderErr)
-		}
-		files = append(files, renderedFiles...)
+			if renderErr != nil {
+				return fmt.Errorf("failed to render template: %w", renderErr)
+			}
+
+			filesMutex.Lock()
+			files = append(files, renderedFiles...)
+			filesMutex.Unlock()
+
+			return nil
+		})
+	}
+
+	err := group.Wait()
+	if err != nil {
+		return nil, fmt.Errorf("failed to render template: %w", err)
 	}
 
 	return files, nil
@@ -139,6 +156,7 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 
 func RemoveFilesListedInMetadata(outputDir string) error {
 	writtenFiles := path.Join(outputDir, ".openapi-generator", "FILES")
+	log.Debug().Str("output-dir", outputDir).Str("lookup-file", writtenFiles).Msg("Clearing generated files")
 
 	// open the file for reading
 	file, err := os.Open(writtenFiles)

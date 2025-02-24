@@ -28,18 +28,27 @@ import java.util.function.Consumer;
  * {{ .Enum.Description }}
 {{ end }}
  *
-{{ if .Enum.Deprecated }} * @deprecated{{ if .Enum.DeprecatedDescription }} {{ .Enum.DeprecatedDescription }}{{ end }}{{ end }}
+{{ if .Enum.Deprecated }} * @deprecated{{ if .Enum.DeprecatedReason }} {{ .Enum.DeprecatedReason }}{{ end }}{{ end }}
  */
-@AllArgsConstructor
 @JsonTypeName("{{.Enum.Name}}")
 {{- if .Enum.Deprecated }}
 @Deprecated
 {{ end }}
 @Generated(value = "io.github.primelib.primecodegen")
-public enum {{.Enum.Name}}{{if .Enum.Parent}} extends {{.Enum.Parent}}{{end}} {
+public enum {{.Enum.Name}}{{if .Enum.Parent.Declaration}} extends {{.Enum.Parent.Declaration}}{{end}} {
 {{- range $i, $p := .Enum.AllowedValues }}
-    {{ $p.Name }}({{$p.Value}}){{ if notLast $.Enum.AllowedValues $i }},{{ else }};{{ end }}
-{{ end }}
+    {{- if $p.Description }}
+    /**
+     * {{ $p.Description | commentSingleLine }}
+     */
+    {{- end }}
+    {{ $p.Name }}("{{ $p.Value }}"),
+{{- end }}
+    ;
 
     private final {{ .Enum.ValueType }} value;
+
+    {{.Enum.Name}}({{ .Enum.ValueType }} value) {
+        this.value = value;
+    }
 }

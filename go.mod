@@ -16,6 +16,7 @@ require (
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/pb33f/libopenapi v0.21.6
 	github.com/rs/zerolog v1.33.0
+	github.com/shomali11/parallelizer v0.0.0-20220717173222-a6776fbf40a9
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
 	gopkg.in/yaml.v3 v3.0.1
