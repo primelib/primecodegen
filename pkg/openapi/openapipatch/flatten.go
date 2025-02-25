@@ -145,7 +145,10 @@ func flattenInnerSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 		}
 
 		for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
-			if !p.Value.IsReference() && slices.Contains(p.Value.Schema().Type, "object") {
+			propSchema := p.Value.Schema()
+
+			// inner objects
+			if !p.Value.IsReference() && slices.Contains(propSchema.Type, "object") {
 				key := util.ToPascalCase(p.Key)
 				log.Trace().Msg("moving inner schema to components: " + key)
 				if ref, err := moveSchemaIntoComponents(doc, key, p.Value); err != nil {
@@ -155,76 +158,20 @@ func flattenInnerSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 				}
 			}
 
-		}
-		/*
-			// flatten anyOf
-			s := schema.Value.Schema()
-			if len(s.AnyOf) > 0 {
-
-			}
-
-			for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
-				// simplify polymorphism
-				_, err := openapidocument.SimplifyPolymorphism(p.Value)
-				if err != nil {
-					return err
+			// inner array objects
+			if slices.Contains(propSchema.Type, "array") && propSchema.Items != nil {
+				itemSchema := propSchema.Items.A.Schema()
+				if !propSchema.Items.A.IsReference() && slices.Contains(itemSchema.Type, "object") {
+					key := util.ToPascalCase(p.Key) + "Item"
+					log.Trace().Msg("moving array inner schema to components: " + key)
+					if ref, err := moveSchemaIntoComponents(doc, key, propSchema.Items.A); err != nil {
+						return fmt.Errorf("error moving array object schema to components: %w", err)
+					} else if ref != nil {
+						propSchema.Items.A = ref
+					}
 				}
-
-
-					// flatten anyOf
-					if p.Value.Schema().AnyOf != nil {
-						for i, s := range p.Value.Schema().AnyOf {
-							if s.IsReference() {
-								continue
-							}
-
-							// move schema to components and replace with reference
-							key := schema.Key + "AnyOf" + fmt.Sprint(i)
-							log.Trace().Msg("moving anyOf schema to components: " + key)
-							if ref, err := moveSchemaIntoComponents(doc, key, s); err != nil {
-								return fmt.Errorf("error moving schema to components: %w", err)
-							} else if ref != nil {
-								p.Value.Schema().AnyOf[i] = ref
-							}
-						}
-					}
-
-					// flatten oneOf
-					if p.Value.Schema().OneOf != nil {
-						for i, s := range p.Value.Schema().OneOf {
-							if s.IsReference() {
-								continue
-							}
-
-							// move schema to components and replace with reference
-							key := schema.Key + "OneOf" + fmt.Sprint(i)
-							log.Trace().Msg("moving oneOf schema to components: " + key)
-							if ref, err := moveSchemaIntoComponents(doc, key, s); err != nil {
-								return fmt.Errorf("error moving schema to components: %w", err)
-							} else if ref != nil {
-								p.Value.Schema().OneOf[i] = ref
-							}
-						}
-					}
-
-					// flatten allOf
-					if p.Value.Schema().AllOf != nil {
-						for i, s := range p.Value.Schema().AllOf {
-							if s.IsReference() {
-								continue
-							}
-
-							// move schema to components and replace with reference
-							key := schema.Key + "AllOf" + fmt.Sprint(i)
-							log.Trace().Msg("moving allOf schema to components: " + key)
-							if ref, err := moveSchemaIntoComponents(doc, key, s); err != nil {
-								return fmt.Errorf("error moving schema to components: %w", err)
-							} else if ref != nil {
-								p.Value.Schema().AllOf[i] = ref
-							}
-						}
-					}
-		*/
+			}
+		}
 	}
 
 	return nil
