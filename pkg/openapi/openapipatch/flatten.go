@@ -146,9 +146,12 @@ func flattenInnerSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 
 		for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
 			propSchema := p.Value.Schema()
+			if p.Value.IsReference() {
+				continue
+			}
 
 			// inner objects
-			if !p.Value.IsReference() && slices.Contains(propSchema.Type, "object") {
+			if slices.Contains(propSchema.Type, "object") {
 				key := util.ToPascalCase(p.Key)
 				log.Trace().Msg("moving inner schema to components: " + key)
 				if ref, err := moveSchemaIntoComponents(doc, key, p.Value); err != nil {

@@ -7,14 +7,14 @@ toolchain go1.23.1
 require (
 	github.com/bluekeyes/go-gitdiff v0.8.1
 	github.com/cidverse/cidverseutils/core v0.0.0-20250210224234-b2040fc3a6b4
-	github.com/cidverse/cidverseutils/filesystem v0.1.2-0.20241031231154-7022092ea3d4
+	github.com/cidverse/cidverseutils/filesystem v0.1.2-0.20250210224234-b2040fc3a6b4
 	github.com/cidverse/cidverseutils/zerologconfig v0.1.1
 	github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/gosimple/slug v1.15.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/jarcoal/httpmock v1.3.1
-	github.com/pb33f/libopenapi v0.21.6
+	github.com/pb33f/libopenapi v0.21.7
 	github.com/rs/zerolog v1.33.0
 	github.com/shomali11/parallelizer v0.0.0-20220717173222-a6776fbf40a9
 	github.com/spf13/cobra v1.9.1
@@ -37,7 +37,7 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/speakeasy-api/jsonpath v0.6.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
-	github.com/wk8/go-ordered-map/v2 v2.1.9-0.20240815153524-6ea36470d1bd // indirect
+	github.com/wk8/go-ordered-map/v2 v2.1.9-0.20240816141633-0a40785b4f41 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
