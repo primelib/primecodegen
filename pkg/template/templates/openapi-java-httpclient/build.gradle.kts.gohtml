@@ -3,7 +3,7 @@
 
 plugins {
     `java-library`
-    id("me.philippheuer.configuration") version "0.14.0"
+    alias(libs.plugins.configuration)
 }
 
 val version: String = properties["version"] as? String ?: "0.0.0"
@@ -55,13 +55,16 @@ projectConfiguration {
 
 dependencies {
     // bom
-    api(platform("io.github.openfeign:feign-bom:13.5"))
-    api(platform("io.github.resilience4j:resilience4j-bom:2.3.0"))
-    api(platform("com.fasterxml.jackson:jackson-bom:2.18.2"))
-    api(platform("io.github.primelib.primecodegenlib.java:bom:0.0.3"))
+    api(platform(libs.openFeignBom))
+    api(platform(libs.resilience4jBom))
+    api(platform(libs.jacksonBom))
+    api(platform(libs.micrometerBom))
+    api(platform(libs.slf4jBom))
+    api(platform(libs.primecodegenlibJavaBom))
 
     // annotations
-    implementation("org.jetbrains:annotations:26.0.1")
+    implementation(libs.jspecify)
+    implementation(libs.jetbrainsAnnotations)
 
     // feign
     implementation("io.github.openfeign:feign-core")
@@ -70,13 +73,13 @@ dependencies {
     implementation("io.github.openfeign:feign-okhttp")
     implementation("io.github.openfeign:feign-micrometer")
 {{- if .Common.HasParametersWithType "form" -}}
-    implementation("io.github.openfeign.form:feign-form:3.8.0")
+    implementation("io.github.openfeign:feign-form")
 {{- end }}
 
     // http client
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation(libs.okhttp)
 {{- if .Common.Endpoints.HasEndpointWithType "socket" }}
-    implementation("com.kohlschutter.junixsocket:junixsocket-core:2.10.1")
+    implementation(libs.junixsocket)
 {{- end }}
 
     // codegen libs
@@ -87,8 +90,8 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // metrics
-    api("io.micrometer:micrometer-core:1.14.4")
+    api("io.micrometer:micrometer-core")
 
     // test
-    testImplementation("org.slf4j:slf4j-simple:2.0.16")
+    testImplementation("org.slf4j:slf4j-simple")
 }

@@ -25,9 +25,9 @@ The following commands are available:
 
 The `openapi-convert` command can be used to convert between different OpenAPI versions.
 
-| Command                                                                                                     | Description                                                                             |
-|-------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| `primecodegen openapi-convert --format-in swagger20 --format-out openapi30 --input /in --output-dir /out  ` | Converts input - into output format (currently Swagger 2.0 to OpenAPI 3.0 is supported) |
+| Command                                                                                                   | Description                                                                             |
+|-----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| `primecodegen openapi-convert --format-in swagger20 --format-out openapi30 --input /in --output-dir /out` | Converts input - into output format (currently Swagger 2.0 to OpenAPI 3.0 is supported) |
 
 **Note**: If `PRIMECODEGEN_SWAGGER_CONVERTER` is not set, the default swagger converter `https://converter.swagger.io/api/convert` will be used.
 
@@ -95,6 +95,7 @@ Environment Variables:
 
 - `PRIMECODEGEN_DEBUG_SPEC` - if set, the final OpenAPI specification is written to stdout.
 - `PRIMECODEGEN_DEBUG_TEMPLATEDATA` - if set, the template data passed to the code generator is written to stdout.
+- `PRIMECODEGEN_TEMPLATE_DIR` - if set, takes priority when looking for template files - useful for customizing templates.
 
 ## Roadmap
 

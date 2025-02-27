@@ -137,6 +137,13 @@ var allTemplates = []Config{
 				Type:            TypeSupportOnce,
 			},
 			{
+				SourceTemplate:  "libs.versions.toml.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "gradle",
+				TargetFileName:  "libs.versions.toml",
+				Type:            TypeSupportOnce,
+			},
+			{
 				SourceTemplate:  "gradle-wrapper.properties.gohtml",
 				Snippets:        defaultSnippets,
 				TargetDirectory: "gradle/wrapper",

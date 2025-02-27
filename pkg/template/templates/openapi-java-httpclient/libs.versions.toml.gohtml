@@ -1,0 +1,17 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.SupportOnceTemplate*/ -}}
+{{- template "header-hash" }}
+
+[libraries]
+openFeignBom = { module = "io.github.openfeign:feign-bom", version = "13.5" }
+resilience4jBom = { module = "io.github.resilience4j:resilience4j-bom", version = "2.3.0" }
+jacksonBom = { module = "com.fasterxml.jackson:jackson-bom", version = "2.18.2" }
+micrometerBom = { module = "io.micrometer:micrometer-bom", version = "1.14.4" }
+slf4jBom = { module = "org.slf4j:slf4j-bom", version = "2.0.17" }
+primecodegenlibJavaBom = { module = "io.github.primelib.primecodegenlib.java:bom", version = "0.0.4" }
+jspecify = { module = "org.jspecify:jspecify", version = "1.0.0" }
+jetbrainsAnnotations = { module = "org.jetbrains:annotations", version = "26.0.1" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version = "4.12.0" }
+junixsocket = { module = "com.kohlschutter.junixsocket:junixsocket-core", version = "2.10.1" }
+
+[plugins]
+configuration = { id = "me.philippheuer.configuration", version = "0.14.0" }
