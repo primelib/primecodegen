@@ -20,6 +20,7 @@ type DocumentModel struct {
 }
 
 type CommonPackages struct {
+	Root       string
 	Client     string
 	Models     string
 	Enums      string
@@ -101,6 +102,7 @@ type Tag struct {
 // Service represents a named collection of operations
 type Service struct {
 	Name        string `yaml:"name"`
+	Type        string `yaml:"type,omitempty"` // Type returns the CodeType used for the service
 	Description string `yaml:"description,omitempty"`
 	Operations  []Operation
 }

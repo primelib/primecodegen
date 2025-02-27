@@ -56,7 +56,8 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 	// set packages
 	rootPackagePath := strings.ReplaceAll(opts.ArtifactGroupId+"."+opts.ArtifactId, "-", ".")
 	opts.PackageConfig = openapigenerator.CommonPackages{
-		Client:     rootPackagePath,
+		Root:       rootPackagePath,
+		Client:     rootPackagePath + ".client",
 		Models:     rootPackagePath + ".models",
 		Enums:      rootPackagePath + ".enums",
 		Operations: rootPackagePath + ".operations",
