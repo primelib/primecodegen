@@ -22,11 +22,11 @@ var V3Patchers = map[string]V3Config{
 		Func:           CreateOperationTagsFromDocTitle,
 	},
 	"fixOperationTags": {
-		ID:             "fixOperationTags",
+		ID:             "repairOperationTags",
 		Description:    "Ensures all operations have at least one tag, and that tags are documented in the document",
 		Enabled:        true,
 		CodeGeneration: false,
-		Func:           FixOperationTags,
+		Func:           RepairOperationTags,
 	},
 	"pruneOperationTags": {
 		ID:             "pruneOperationTags",
@@ -76,5 +76,12 @@ var V3Patchers = map[string]V3Config{
 		Enabled:        true,
 		CodeGeneration: true,
 		Func:           MissingSchemaTitle,
+	},
+	"pruneInvalidPaths": {
+		ID:             "pruneInvalidPaths",
+		Description:    "Removes all paths that are invalid (e.g. empty path, path with invalid characters)",
+		Enabled:        true,
+		CodeGeneration: true,
+		Func:           PruneInvalidPaths,
 	},
 }
