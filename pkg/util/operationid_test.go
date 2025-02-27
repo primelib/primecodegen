@@ -18,6 +18,7 @@ func TestToOperationId(t *testing.T) {
 		{"PATCH", "/api/v1/items/{id}/update", "patchItemByIdUpdateV1"},
 		{"GET", "/api/v1/books/{bookId}/file/*", "getBookByBookIdFileV1"},
 		{"PUT", "/api/v2/series/{seriesId}/read-progress/tachiyomi", "putSeriesBySeriesIdReadProgressTachiyomiV2"},
+		{"PUT", "/api/v1.2/updates/{id}", "putV12UpdateByIdV1"},
 	}
 
 	for _, tc := range testCases {
