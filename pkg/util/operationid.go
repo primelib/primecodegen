@@ -17,6 +17,7 @@ func ToOperationId(method string, url string) string {
 	version := ParseURLAPIVersion(url)
 	operationID = strings.Replace(operationID, "/v"+version+"/", "", 1)
 	operationID = strings.Replace(operationID, "*", "", 1)
+	operationID = strings.Replace(operationID, ".", "", -1)
 
 	return strings.ToLower(method) + CapitalizeAfterChars(operationID, []int32{'/', '-', ':'}, true) + "V" + version
 }
