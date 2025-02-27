@@ -38,7 +38,9 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 	// operations by tag
 	template.OperationsByTag = make(map[string][]Operation)
 	for _, op := range operations {
-		template.OperationsByTag[op.Tag] = append(template.OperationsByTag[op.Tag], op)
+		for _, tag := range op.Tags {
+			template.OperationsByTag[tag] = append(template.OperationsByTag[tag], op)
+		}
 	}
 
 	// services
@@ -46,6 +48,7 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 	for _, tag := range doc.Model.Tags {
 		service := Service{
 			Name:        tag.Name,
+			Type:        generator.ToClassName(template.Name + tag.Name),
 			Description: tag.Description,
 			Operations:  []Operation{},
 		}

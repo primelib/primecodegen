@@ -1,9 +1,15 @@
 {{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
 {{- template "header-singleline" }}
 
-package {{ .Package }};
+package {{ .Common.Packages.Root }};
 
-import {{ .Package }}.{{ .Metadata.Name }}Api;
+import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}Api;
+import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}ConsumerApi;
+
+{{- range $service := .Common.Services }}
+import {{ $.Common.Packages.Client }}.{{ $service.Type }}Api;
+import {{ $.Common.Packages.Client }}.{{ $service.Type }}ConsumerApi;
+{{- end }}
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -63,21 +69,33 @@ public class {{ .Metadata.Name }}Factory {
 
         if (config.api().isInterface()) {
             return buildClient(spec);
-        } else {
-            try {
-                {{ .Metadata.Name }}Api api = buildClient(s -> {
-                    s.api({{ .Metadata.Name }}Api.class);
-                    s.applySpec(config);
-                });
-                return config.api().getConstructor({{ .Metadata.Name }}Api.class).newInstance(api);
-            } catch (Exception ex) {
-                throw new IllegalArgumentException("api must have a constructor with one parameter of type {{ .Metadata.Name }}Api", ex);
-            }
         }
+        if (config.api() == {{ .Metadata.Name }}ConsumerApi.class) {
+            return (T) {{ .Metadata.Name }}Factory.buildConsumerClient({{ .Metadata.Name }}ConsumerApi.class, {{ .Metadata.Name }}Api.class, (InfonovaFactorySpec<{{ .Metadata.Name }}ConsumerApi>) config);
+        }
+{{- range $service := .Common.Services }}
+        if (config.api() == {{ $service.Type }}ConsumerApi.class) {
+            return (T) {{ $.Metadata.Name }}Factory.buildConsumerClient({{ $service.Type }}ConsumerApi.class, {{ $service.Type }}Api.class, (InfonovaFactorySpec<{{ $service.Type }}ConsumerApi>) config);
+        }
+{{- end }}
+
+        throw new IllegalArgumentException("api must be an compatible interface or consumer class");
     }
 
     public static {{ .Metadata.Name }}Api create() {
         return create(spec -> spec.api({{ .Metadata.Name }}Api.class));
+    }
+
+    private static <T, U> T buildConsumerClient(Class<T> consumerApiClass, Class<U> apiClass, InfonovaFactorySpec<T> config) {
+        try {
+            U api = buildClient(s -> {
+                s.api(apiClass);
+                s.applySpec(config);
+            });
+            return consumerApiClass.getConstructor(apiClass).newInstance(api);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("API must have a constructor with one parameter of type " + apiClass.getSimpleName(), ex);
+        }
     }
 
     private static <T> T buildClient(Consumer<{{ .Metadata.Name }}FactorySpec<T>> spec) {

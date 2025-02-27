@@ -77,6 +77,7 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 			Common:         common,
 			Package:        common.Packages.Client,
 			TagName:        service.Name,
+			TagType:        service.Type,
 			TagDescription: service.Description,
 			TagOperations:  service.Operations,
 		})

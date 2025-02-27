@@ -43,6 +43,7 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 
 	// set packages
 	opts.PackageConfig = openapigenerator.CommonPackages{
+		Root:       "client",
 		Client:     "client",
 		Models:     "models",
 		Enums:      "enums",

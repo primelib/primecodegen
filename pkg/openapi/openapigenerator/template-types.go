@@ -37,6 +37,7 @@ type APIEachTemplate struct {
 	Common         GlobalTemplate
 	Package        string
 	TagName        string // Name of the operation tag
+	TagType        string // Type returns the CodeType used for the service
 	TagDescription string // Description of the operation tag
 	TagOperations  []Operation
 }

@@ -1,9 +1,9 @@
 {{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
 {{- template "header-singleline" }}
 
-package {{ .Package }};
+package {{ .Common.Packages.Root }};
 
-import {{ .Package }}.{{ .Metadata.Name }}Api;
+import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}Api;
 import {{ .Common.Packages.Auth }}.ApiKeyAuthSpec;
 import {{ .Common.Packages.Auth }}.BasicAuthSpec;
 import {{ .Common.Packages.Auth }}.BearerAuthSpec;

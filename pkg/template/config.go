@@ -66,20 +66,20 @@ var allTemplates = []Config{
 	},
 	{
 		ID:          "openapi-java-httpclient",
-		Description: "OpenAPI Client for Go",
+		Description: "OpenAPI Client for Java",
 		Files: []File{
 			// factory
 			{
 				SourceTemplate:  "api_factory.gohtml",
 				Snippets:        defaultSnippets,
-				TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+				TargetDirectory: "src/main/java/{{ .Common.Packages.Root | toFilePath }}",
 				TargetFileName:  "{{ .Metadata.Name }}Factory.java",
 				Type:            TypeAPIOnce,
 			},
 			{
 				SourceTemplate:  "api_factoryspec.gohtml",
 				Snippets:        defaultSnippets,
-				TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+				TargetDirectory: "src/main/java/{{ .Common.Packages.Root | toFilePath }}",
 				TargetFileName:  "{{ .Metadata.Name }}FactorySpec.java",
 				Type:            TypeAPIOnce,
 			},
@@ -97,6 +97,21 @@ var allTemplates = []Config{
 				TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
 				TargetFileName:  "{{ .Metadata.Name }}ConsumerApi.java",
 				Type:            TypeAPIOnce,
+			},
+			// services
+			{
+				SourceTemplate:  "api_tag_default.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+				TargetFileName:  "{{ .TagType }}Api.java",
+				Type:            TypeAPIEach,
+			},
+			{
+				SourceTemplate:  "api_tag_consumer.gohtml",
+				Snippets:        defaultSnippets,
+				TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+				TargetFileName:  "{{ .TagType }}ConsumerApi.java",
+				Type:            TypeAPIEach,
 			},
 			// operations
 			{
