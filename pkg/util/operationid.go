@@ -2,6 +2,8 @@ package util
 
 import (
 	"strings"
+
+	"github.com/pb33f/libopenapi/orderedmap"
 )
 
 func ToOperationId(method string, url string) string {
@@ -32,17 +34,6 @@ func convertPathParameterToSingularIfFollowedByVariable(path string) string {
 		sections[i] = currentSection
 	}
 	return strings.Join(sections, "/")
-}
-
-var suffixes = map[string]string{
-	"ies":  "y",  // e.g., "cities" -> "city"
-	"ves":  "f",  // e.g., "wolves" -> "wolf"
-	"oes":  "o",  // e.g., "heroes" -> "hero"
-	"ses":  "s",  // e.g., "masses" -> "mass"
-	"xes":  "x",  // e.g., "foxes" -> "fox"
-	"ches": "ch", // e.g., "batches" -> "batch"
-	"shes": "sh", // e.g., "wishes" -> "wish"
-	"s":    "",   // e.g., "cats" -> "cat"
 }
 
 var irregularForms = map[string]string{
@@ -142,16 +133,29 @@ var irregularForms = map[string]string{
 	`you`:            `you`,
 }
 
+var pluralSuffixes = orderedmap.New[string, string]()
+
 func toSingular(word string) string {
+	if pluralSuffixes.Len() == 0 {
+		pluralSuffixes.Set("ies", "y")   // e.g., "cities" -> "city"
+		pluralSuffixes.Set("ves", "f")   // e.g., "wolves" -> "wolf"
+		pluralSuffixes.Set("oes", "o")   // e.g., "heroes" -> "hero"
+		pluralSuffixes.Set("ses", "s")   // e.g., "masses" -> "mass"
+		pluralSuffixes.Set("xes", "x")   // e.g., "foxes" -> "fox"
+		pluralSuffixes.Set("ches", "ch") // e.g., "batches" -> "batch"
+		pluralSuffixes.Set("shes", "sh") // e.g., "wishes" -> "wish"
+		pluralSuffixes.Set("s", "")      // e.g., "cats" -> "cat"
+	}
+
 	// irregular forms
 	if val, ok := irregularForms[word]; ok {
 		return val
 	}
 
 	// regular forms
-	for pluralSuffix, singularSuffix := range suffixes {
-		if strings.HasSuffix(word, pluralSuffix) {
-			return strings.TrimSuffix(word, pluralSuffix) + singularSuffix
+	for item := pluralSuffixes.Oldest(); item != nil; item = item.Next() {
+		if strings.HasSuffix(word, item.Key) {
+			return strings.TrimSuffix(word, item.Key) + item.Value
 		}
 	}
 
