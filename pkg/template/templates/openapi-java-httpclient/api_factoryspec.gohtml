@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.processing.Generated;
 
 /**
- * A specification to construct a {@link {{ .Metadata.Name }}Api} instance.
+ * A specification to construct a client instance.
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -82,7 +82,7 @@ public final class {{ .Metadata.Name }}FactorySpec<T> extends FeignModuleSpec<{{
     private String logLevel = "none";
 
     /**
-     * Constructs a validated implementation of {@link {{ .Metadata.Name }}Api}.
+     * Constructs a validated implementation of the specification.
      *
      * @param spec the specification to process
      */
