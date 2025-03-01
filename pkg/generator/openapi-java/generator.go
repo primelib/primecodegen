@@ -328,9 +328,11 @@ func (g *JavaGenerator) TypeToImport(iType openapigenerator.CodeType) string {
 
 func (g *JavaGenerator) PostProcessContent(name string, content []byte) []byte {
 	// clean imports
-	if strings.HasSuffix(name, ".java") {
-		content = CleanJavaImports(content)
-	}
+	/*
+		if strings.HasSuffix(name, ".java") {
+			content = CleanJavaImports(content)
+		}
+	*/
 
 	return content
 }
@@ -357,7 +359,7 @@ func (g *JavaGenerator) PostProcessing(files []template.RenderedFile) error {
 	}
 
 	slog.Debug("Post processing java files using "+fmtBinary, "file_len", len(files))
-	cmd := exec.Command(fmtBinary, "-r", "--aosp")
+	cmd := exec.Command(fmtBinary, "-r", "--fix-imports-only")
 	cmd.Args = append(cmd.Args, formatFiles...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

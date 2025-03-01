@@ -42,10 +42,10 @@ public class {{ .Metadata.Name }}ConsumerApi {
     * {{ $op.Description }}
     {{- end }}
     *
-    {{- if $op.Parameters }}
+    {{- if $op.MutableParameters }}
     * @param spec a consumer that creates the payload for this operation. Supports the following properties:
     * <ul>
-    {{- range $param := $op.Parameters }}
+    {{- range $param := $op.MutableParameters }}
     *   <li>{{ $param.Name }}: {{ $param.Description | commentSingleLine }}</li>
     {{- end }}
     * </ul>
@@ -68,7 +68,7 @@ public class {{ .Metadata.Name }}ConsumerApi {
     {{- if $op.Parameters }}
     public {{ $op.ReturnType.QualifiedType }} {{ $op.Name }}(Consumer<{{ $op.Name }}OperationSpec> spec) {
         {{$op.Name }}OperationSpec r = new {{ $op.Name }}OperationSpec(spec);
-        {{ if ne $op.ReturnType.QualifiedType "void" }}return {{ end }}api.{{ $op.Name }}({{ range $i, $param := $op.Parameters }}r.{{ $param.Name }}(){{ if notLast $op.Parameters $i }}, {{ end }}{{ end }});
+        {{ if ne $op.ReturnType.QualifiedType "void" }}return {{ end }}api.{{ $op.Name }}({{ range $i, $param := $op.MutableParameters }}r.{{ $param.Name }}(){{ if notLast $op.MutableParameters $i }}, {{ end }}{{ end }});
     }
     {{- else }}
     public {{ $op.ReturnType.QualifiedType }} {{ $op.Name }}() {

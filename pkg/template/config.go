@@ -2,8 +2,8 @@ package template
 
 var defaultSnippets = []string{"global-layout.gohtml"}
 
-var allTemplates = []Config{
-	{
+var allTemplates = map[string]Config{
+	"openapi-go-httpclient": {
 		ID:          "openapi-go-httpclient",
 		Description: "OpenAPI Client for Go",
 		Files: []File{
@@ -64,7 +64,7 @@ var allTemplates = []Config{
 			},
 		},
 	},
-	{
+	"openapi-java-httpclient": {
 		ID:          "openapi-java-httpclient",
 		Description: "OpenAPI Client for Java",
 		Files: []File{
