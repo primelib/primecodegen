@@ -21,9 +21,22 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.processing.Generated;
 
+/**
+ * {{ .Service.Type }}Api
+{{- if .Service.Description }}
+ *
+ * {{ .Service.Description }}
+{{- end }}
+{{- if .Service.Documentation }}
+ *
+{{- range $doc := .Service.Documentation }}
+ * @see <a href="{{ $doc.URL }}">{{ $doc.Title }}</a>
+{{- end }}
+{{- end }}
+ */
 @Generated(value = "io.github.primelib.primecodegen")
-public interface {{ .TagType }}Api {
-{{ range $op := .TagOperations }}
+public interface {{ .Service.Type }}Api {
+{{ range $op := .Service.Operations }}
     /**
     * {{ $op.Name }}
     * {{ $op.Summary }}

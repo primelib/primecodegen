@@ -9,13 +9,13 @@ import (
     "{{ .Metadata.ArtifactId }}/pkgs/operations"
 )
 
-{{ $serviceName := printf "%sService" (.TagName | pascalCase) }}
-{{- if .TagDescription }}
-// {{ $serviceName }} {{ .TagDescription | commentSingleLine }}
+{{ $serviceName := printf "%sService" (.Service.Name | pascalCase) }}
+{{- if .Service.Description }}
+// {{ $serviceName }} {{ .Service.Description | commentSingleLine }}
 {{- end }}
 type {{ $serviceName }} Service
 
-{{- range $op := .TagOperations }}
+{{- range $op := .Service.Operations }}
 // {{ $op.Name }}{{if $op.Description }} {{ $op.Description | commentSingleLine }}{{ end }}
 //
 {{- range $doc := $op.Documentation }}

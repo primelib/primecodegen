@@ -26,15 +26,28 @@ import java.util.Map;
 import java.util.function.Consumer;
 import javax.annotation.processing.Generated;
 
+/**
+ * {{ .Service.Type }}ConsumerApi
+{{- if .Service.Description }}
+ *
+ * {{ .Service.Description }}
+{{- end }}
+{{- if .Service.Documentation }}
+ *
+{{- range $doc := .Service.Documentation }}
+ * @see <a href="{{ $doc.URL }}">{{ $doc.Title }}</a>
+{{- end }}
+{{- end }}
+ */
 @Generated(value = "io.github.primelib.primecodegen")
-public class {{ .TagType }}ConsumerApi {
-    private final {{ .TagType }}Api api;
+public class {{ .Service.Type }}ConsumerApi {
+    private final {{ .Service.Type }}Api api;
 
-    public {{ .TagType }}ConsumerApi({{ .TagType }}Api api) {
+    public {{ .Service.Type }}ConsumerApi({{ .Service.Type }}Api api) {
         this.api = api;
     }
 
-{{ range $op := .TagOperations }}
+{{ range $op := .Service.Operations }}
     /**
     * {{ $op.Name }}
     * {{ $op.Summary }}

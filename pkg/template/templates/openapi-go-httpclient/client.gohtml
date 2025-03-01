@@ -23,7 +23,9 @@ type Client struct {
 	restyClient *resty.Client
 
 {{- range $k, $v := .Common.Services }}
+{{- if $v.Description }}
     // {{ $v.Description }}
+{{- end }}
     {{ $v.Name | pascalCase }} *{{ $v.Name | pascalCase }}Service
 {{- end }}
 }
