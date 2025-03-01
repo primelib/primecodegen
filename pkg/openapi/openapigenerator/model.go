@@ -224,8 +224,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					StaticValue: requestBody.Key(),
 				}
 				if !slices.Contains(addedParameters, gen.ToParameterName(headerParam.Name)) {
-					operation.HeaderParameters = append(operation.HeaderParameters, headerParam)
-					operation.Parameters = append(operation.Parameters, headerParam)
+					operation.AddParameter(headerParam)
 				}
 
 				// body type
@@ -240,8 +239,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					Type:        gen.PostProcessType(bodyType),
 					Required:    true,
 				}
-				operation.BodyParameter = &bodyParam
-				operation.Parameters = append(operation.Parameters, bodyParam)
+				operation.AddParameter(bodyParam)
 			}
 
 			// response type

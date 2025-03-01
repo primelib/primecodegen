@@ -110,25 +110,26 @@ type Service struct {
 }
 
 type Operation struct {
-	Name             string          `yaml:"name,omitempty"`
-	Path             string          `yaml:"path"`
-	Method           string          `yaml:"method"`
-	Summary          string          `yaml:"summary,omitempty"`     // Short description
-	Description      string          `yaml:"description,omitempty"` // Long description
-	Tag              string          `yaml:"tag,omitempty"`
-	Tags             []string        `yaml:"tags,omitempty"`
-	ReturnType       CodeType        `yaml:"returnType,omitempty"`
-	Deprecated       bool            `yaml:"deprecated,omitempty"`
-	DeprecatedReason string          `yaml:"deprecatedReason,omitempty"`
-	Parameters       []Parameter     `yaml:"parameters,omitempty"`
-	PathParameters   []Parameter     `yaml:"pathParameters,omitempty"`
-	QueryParameters  []Parameter     `yaml:"queryParameters,omitempty"`
-	HeaderParameters []Parameter     `yaml:"headerParameters,omitempty"`
-	CookieParameters []Parameter     `yaml:"cookieParameters,omitempty"`
-	BodyParameter    *Parameter      `yaml:"bodyParameter,omitempty"`
-	Imports          []string        `yaml:"imports,omitempty"`
-	Documentation    []Documentation `yaml:"documentation,omitempty"`
-	Stability        string          `yaml:"stability,omitempty"`
+	Name              string          `yaml:"name,omitempty"`
+	Path              string          `yaml:"path"`
+	Method            string          `yaml:"method"`
+	Summary           string          `yaml:"summary,omitempty"`     // Short description
+	Description       string          `yaml:"description,omitempty"` // Long description
+	Tag               string          `yaml:"tag,omitempty"`
+	Tags              []string        `yaml:"tags,omitempty"`
+	ReturnType        CodeType        `yaml:"returnType,omitempty"`
+	Deprecated        bool            `yaml:"deprecated,omitempty"`
+	DeprecatedReason  string          `yaml:"deprecatedReason,omitempty"`
+	Parameters        []Parameter     `yaml:"parameters,omitempty"`        // Parameters holds all parameters, including static ones that can not be overridden
+	MutableParameters []Parameter     `yaml:"mutableParameters,omitempty"` // MutableParameters can be supplied by the user
+	PathParameters    []Parameter     `yaml:"pathParameters,omitempty"`
+	QueryParameters   []Parameter     `yaml:"queryParameters,omitempty"`
+	HeaderParameters  []Parameter     `yaml:"headerParameters,omitempty"`
+	CookieParameters  []Parameter     `yaml:"cookieParameters,omitempty"`
+	BodyParameter     *Parameter      `yaml:"bodyParameter,omitempty"`
+	Imports           []string        `yaml:"imports,omitempty"`
+	Documentation     []Documentation `yaml:"documentation,omitempty"`
+	Stability         string          `yaml:"stability,omitempty"`
 }
 
 func (o *Operation) HasParametersWithType(paramType string) bool {
@@ -141,21 +142,12 @@ func (o *Operation) HasParametersWithType(paramType string) bool {
 	return false
 }
 
-func (o *Operation) NonStaticParameters() []Parameter {
-	var nonStaticParams []Parameter
-
-	for _, p := range o.Parameters {
-		if p.StaticValue == "" {
-			nonStaticParams = append(nonStaticParams, p)
-		}
-	}
-
-	return nonStaticParams
-}
-
 func (o *Operation) AddParameter(parameter Parameter) {
 	// add parameter to parameter type list
 	o.Parameters = append(o.Parameters, parameter)
+	if parameter.StaticValue == "" {
+		o.MutableParameters = append(o.MutableParameters, parameter)
+	}
 	switch parameter.In {
 	case "path":
 		o.PathParameters = append(o.PathParameters, parameter)

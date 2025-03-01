@@ -31,7 +31,7 @@ public interface {{ .TagType }}Api {
     * {{ $op.Description }}
     {{- end }}
     *
-    {{- range $param := $op.Parameters }}
+    {{- range $param := $op.MutableParameters }}
     * @param {{ $param.Name }} {{ $param.Description }}
     {{- end }}
     {{- if $op.Documentation }}
@@ -46,20 +46,24 @@ public interface {{ .TagType }}Api {
     {{- if eq $op.Stability "experimental" }}
     @ApiStatus.Experimental
     {{- end }}
-    @RequestLine("{{ $op.Method | upperCase }} {{ $op.Path }}{{ if $op.QueryParameters }}?{{ range $i, $p := $op.QueryParameters }}{{ $p.Name }}={{$p.FieldName | wrapIn "{" "}" }}{{ if notLast $op.QueryParameters $i }}&{{ end }}{{ end }}{{ end }}")
+    @RequestLine("{{ $op.Method | upperCase }} {{ $op.Path }}{{ if $op.QueryParameters }}?{{ range $i, $p := $op.QueryParameters }}{{ $p.Name }}={{$p.Name | wrapIn "{" "}" }}{{ if notLast $op.QueryParameters $i }}&{{ end }}{{ end }}{{ end }}")
     {{- if $op.HeaderParameters }}
     @Headers({
     {{- range $i, $p := $op.HeaderParameters }}
-        "{{ $p.Name }}: {{ $p.FieldName | wrapIn "{" "}"}}"{{ if notLast $op.HeaderParameters $i }},{{ end }}
+    {{- if $p.StaticValue }}
+        "{{ $p.FieldName }}: {{ $p.StaticValue }}"{{ if notLast $op.HeaderParameters $i }},{{ end }}
+    {{- else }}
+        "{{ $p.FieldName }}: {{ $p.Name | wrapIn "{" "}"}}"{{ if notLast $op.HeaderParameters $i }},{{ end }}
+    {{- end }}
     {{- end }}
     })
     {{- end }}
     {{- if $op.Deprecated }}
     @Deprecated
     {{- end }}
-    {{ $op.ReturnType.QualifiedType }} {{ $op.Name }}{{- if gt (len $op.Parameters) 0 }}(
-        {{- range $i, $param := $op.Parameters }}
-            {{if $param.Required}}@NotNull{{else}}@Nullable{{end}} {{if ne $param.In "body"}}@Param("{{ $param.FieldName }}") {{end}}{{$param.Type.QualifiedType}} {{$param.Name}}{{if notLast $op.Parameters $i}},{{end}}
+    {{ $op.ReturnType.QualifiedType }} {{ $op.Name }}{{- if gt (len $op.MutableParameters) 0 }}(
+        {{- range $i, $param := $op.MutableParameters }}
+            {{if $param.Required}}@NotNull{{else}}@Nullable{{end}} {{if ne $param.In "body"}}@Param("{{ $param.Name }}") {{end}}{{$param.Type.QualifiedType}} {{$param.Name}}{{if notLast $op.MutableParameters $i}},{{end}}
         {{- end }}
     );{{ else }}();{{ end }}
 {{ end }}

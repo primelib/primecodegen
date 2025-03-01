@@ -18,18 +18,18 @@ import (
 var templateFS embed.FS
 
 func RenderTemplateById(templateId string, outputDir string, templateType Type, data interface{}, opts RenderOpts) ([]RenderedFile, error) {
-	for _, t := range allTemplates {
-		if t.ID == templateId {
-			return RenderTemplate(t, outputDir, templateType, data, opts)
-		}
+	templateConfig, exists := allTemplates[templateId]
+	if !exists {
+		return nil, errors.Join(ErrTemplateNotFound, fmt.Errorf("template id not found: %s", templateId))
 	}
 
-	return nil, errors.Join(ErrTemplateNotFound, errors.New("template id: "+templateId))
+	return RenderTemplate(templateConfig, outputDir, templateType, data, opts)
 }
 
 // RenderTemplate renders the template with the provided data and returns the rendered files
 func RenderTemplate(config Config, outputDir string, templateType Type, data interface{}, opts RenderOpts) ([]RenderedFile, error) {
 	var files []RenderedFile
+	templateFiles := config.FilesByType(templateType)
 
 	// pre-load all template files
 	tmpl := make(map[string]*template.Template)
@@ -50,11 +50,7 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 
 	// render templates
 	// TODO: concurrency
-	for _, file := range config.Files {
-		if file.Type != templateType {
-			continue
-		}
-
+	for _, file := range templateFiles {
 		var renderedContent bytes.Buffer
 		if file.SourceTemplate != "" {
 			t := tmpl[file.SourceTemplate]

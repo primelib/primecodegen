@@ -35,6 +35,16 @@ type Config struct {
 	Files       []File // Files is a list of files that will be rendered
 }
 
+func (c Config) FilesByType(t Type) []File {
+	var files []File
+	for _, f := range c.Files {
+		if f.Type == t {
+			files = append(files, f)
+		}
+	}
+	return files
+}
+
 type File struct {
 	Description     string   // Description is a human-readable description of the template
 	SourceTemplate  string   // SourceTemplate is the path to the template file

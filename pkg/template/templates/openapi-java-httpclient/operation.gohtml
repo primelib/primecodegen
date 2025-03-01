@@ -52,7 +52,7 @@ public class {{.Operation.Name}}OperationSpec {
     @ApiStatus.Experimental
     public static Boolean VALIDATION_ENABLED = true;
 
-    {{- range $param := .Operation.Parameters }}
+    {{- range $param := .Operation.MutableParameters }}
 
     /**
      * {{ $param.Description | commentSingleLine }}
@@ -79,7 +79,7 @@ public class {{.Operation.Name}}OperationSpec {
      * @throws NullPointerException
      */
     public void validate() {
-        {{- range $param := .Operation.Parameters }}
+        {{- range $param := .Operation.MutableParameters }}
         {{- if $param.Required }}
         Objects.requireNonNull({{ $param.Name }}, "{{ $param.Name }} is a required parameter!");
         {{- end }}
