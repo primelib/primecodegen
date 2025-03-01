@@ -1,0 +1,33 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.SupportOnceTemplate*/ -}}
+# {{ .Metadata.DisplayName }}
+
+A java http client library for {{ .Metadata.DisplayName }}.
+
+## Installation
+
+```
+implementation("{{ .Metadata.ArtifactGroupId }}:{{ .Metadata.ArtifactId }}:<version>")
+```
+
+## Usage
+
+*Create client instances using the factory, you can choose different interfaces by changing the `api` parameter.*
+
+```java
+{{ .Metadata.Name }}Api client = {{ .Metadata.Name }}Factory.create(spec -> {
+    spec.api({{ .Metadata.Name }}Api.class);
+    spec.baseUrl("{{ .Common.Endpoints.DefaultEndpoint }}");
+    spec.basicAuth(basic -> {
+        basic.username("admin");
+        basic.password("admin");
+    });
+    //spec.meterRegistry(meterRegistry);
+    //spec.logLevel("FULL");
+});
+```
+
+{{- if .Metadata.LicenseName }}
+## License
+
+This project is licensed under the [{{ .Metadata.LicenseName }}]({{ .Metadata.LicenseUrl }}) license.
+{{- end }}
