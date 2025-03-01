@@ -3,7 +3,6 @@ package openapigenerator
 import (
 	"fmt"
 	"os"
-	"path"
 	"strings"
 	"sync"
 
@@ -24,9 +23,9 @@ func GeneratorById(id string, allGenerators []CodeGenerator) (CodeGenerator, err
 	return nil, fmt.Errorf("generator with id %s not found", id)
 }
 
-func GenerateFiles(templateId string, outputDir string, templateData DocumentModel, renderOpts template.RenderOpts, generatorOpts GenerateOpts) ([]template.RenderedFile, error) {
+func GenerateFiles(templateId string, outputDir string, templateData DocumentModel, renderOpts template.RenderOpts, generatorOpts GenerateOpts) (map[string]template.RenderedFile, error) {
 	log.Debug().Str("template-id", templateId).Str("output-dir", outputDir).Msg("Generating files")
-	var files []template.RenderedFile
+	files := make(map[string]template.RenderedFile)
 	var filesMutex sync.Mutex
 
 	// print template data
@@ -112,12 +111,12 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 
 	// render files
 	log.Debug().Str("templateId", templateId).Str("outputDir", outputDir).Int("files", len(data)).Msg("rendering template files")
-	group := parallelizer.NewGroup(parallelizer.WithPoolSize(32))
+	group := parallelizer.NewGroup(parallelizer.WithPoolSize(6))
 	defer group.Close()
 
 	for _, d := range data {
 		group.Add(func() error {
-			var renderedFiles []template.RenderedFile
+			var renderedFiles map[string]template.RenderedFile
 			var renderErr error
 
 			switch d.(type) {
@@ -140,7 +139,9 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 			}
 
 			filesMutex.Lock()
-			files = append(files, renderedFiles...)
+			for k, v := range renderedFiles {
+				files[k] = v
+			}
 			filesMutex.Unlock()
 
 			return nil
@@ -153,65 +154,4 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 	}
 
 	return files, nil
-}
-
-func RemoveFilesListedInMetadata(outputDir string) error {
-	writtenFiles := path.Join(outputDir, ".openapi-generator", "FILES")
-	log.Debug().Str("output-dir", outputDir).Str("lookup-file", writtenFiles).Msg("Clearing generated files")
-
-	// open the file for reading
-	file, err := os.Open(writtenFiles)
-	if err != nil {
-		return nil // no metadata file found, no files to remove
-	}
-	defer file.Close()
-
-	// read each file name from the file
-	var files []string
-	scanner := yaml.NewDecoder(file)
-	for scanner.Decode(&files) == nil {
-		for _, f := range files {
-			absFile := path.Join(outputDir, f)
-
-			if fileInfo, err := os.Stat(absFile); err == nil && fileInfo.Mode().IsRegular() {
-				remErr := os.Remove(absFile)
-				if remErr != nil {
-					return fmt.Errorf("failed to remove file: %w", remErr)
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-// WriteMetadata generates metadata about the generated files for the output directory
-func WriteMetadata(outputDir string, files []template.RenderedFile) error {
-	writtenFiles := path.Join(outputDir, ".openapi-generator", "FILES")
-
-	// ensure output directory exists
-	err := os.MkdirAll(path.Dir(writtenFiles), os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
-	}
-
-	// open the file for writing
-	file, err := os.Create(writtenFiles)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer file.Close()
-
-	// write each file name to the file
-	for _, f := range files {
-		if f.State == template.FileRendered {
-			relativeFile := strings.TrimPrefix(strings.TrimPrefix(f.File, outputDir), "/")
-			_, err := file.WriteString(relativeFile + "\n")
-			if err != nil {
-				return fmt.Errorf("failed to write to file: %w", err)
-			}
-		}
-	}
-
-	return nil
 }

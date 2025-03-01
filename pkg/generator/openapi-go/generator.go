@@ -3,6 +3,8 @@ package openapi_go
 import (
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
 	"os/exec"
 	"slices"
 	"strings"
@@ -60,12 +62,6 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		return fmt.Errorf("failed to build template data: %w", err)
 	}
 
-	// remove generated files
-	err = openapigenerator.RemoveFilesListedInMetadata(opts.OutputDir)
-	if err != nil {
-		return fmt.Errorf("failed to clear generated files: %w", err)
-	}
-
 	// generate files
 	files, err := openapigenerator.GenerateFiles(fmt.Sprintf("openapi-%s-%s", g.Id(), opts.TemplateId), opts.OutputDir, templateData, template.RenderOpts{
 		DryRun:               opts.DryRun,
@@ -88,6 +84,20 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		log.Debug().Str("file", f.File).Str("template-file", f.TemplateFile).Str("state", string(f.State)).Msg("Generated file")
 	}
 	log.Info().Msgf("Generated %d files", len(files))
+
+	// delete old files (oldfiles - files)
+	oldFiles := openapigenerator.FilesListedInMetadata(opts.OutputDir)
+	for _, f := range oldFiles {
+		if _, ok := files[f]; !ok {
+			log.Debug().Str("file", f).Msg("Removing obsolete file")
+			if !opts.DryRun {
+				err = openapigenerator.RemoveGeneratedFile(opts.OutputDir, f)
+				if err != nil {
+					return fmt.Errorf("failed to remove generated file: %w", err)
+				}
+			}
+		}
+	}
 
 	// post-processing (formatting)
 	err = g.PostProcessing(opts.OutputDir)
@@ -290,19 +300,31 @@ func (g *GoGenerator) TypeToImport(iType openapigenerator.CodeType) string {
 	return g.typeToImport[typeName]
 }
 
+const gofmtBinary = "gofmt"
+const goimportsBinary = "goimports"
+
 func (g *GoGenerator) PostProcessing(outputDir string) error {
+	if os.Getenv("PRIMECODEGEN_SKIP_POST_PROCESSING") == "true" {
+		slog.Debug("Skipping post processing java files")
+		return nil
+	}
+
 	// run gofmt
-	cmd := exec.Command("gofmt", "-s", "-w", outputDir)
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error running gofmt: %v", err)
+	if openapigenerator.IsBinaryAvailable(gofmtBinary) {
+		cmd := exec.Command(gofmtBinary, "-s", "-w", outputDir)
+		err := cmd.Run()
+		if err != nil {
+			return fmt.Errorf("error running %s: %v", gofmtBinary, err)
+		}
 	}
 
 	// run goimports
-	cmd = exec.Command("goimports", "-w", outputDir)
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error running goimports: %v", err)
+	if openapigenerator.IsBinaryAvailable(goimportsBinary) {
+		cmd := exec.Command(goimportsBinary, "-w", outputDir)
+		err := cmd.Run()
+		if err != nil {
+			return fmt.Errorf("error running %s: %v", goimportsBinary, err)
+		}
 	}
 
 	return nil

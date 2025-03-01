@@ -12,21 +12,19 @@ import (
 type SchemaMatchFunc func(schema *base.Schema) bool
 
 func SimplifyPolymorphism(schemaName string, schemaProxy *base.SchemaProxy, schemas *orderedmap.Map[string, *base.SchemaProxy], schemataMap map[string]string) (*base.SchemaProxy, error) {
-	log.Debug().Str("schema", schemaName).Msg("Processing")
-
 	schemataMap[schemaName] = ""
 	schema, err := schemaProxy.BuildSchema()
 	if err != nil {
 		return nil, fmt.Errorf("error building schema: %w", err)
 	}
-	if !IsPolypmorphicSchema(schema) && schemaProxy.IsReference() {
+	if !IsPolymorphicSchema(schema) && schemaProxy.IsReference() {
 		return nil, nil
 	}
 
 	// merge properties of derived schemata referencing a base schema using allOf into the base schema
 	if len(schema.AllOf) > 0 {
 		for _, schemaRef := range schema.AllOf {
-			err := mergeAllOf(schemaRef, schema, schemaName, schemas, schemataMap, "AllOf")
+			err = mergeAllOf(schemaRef, schema, schemaName, schemas, schemataMap, "AllOf")
 			if err != nil {
 				return nil, fmt.Errorf("error merging schemas: %w", err)
 			}
@@ -38,7 +36,7 @@ func SimplifyPolymorphism(schemaName string, schemaProxy *base.SchemaProxy, sche
 	// merge properties of derived schemata referenced using anyOf inside a base-schema into the base-schema
 	if len(schema.AnyOf) > 0 {
 		for _, schemaRef := range schema.AnyOf {
-			err := mergeAnyOfOneOf(schemaRef, schema, schemaName, schemas, schemataMap, "AnyOf")
+			err = mergeAnyOfOneOf(schemaRef, schema, schemaName, schemas, schemataMap, "AnyOf")
 			if err != nil {
 				return nil, fmt.Errorf("error merging schemas: %w", err)
 			}
@@ -50,7 +48,7 @@ func SimplifyPolymorphism(schemaName string, schemaProxy *base.SchemaProxy, sche
 	// merge properties of derived schemata referenced using oneOf inside a base-schema into the base-schema
 	if len(schema.OneOf) > 0 {
 		for _, schemaRef := range schema.OneOf {
-			err := mergeAnyOfOneOf(schemaRef, schema, schemaName, schemas, schemataMap, "OneOf")
+			err = mergeAnyOfOneOf(schemaRef, schema, schemaName, schemas, schemataMap, "OneOf")
 			if err != nil {
 				return nil, fmt.Errorf("error merging schemas: %w", err)
 			}
@@ -383,8 +381,8 @@ func IsEnumSchema(s *base.Schema) bool {
 	return false
 }
 
-// IsPolypmorphicSchema returns true if the schema is a polymorphic schema (allOf, oneOf, anyOf)
-func IsPolypmorphicSchema(s *base.Schema) bool {
+// IsPolymorphicSchema returns true if the schema is a polymorphic schema (allOf, oneOf, anyOf)
+func IsPolymorphicSchema(s *base.Schema) bool {
 	if IsEnumSchema(s) {
 		return false
 	}

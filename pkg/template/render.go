@@ -9,15 +9,18 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"sync"
 	"text/template"
 
 	"github.com/primelib/primecodegen/pkg/util"
+	"github.com/rs/zerolog/log"
+	"github.com/shomali11/parallelizer"
 )
 
 //go:embed templates/*
 var templateFS embed.FS
 
-func RenderTemplateById(templateId string, outputDir string, templateType Type, data interface{}, opts RenderOpts) ([]RenderedFile, error) {
+func RenderTemplateById(templateId string, outputDir string, templateType Type, data interface{}, opts RenderOpts) (map[string]RenderedFile, error) {
 	templateConfig, exists := allTemplates[templateId]
 	if !exists {
 		return nil, errors.Join(ErrTemplateNotFound, fmt.Errorf("template id not found: %s", templateId))
@@ -27,8 +30,9 @@ func RenderTemplateById(templateId string, outputDir string, templateType Type, 
 }
 
 // RenderTemplate renders the template with the provided data and returns the rendered files
-func RenderTemplate(config Config, outputDir string, templateType Type, data interface{}, opts RenderOpts) ([]RenderedFile, error) {
-	var files []RenderedFile
+func RenderTemplate(config Config, outputDir string, templateType Type, data interface{}, opts RenderOpts) (map[string]RenderedFile, error) {
+	files := make(map[string]RenderedFile)
+	var filesMutex sync.Mutex
 	templateFiles := config.FilesByType(templateType)
 
 	// pre-load all template files
@@ -40,81 +44,89 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 
 		t, err := loadTemplate(config.ID, append([]string{file.SourceTemplate}, file.Snippets...), opts.TemplateFunctions)
 		if err != nil {
-			return nil, errors.Join(
-				ErrFailedToParseTemplate,
-				fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err),
-			)
+			return nil, errors.Join(ErrFailedToParseTemplate, fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err))
 		}
 		tmpl[file.SourceTemplate] = t
 	}
 
 	// render templates
-	// TODO: concurrency
+	group := parallelizer.NewGroup(parallelizer.WithPoolSize(6))
+	defer group.Close()
 	for _, file := range templateFiles {
-		var renderedContent bytes.Buffer
-		if file.SourceTemplate != "" {
-			t := tmpl[file.SourceTemplate]
+		group.Add(func() error {
+			var renderedContent bytes.Buffer
+			if file.SourceTemplate != "" {
+				t := tmpl[file.SourceTemplate]
 
-			err := t.Execute(&renderedContent, data)
-			if err != nil {
-				return nil, errors.Join(
-					ErrFailedToRenderTemplate,
-					fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err),
-				)
-			}
-		} else if file.SourceUrl != "" {
-			err := util.DownloadBytes(file.SourceUrl, &renderedContent)
-			if err != nil {
-				return nil, errors.Join(
-					ErrFailedToDownloadTemplateFile,
-					fmt.Errorf("failed to download template from %s: %w", file.SourceUrl, err),
-				)
-			}
-		} else {
-			return nil, errors.Join(ErrTemplateFileOrUrlIsRequired, errors.New("template id: "+file.TargetDirectory+"/"+file.TargetFileName))
-		}
-
-		// variables in dir or name
-		resolvedDir, err := resolveName(file.TargetDirectory, data)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve directory name: %w", err)
-		}
-		resolvedFile, err := resolveName(file.TargetFileName, data)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve file name: %w", err)
-		}
-
-		// write to file
-		// TODO: allow variables in target file name
-		targetDir := filepath.Join(outputDir, resolvedDir)
-		targetFile := filepath.Join(targetDir, resolvedFile)
-		skippedByScope := len(opts.Types) > 0 && !slices.Contains(opts.Types, file.Type)
-		skippedByName := slices.Contains(opts.IgnoreFiles, file.TargetFileName)
-		output := renderedContent.Bytes()
-		if opts.PostProcess != nil {
-			output = opts.PostProcess(resolvedFile, output)
-		}
-
-		var state FileState
-		if opts.DryRun {
-			state = FileDryRun
-		} else if skippedByName {
-			state = FileSkippedName
-		} else if skippedByScope {
-			state = FileSkippedScope
-		} else {
-			err = os.MkdirAll(targetDir, 0755)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create directory %s: %w", targetDir, err)
+				err := t.Execute(&renderedContent, data)
+				if err != nil {
+					return errors.Join(ErrFailedToRenderTemplate, fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err))
+				}
+			} else if file.SourceUrl != "" {
+				err := util.DownloadBytes(file.SourceUrl, &renderedContent)
+				if err != nil {
+					return errors.Join(
+						ErrFailedToDownloadTemplateFile,
+						fmt.Errorf("failed to download template from %s: %w", file.SourceUrl, err),
+					)
+				}
+			} else {
+				return errors.Join(ErrTemplateFileOrUrlIsRequired, errors.New("template id: "+file.TargetDirectory+"/"+file.TargetFileName))
 			}
 
-			err = os.WriteFile(targetFile, output, 0644)
+			// variables in dir or name
+			resolvedDir, err := resolveName(file.TargetDirectory, data)
 			if err != nil {
-				return nil, fmt.Errorf("failed to write rendered file %s: %w", targetFile, err)
+				return fmt.Errorf("failed to resolve directory name: %w", err)
 			}
-			state = FileRendered
-		}
-		files = append(files, RenderedFile{File: targetFile, TemplateFile: file.SourceTemplate, State: state})
+			resolvedFile, err := resolveName(file.TargetFileName, data)
+			if err != nil {
+				return fmt.Errorf("failed to resolve file name: %w", err)
+			}
+
+			// write to file
+			// TODO: allow variables in target file name
+			targetDir := filepath.Join(outputDir, resolvedDir)
+			targetFile := filepath.Join(targetDir, resolvedFile)
+			skippedByScope := len(opts.Types) > 0 && !slices.Contains(opts.Types, file.Type)
+			skippedByName := slices.Contains(opts.IgnoreFiles, file.TargetFileName)
+			output := renderedContent.Bytes()
+			if opts.PostProcess != nil {
+				output = opts.PostProcess(resolvedFile, output)
+			}
+
+			var state FileState
+			if opts.DryRun {
+				state = FileDryRun
+			} else if skippedByName {
+				state = FileSkippedName
+			} else if skippedByScope {
+				state = FileSkippedScope
+			} else {
+				err = os.MkdirAll(targetDir, 0755)
+				if err != nil {
+					return fmt.Errorf("failed to create directory %s: %w", targetDir, err)
+				}
+
+				err = os.WriteFile(targetFile, output, 0644)
+				if err != nil {
+					return fmt.Errorf("failed to write rendered file %s: %w", targetFile, err)
+				}
+				state = FileRendered
+			}
+			log.Debug().Str("template-id", config.ID).Str("file", targetFile).Msg("Rendered file")
+
+			filesMutex.Lock()
+			files[targetFile] = RenderedFile{File: targetFile, TemplateFile: file.SourceTemplate, State: state}
+			filesMutex.Unlock()
+
+			return nil
+		})
+	}
+
+	err := group.Wait()
+	if err != nil {
+		return nil, fmt.Errorf("failed to render template: %w", err)
 	}
 
 	return files, nil
