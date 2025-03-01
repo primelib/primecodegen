@@ -7,6 +7,7 @@ import (
 
 	"github.com/cidverse/go-ptr"
 	"github.com/pb33f/libopenapi"
+	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/openapi/openapiutil"
@@ -216,11 +217,31 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 
 			// request body
 			if rb := op.Value.RequestBody; rb != nil {
-				bodyType, err := gen.ToCodeType(rb.Content.First().Value().Schema.Schema(), CodeTypeSchemaResponse, false)
+				requestBody := rb.Content.First()
+
+				// content-type header
+				contentType, err := gen.ToCodeType(&base.Schema{Type: []string{"string"}, Format: ""}, CodeTypeSchemaParameter, true)
+				if err != nil {
+					return operations, fmt.Errorf("error converting type of [%s:%s:contentType]: %w", path.Key, op.Key, err)
+				}
+				headerParam := Parameter{
+					Name:        gen.ToParameterName("Content-Type"),
+					FieldName:   "Content-Type",
+					In:          "header",
+					Type:        contentType,
+					Required:    true,
+					StaticValue: requestBody.Key(),
+				}
+				if !slices.Contains(addedParameters, gen.ToParameterName(headerParam.Name)) {
+					operation.HeaderParameters = append(operation.HeaderParameters, headerParam)
+					operation.Parameters = append(operation.Parameters, headerParam)
+				}
+
+				// body type
+				bodyType, err := gen.ToCodeType(requestBody.Value().Schema.Schema(), CodeTypeSchemaResponse, false)
 				if err != nil {
 					return operations, fmt.Errorf("error converting type of [%s:%s:bodyType]: %w", path.Key, op.Key, err)
 				}
-
 				bodyParam := Parameter{
 					Name:        "payload",
 					In:          "body",

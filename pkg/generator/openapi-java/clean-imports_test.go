@@ -11,20 +11,25 @@ func TestCleanJavaImports(t *testing.T) {
 		import java.util.List;
 		import java.util.Map;
 		import java.util.ArrayList;
-		
+		import com.example.BookMetadata;
+
 		public class Test {
 			public static void main(String[] args) {
 				List<String> list = new ArrayList<>();
+				Map<String, BookMetadata> map = new HashMap<>();
 			}
 		}
 	`)
 	expected := []byte(`
 		import java.util.List;
+		import java.util.Map;
 		import java.util.ArrayList;
-		
+		import com.example.BookMetadata;
+
 		public class Test {
 			public static void main(String[] args) {
 				List<String> list = new ArrayList<>();
+				Map<String, BookMetadata> map = new HashMap<>();
 			}
 		}
 	`)
@@ -51,7 +56,7 @@ func TestFindUnusedImports(t *testing.T) {
 		import java.util.List;
 		import java.util.Map;
 		import java.util.ArrayList;
-		
+
 		public class Test {
 			public static void main(String[] args) {
 				List<String> list = new ArrayList<>();

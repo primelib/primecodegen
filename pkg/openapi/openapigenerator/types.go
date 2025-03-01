@@ -139,6 +139,18 @@ func (o Operation) HasParametersWithType(paramType string) bool {
 	return false
 }
 
+func (o Operation) NonStaticParameters() []Parameter {
+	var nonStaticParams []Parameter
+
+	for _, p := range o.Parameters {
+		if p.StaticValue == "" {
+			nonStaticParams = append(nonStaticParams, p)
+		}
+	}
+
+	return nonStaticParams
+}
+
 type Parameter struct {
 	Name             string                                  `yaml:"name,omitempty"`
 	FieldName        string                                  `yaml:"fieldName,omitempty"` // FieldName is the original name of the parameter
@@ -148,6 +160,7 @@ type Parameter struct {
 	IsPrimitiveType  bool                                    `yaml:"isPrimitiveType,omitempty"`
 	Required         bool                                    `yaml:"required,omitempty"`
 	AllowedValues    map[string]openapidocument.AllowedValue `yaml:"allowedValues,omitempty"`
+	StaticValue      string                                  `yaml:"staticValue,omitempty"`
 	Deprecated       bool                                    `yaml:"deprecated,omitempty"`
 	DeprecatedReason string                                  `yaml:"deprecatedReason,omitempty"`
 }

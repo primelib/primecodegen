@@ -61,15 +61,18 @@ func findUnusedImports(content []byte, imports []string) (unusedImports []string
 		}
 
 		patterns := []string{
-			"new " + className,
-			className + ".",
-			className + " ",
-			"@" + className,
-			className + "(",
-			className + "::",
-			className + "<",
-			className + "[]",
-			"<" + className + ">",
+			"new " + className,     // e.g. new ClassName
+			className + ".",        // e.g. ClassName.
+			className + " ",        // e.g. ClassName
+			"@" + className,        // e.g. @ClassName
+			className + "(",        // e.g. ClassName(
+			className + "::",       // e.g. ClassName::
+			className + "<",        // e.g. ClassName<
+			className + "[]",       // e.g. ClassName[]
+			"<" + className + ">",  // e.g. Any<ClassName>
+			"<" + className + ",",  // e.g. Map<ClassName,
+			"," + className + ">",  // e.g. Map<String,ClassName>
+			", " + className + ">", // e.g. Map<String, ClassName>
 		}
 
 		isUsed := false

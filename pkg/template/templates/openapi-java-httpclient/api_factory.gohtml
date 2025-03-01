@@ -55,6 +55,10 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.function.Consumer;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -71,11 +75,11 @@ public class {{ .Metadata.Name }}Factory {
             return buildClient(spec);
         }
         if (config.api() == {{ .Metadata.Name }}ConsumerApi.class) {
-            return (T) {{ .Metadata.Name }}Factory.buildConsumerClient({{ .Metadata.Name }}ConsumerApi.class, {{ .Metadata.Name }}Api.class, (InfonovaFactorySpec<{{ .Metadata.Name }}ConsumerApi>) config);
+            return (T) {{ .Metadata.Name }}Factory.buildConsumerClient({{ .Metadata.Name }}ConsumerApi.class, {{ .Metadata.Name }}Api.class, ({{ .Metadata.Name }}FactorySpec<{{ .Metadata.Name }}ConsumerApi>) config);
         }
 {{- range $service := .Common.Services }}
         if (config.api() == {{ $service.Type }}ConsumerApi.class) {
-            return (T) {{ $.Metadata.Name }}Factory.buildConsumerClient({{ $service.Type }}ConsumerApi.class, {{ $service.Type }}Api.class, (InfonovaFactorySpec<{{ $service.Type }}ConsumerApi>) config);
+            return (T) {{ $.Metadata.Name }}Factory.buildConsumerClient({{ $service.Type }}ConsumerApi.class, {{ $service.Type }}Api.class, ({{ $.Metadata.Name }}FactorySpec<{{ $service.Type }}ConsumerApi>) config);
         }
 {{- end }}
 
@@ -86,7 +90,7 @@ public class {{ .Metadata.Name }}Factory {
         return create(spec -> spec.api({{ .Metadata.Name }}Api.class));
     }
 
-    private static <T, U> T buildConsumerClient(Class<T> consumerApiClass, Class<U> apiClass, InfonovaFactorySpec<T> config) {
+    private static <T, U> T buildConsumerClient(Class<T> consumerApiClass, Class<U> apiClass, {{ .Metadata.Name }}FactorySpec<T> config) {
         try {
             U api = buildClient(s -> {
                 s.api(apiClass);
@@ -111,6 +115,34 @@ public class {{ .Metadata.Name }}Factory {
                             .header("Proxy-Authorization", Credentials.basic(config.proxy().username(), new String(config.proxy().password())))
                             .build();
                 });
+            }
+        }
+
+        // insecure
+        if (config.insecure()) {
+            try {
+                TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        @Override
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {}
+
+                        @Override
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {}
+
+                        @Override
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return new java.security.cert.X509Certificate[]{};
+                        }
+                    }
+                };
+
+                SSLContext sslContext = SSLContext.getInstance("SSL");
+                sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
+                clientBuilder.hostnameVerifier((hostname, session) -> true);
+                clientBuilder.sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustAllCerts[0]);
+            } catch (Exception ex) {
+                throw new RuntimeException("failed to configure insecure mode", ex);
             }
         }
 
