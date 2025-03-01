@@ -73,12 +73,6 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		return fmt.Errorf("failed to build template data: %w", err)
 	}
 
-	// remove generated files
-	err = openapigenerator.RemoveFilesListedInMetadata(opts.OutputDir)
-	if err != nil {
-		return fmt.Errorf("failed to clear generated files: %w", err)
-	}
-
 	// generate files
 	files, err := openapigenerator.GenerateFiles(fmt.Sprintf("openapi-%s-%s", g.Id(), opts.TemplateId), opts.OutputDir, templateData, template.RenderOpts{
 		DryRun:               opts.DryRun,
@@ -86,7 +80,6 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		IgnoreFiles:          nil,
 		IgnoreFileCategories: nil,
 		Properties:           map[string]string{},
-		PostProcess:          g.PostProcessContent,
 		TemplateFunctions: texttemplate.FuncMap{
 			"toClassName":     g.ToClassName,
 			"toFunctionName":  g.ToFunctionName,
@@ -102,6 +95,20 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		log.Debug().Str("file", f.File).Str("template-file", f.TemplateFile).Str("state", string(f.State)).Msg("Generated file")
 	}
 	log.Info().Msgf("Generated %d files", len(files))
+
+	// delete old files (oldfiles - files)
+	oldFiles := openapigenerator.FilesListedInMetadata(opts.OutputDir)
+	for _, f := range oldFiles {
+		if _, ok := files[f]; !ok {
+			log.Debug().Str("file", f).Msg("Removing obsolete file")
+			if !opts.DryRun {
+				err = openapigenerator.RemoveGeneratedFile(opts.OutputDir, f)
+				if err != nil {
+					return fmt.Errorf("failed to remove generated file: %w", err)
+				}
+			}
+		}
+	}
 
 	// post-processing (formatting)
 	err = g.PostProcessing(files)
@@ -326,46 +333,31 @@ func (g *JavaGenerator) TypeToImport(iType openapigenerator.CodeType) string {
 	return g.typeToImport[typeName]
 }
 
-func (g *JavaGenerator) PostProcessContent(name string, content []byte) []byte {
-	// clean imports
-	/*
-		if strings.HasSuffix(name, ".java") {
-			content = CleanJavaImports(content)
-		}
-	*/
+const googleJavaFormatBinary = "google-java-format"
 
-	return content
-}
-
-const fmtBinary = "google-java-format"
-
-func (g *JavaGenerator) PostProcessing(files []template.RenderedFile) error {
+func (g *JavaGenerator) PostProcessing(files map[string]template.RenderedFile) error {
 	if os.Getenv("PRIMECODEGEN_SKIP_POST_PROCESSING") == "true" {
 		slog.Debug("Skipping post processing java files")
 		return nil
 	}
 
-	_, err := exec.LookPath(fmtBinary)
-	if err != nil {
-		slog.Warn(fmtBinary + " not found in PATH, skipping formatting")
-		return nil
-	}
-
-	var formatFiles []string
-	for _, f := range files {
-		if strings.HasSuffix(f.File, ".java") && f.State == template.FileRendered {
-			formatFiles = append(formatFiles, f.File)
+	if openapigenerator.IsBinaryAvailable(googleJavaFormatBinary) {
+		var formatFiles []string
+		for _, f := range files {
+			if strings.HasSuffix(f.File, ".java") && f.State == template.FileRendered {
+				formatFiles = append(formatFiles, f.File)
+			}
 		}
-	}
 
-	slog.Debug("Post processing java files using "+fmtBinary, "file_len", len(files))
-	cmd := exec.Command(fmtBinary, "-r", "--fix-imports-only")
-	cmd.Args = append(cmd.Args, formatFiles...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error running %s: %v", fmtBinary, err)
+		slog.Debug("Post processing java files using "+googleJavaFormatBinary, "file_len", len(files))
+		cmd := exec.Command(googleJavaFormatBinary, "-r", "--fix-imports-only")
+		cmd.Args = append(cmd.Args, formatFiles...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Run()
+		if err != nil {
+			return fmt.Errorf("error running %s: %v", googleJavaFormatBinary, err)
+		}
 	}
 
 	return nil

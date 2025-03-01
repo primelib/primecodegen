@@ -20,7 +20,6 @@ func MergePolymorphicSchemas(v3Model *libopenapi.DocumentModel[v3.Document]) err
 
 	// component schemas
 	for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-		log.Debug().Str("components.schema", schema.Key).Msg("merging")
 		var err error
 		schema.Value, err = openapidocument.SimplifyPolymorphism(schema.Key, schema.Value, v3Model.Model.Components.Schemas, derivedSchemaReplacementMap)
 		if err != nil {
