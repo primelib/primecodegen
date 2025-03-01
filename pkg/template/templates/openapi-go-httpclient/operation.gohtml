@@ -14,13 +14,13 @@ import (
 
 {{ $reqStructName := printf "%sRequest" (.Name) }}
 type {{ $reqStructName }} struct {
-{{- range .Operation.HeaderParameters }}
+{{- range .Operation.MutableHeaderParameter }}
 	{{ .Name | toPropertyName }} {{ .Type.QualifiedDeclaration }} `headerParam:"style=simple,explode=false,name={{ .FieldName }}"` {{ if .Description }}// {{ .Description | commentSingleLine }}{{ end }}
 {{- end }}
-{{- range .Operation.PathParameters }}
+{{- range .Operation.MutablePathParameters }}
 	{{ .Name | toPropertyName }} {{ .Type.QualifiedDeclaration }} `pathParam:"style=simple,explode=false,name={{ .FieldName }}"` {{ if .Description }}// {{ .Description | commentSingleLine }}{{ end }}
 {{- end }}
-{{- range .Operation.QueryParameters }}
+{{- range .Operation.MutableQueryParameters }}
 	{{ .Name | toPropertyName }} {{ .Type.QualifiedDeclaration }} `queryParam:"style=simple,explode=false,name={{ .FieldName }}"` {{ if .Description }}// {{ .Description | commentSingleLine }}{{ end }}
 {{- end }}
 {{- if .Operation.BodyParameter }}
@@ -41,9 +41,11 @@ type {{ .Name }}Response struct {
 }
 
 // {{ .Operation.Name }}{{if .Operation.Description }} {{ .Operation.Description | commentSingleLine }}{{ end }}
+{{- if .Operation.Documentation }}
 //
 {{- range $doc := .Operation.Documentation }}
 // {{ $doc.Title }}: {{ $doc.URL }}
+{{- end }}
 {{- end }}
 //
 //meta:operation {{ .Operation.Method | upperCase }} {{ .Operation.Path }}
@@ -55,6 +57,9 @@ func {{ .Operation.Name | toFunctionName }}(client *resty.Client, ctx context.Co
 	if err != nil {
 		return nil, err
 	}
+{{- range .Operation.ImmutableHeaderParameter }}
+	r.SetHeader("{{ .FieldName }}", "{{ .StaticValue }}")
+{{- end }}
 	r.SetHeaders(reqData.HeaderParams)
 	r.SetPathParams(reqData.PathParams)
 	r.SetQueryParamsFromValues(reqData.QueryParams)

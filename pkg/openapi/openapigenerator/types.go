@@ -111,27 +111,35 @@ type Service struct {
 }
 
 type Operation struct {
-	Name                string          `yaml:"name,omitempty"`
-	Path                string          `yaml:"path"`
-	Method              string          `yaml:"method"`
-	Summary             string          `yaml:"summary,omitempty"`     // Short description
-	Description         string          `yaml:"description,omitempty"` // Long description
-	Tag                 string          `yaml:"tag,omitempty"`
-	Tags                []string        `yaml:"tags,omitempty"`
-	ReturnType          CodeType        `yaml:"returnType,omitempty"`
-	Deprecated          bool            `yaml:"deprecated,omitempty"`
-	DeprecatedReason    string          `yaml:"deprecatedReason,omitempty"`
-	Parameters          []Parameter     `yaml:"parameters,omitempty"`          // Parameters holds all parameters, including static ones that can not be overridden
-	MutableParameters   []Parameter     `yaml:"mutableParameters,omitempty"`   // MutableParameters can be supplied by the user
-	ImmutableParameters []Parameter     `yaml:"immutableParameters,omitempty"` // ImmutableParameters can not be overridden by the user
-	PathParameters      []Parameter     `yaml:"pathParameters,omitempty"`
-	QueryParameters     []Parameter     `yaml:"queryParameters,omitempty"`
-	HeaderParameters    []Parameter     `yaml:"headerParameters,omitempty"`
-	CookieParameters    []Parameter     `yaml:"cookieParameters,omitempty"`
-	BodyParameter       *Parameter      `yaml:"bodyParameter,omitempty"`
-	Imports             []string        `yaml:"imports,omitempty"`
-	Documentation       []Documentation `yaml:"documentation,omitempty"`
-	Stability           string          `yaml:"stability,omitempty"`
+	Name                     string          `yaml:"name,omitempty"`
+	Path                     string          `yaml:"path"`
+	Method                   string          `yaml:"method"`
+	Summary                  string          `yaml:"summary,omitempty"`     // Short description
+	Description              string          `yaml:"description,omitempty"` // Long description
+	Tag                      string          `yaml:"tag,omitempty"`
+	Tags                     []string        `yaml:"tags,omitempty"`
+	ReturnType               CodeType        `yaml:"returnType,omitempty"`
+	Deprecated               bool            `yaml:"deprecated,omitempty"`
+	DeprecatedReason         string          `yaml:"deprecatedReason,omitempty"`
+	Parameters               []Parameter     `yaml:"parameters,omitempty"`          // Parameters holds all parameters, including static ones that can not be overridden
+	MutableParameters        []Parameter     `yaml:"mutableParameters,omitempty"`   // MutableParameters can be supplied by the user
+	ImmutableParameters      []Parameter     `yaml:"immutableParameters,omitempty"` // ImmutableParameters can not be overridden by the user
+	PathParameters           []Parameter     `yaml:"pathParameters,omitempty"`
+	MutablePathParameters    []Parameter     `yaml:"mutablePathParameters,omitempty"`
+	ImmutablePathParameters  []Parameter     `yaml:"immutablePathParameters,omitempty"`
+	QueryParameters          []Parameter     `yaml:"queryParameters,omitempty"`
+	MutableQueryParameters   []Parameter     `yaml:"mutableQueryParameters,omitempty"`
+	ImmutableQueryParameters []Parameter     `yaml:"immutableQueryParameters,omitempty"`
+	HeaderParameters         []Parameter     `yaml:"headerParameters,omitempty"`
+	MutableHeaderParameter   []Parameter     `yaml:"mutableHeaderParameter,omitempty"`
+	ImmutableHeaderParameter []Parameter     `yaml:"immutableHeaderParameter,omitempty"`
+	CookieParameters         []Parameter     `yaml:"cookieParameters,omitempty"`
+	MutableCookieParameter   []Parameter     `yaml:"mutableCookieParameter,omitempty"`
+	ImmutableCookieParameter []Parameter     `yaml:"immutableCookieParameter,omitempty"`
+	BodyParameter            *Parameter      `yaml:"bodyParameter,omitempty"`
+	Imports                  []string        `yaml:"imports,omitempty"`
+	Documentation            []Documentation `yaml:"documentation,omitempty"`
+	Stability                string          `yaml:"stability,omitempty"`
 }
 
 func (o *Operation) HasParametersWithType(paramType string) bool {
@@ -145,22 +153,46 @@ func (o *Operation) HasParametersWithType(paramType string) bool {
 }
 
 func (o *Operation) AddParameter(parameter Parameter) {
-	// add parameter to parameter type list
+	isImmutable := parameter.StaticValue != ""
+	parameter.IsImmutable = isImmutable
+
 	o.Parameters = append(o.Parameters, parameter)
-	if parameter.StaticValue == "" {
-		o.MutableParameters = append(o.MutableParameters, parameter)
-	} else {
+	if isImmutable {
 		o.ImmutableParameters = append(o.ImmutableParameters, parameter)
+	} else {
+		o.MutableParameters = append(o.MutableParameters, parameter)
 	}
 	switch parameter.In {
 	case "path":
 		o.PathParameters = append(o.PathParameters, parameter)
+		if isImmutable {
+			o.ImmutablePathParameters = append(o.ImmutablePathParameters, parameter)
+		} else {
+			o.MutablePathParameters = append(o.MutablePathParameters, parameter)
+		}
 	case "query":
 		o.QueryParameters = append(o.QueryParameters, parameter)
+		if isImmutable {
+			o.ImmutableQueryParameters = append(o.ImmutableQueryParameters, parameter)
+		} else {
+			o.MutableQueryParameters = append(o.MutableQueryParameters, parameter)
+		}
 	case "header":
 		o.HeaderParameters = append(o.HeaderParameters, parameter)
+		if isImmutable {
+			o.ImmutableHeaderParameter = append(o.ImmutableHeaderParameter, parameter)
+		} else {
+			o.MutableHeaderParameter = append(o.MutableHeaderParameter, parameter)
+		}
 	case "cookie":
 		o.CookieParameters = append(o.CookieParameters, parameter)
+		if isImmutable {
+			o.ImmutableCookieParameter = append(o.ImmutableCookieParameter, parameter)
+		} else {
+			o.MutableCookieParameter = append(o.MutableCookieParameter, parameter)
+		}
+	case "body":
+		o.BodyParameter = &parameter
 	}
 
 	// replace original FieldName in method path with parameter name
@@ -174,6 +206,7 @@ type Parameter struct {
 	Description      string                                  `yaml:"description,omitempty"`
 	Type             CodeType                                `yaml:"type,omitempty"`
 	IsPrimitiveType  bool                                    `yaml:"isPrimitiveType,omitempty"`
+	IsImmutable      bool                                    `yaml:"isImmutable,omitempty"`
 	Required         bool                                    `yaml:"required,omitempty"`
 	AllowedValues    map[string]openapidocument.AllowedValue `yaml:"allowedValues,omitempty"`
 	StaticValue      string                                  `yaml:"staticValue,omitempty"`

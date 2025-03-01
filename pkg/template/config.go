@@ -35,7 +35,7 @@ var allTemplates = map[string]Config{
 				Description:     "model file",
 				SourceTemplate:  "enum.gohtml",
 				Snippets:        defaultSnippets,
-				TargetDirectory: "pkgs/models",
+				TargetDirectory: "pkgs/enums",
 				TargetFileName:  "{{ .Name }}.go",
 				Type:            TypeEnumEach,
 			},
