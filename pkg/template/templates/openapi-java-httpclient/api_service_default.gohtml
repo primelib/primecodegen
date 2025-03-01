@@ -63,7 +63,7 @@ public interface {{ .Service.Type }}Api {
     {{- if $op.HeaderParameters }}
     @Headers({
     {{- range $i, $p := $op.HeaderParameters }}
-    {{- if $p.StaticValue }}
+    {{- if $p.IsImmutable }}
         "{{ $p.FieldName }}: {{ $p.StaticValue }}"{{ if notLast $op.HeaderParameters $i }},{{ end }}
     {{- else }}
         "{{ $p.FieldName }}: {{ $p.Name | wrapIn "{" "}"}}"{{ if notLast $op.HeaderParameters $i }},{{ end }}
