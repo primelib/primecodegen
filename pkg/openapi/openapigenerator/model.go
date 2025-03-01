@@ -200,16 +200,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					Deprecated:       param.Deprecated,
 					DeprecatedReason: deprecatedReason,
 				}
-				operation.Parameters = append(operation.Parameters, p)
-				if p.In == "path" {
-					operation.PathParameters = append(operation.PathParameters, p)
-				} else if p.In == "query" {
-					operation.QueryParameters = append(operation.QueryParameters, p)
-				} else if p.In == "header" {
-					operation.HeaderParameters = append(operation.HeaderParameters, p)
-				} else if p.In == "cookie" {
-					operation.CookieParameters = append(operation.CookieParameters, p)
-				}
+				operation.AddParameter(p)
 				operation.Imports = append(operation.Imports, gen.TypeToImport(pType))
 
 				addedParameters = append(addedParameters, gen.ToParameterName(param.Name))

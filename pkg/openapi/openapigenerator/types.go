@@ -1,6 +1,8 @@
 package openapigenerator
 
 import (
+	"strings"
+
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 )
 
@@ -129,7 +131,7 @@ type Operation struct {
 	Stability        string          `yaml:"stability,omitempty"`
 }
 
-func (o Operation) HasParametersWithType(paramType string) bool {
+func (o *Operation) HasParametersWithType(paramType string) bool {
 	for _, p := range o.Parameters {
 		if p.In == paramType {
 			return true
@@ -139,7 +141,7 @@ func (o Operation) HasParametersWithType(paramType string) bool {
 	return false
 }
 
-func (o Operation) NonStaticParameters() []Parameter {
+func (o *Operation) NonStaticParameters() []Parameter {
 	var nonStaticParams []Parameter
 
 	for _, p := range o.Parameters {
@@ -149,6 +151,24 @@ func (o Operation) NonStaticParameters() []Parameter {
 	}
 
 	return nonStaticParams
+}
+
+func (o *Operation) AddParameter(parameter Parameter) {
+	// add parameter to parameter type list
+	o.Parameters = append(o.Parameters, parameter)
+	switch parameter.In {
+	case "path":
+		o.PathParameters = append(o.PathParameters, parameter)
+	case "query":
+		o.QueryParameters = append(o.QueryParameters, parameter)
+	case "header":
+		o.HeaderParameters = append(o.HeaderParameters, parameter)
+	case "cookie":
+		o.CookieParameters = append(o.CookieParameters, parameter)
+	}
+
+	// replace original FieldName in method path with parameter name
+	o.Path = strings.Replace(o.Path, "{"+parameter.FieldName+"}", "{"+parameter.Name+"}", -1)
 }
 
 type Parameter struct {
