@@ -33,13 +33,10 @@ type APIOnceTemplate struct {
 }
 
 type APIEachTemplate struct {
-	Metadata       Metadata // Metadata for the template, like artifact group and ID
-	Common         GlobalTemplate
-	Package        string
-	TagName        string // Name of the operation tag
-	TagType        string // Type returns the CodeType used for the service
-	TagDescription string // Description of the operation tag
-	TagOperations  []Operation
+	Metadata Metadata // Metadata for the template, like artifact group and ID
+	Common   GlobalTemplate
+	Package  string
+	Service  Service
 }
 
 type OperationEachTemplate struct {

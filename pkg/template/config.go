@@ -20,7 +20,7 @@ var allTemplates = map[string]Config{
 				SourceTemplate:  "service.gohtml",
 				Snippets:        defaultSnippets,
 				TargetDirectory: "",
-				TargetFileName:  "service-{{ .TagName }}.go",
+				TargetFileName:  "service-{{ .Service.Name }}.go",
 				Type:            TypeAPIEach,
 			},
 			{
@@ -85,14 +85,14 @@ var allTemplates = map[string]Config{
 			},
 			// api
 			{
-				SourceTemplate:  "api_main.gohtml",
+				SourceTemplate:  "api_main_default.gohtml",
 				Snippets:        defaultSnippets,
 				TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
 				TargetFileName:  "{{ .Metadata.Name }}Api.java",
 				Type:            TypeAPIOnce,
 			},
 			{
-				SourceTemplate:  "api_consumer.gohtml",
+				SourceTemplate:  "api_main_consumer.gohtml",
 				Snippets:        defaultSnippets,
 				TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
 				TargetFileName:  "{{ .Metadata.Name }}ConsumerApi.java",
@@ -100,17 +100,17 @@ var allTemplates = map[string]Config{
 			},
 			// services
 			{
-				SourceTemplate:  "api_tag_default.gohtml",
+				SourceTemplate:  "api_service_default.gohtml",
 				Snippets:        defaultSnippets,
 				TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
-				TargetFileName:  "{{ .TagType }}Api.java",
+				TargetFileName:  "{{ .Service.Type }}Api.java",
 				Type:            TypeAPIEach,
 			},
 			{
-				SourceTemplate:  "api_tag_consumer.gohtml",
+				SourceTemplate:  "api_service_consumer.gohtml",
 				Snippets:        defaultSnippets,
 				TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
-				TargetFileName:  "{{ .TagType }}ConsumerApi.java",
+				TargetFileName:  "{{ .Service.Type }}ConsumerApi.java",
 				Type:            TypeAPIEach,
 			},
 			// operations

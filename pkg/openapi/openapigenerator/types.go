@@ -103,10 +103,11 @@ type Tag struct {
 
 // Service represents a named collection of operations
 type Service struct {
-	Name        string `yaml:"name"`
-	Type        string `yaml:"type,omitempty"` // Type returns the CodeType used for the service
-	Description string `yaml:"description,omitempty"`
-	Operations  []Operation
+	Name          string `yaml:"name"`
+	Type          string `yaml:"type,omitempty"` // Type returns the CodeType used for the service
+	Description   string `yaml:"description,omitempty"`
+	Operations    []Operation
+	Documentation []Documentation `yaml:"documentation,omitempty"`
 }
 
 type Operation struct {

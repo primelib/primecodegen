@@ -48,13 +48,21 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 	template.Services = make(map[string]Service)
 	for _, tag := range doc.Model.Tags {
 		service := Service{
-			Name:        tag.Name,
-			Type:        generator.ToClassName(template.Name + tag.Name),
-			Description: tag.Description,
-			Operations:  []Operation{},
+			Name:          tag.Name,
+			Type:          generator.ToClassName(template.Name + tag.Name),
+			Description:   tag.Description,
+			Operations:    []Operation{},
+			Documentation: make([]Documentation, 0),
 		}
 		if _, ok := template.OperationsByTag[tag.Name]; ok {
 			service.Operations = append(service.Operations, template.OperationsByTag[tag.Name]...)
+		}
+
+		if tag.ExternalDocs != nil {
+			service.Documentation = append(service.Documentation, Documentation{
+				Title: tag.ExternalDocs.Description,
+				URL:   tag.ExternalDocs.URL,
+			})
 		}
 
 		template.Services[tag.Name] = service

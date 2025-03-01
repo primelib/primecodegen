@@ -72,13 +72,10 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 
 	for _, service := range templateData.Services {
 		data = append(data, APIEachTemplate{
-			Metadata:       metadata,
-			Common:         common,
-			Package:        common.Packages.Client,
-			TagName:        service.Name,
-			TagType:        service.Type,
-			TagDescription: service.Description,
-			TagOperations:  service.Operations,
+			Metadata: metadata,
+			Common:   common,
+			Package:  common.Packages.Client,
+			Service:  service,
 		})
 	}
 	for _, op := range templateData.Operations {
