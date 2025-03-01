@@ -49,6 +49,13 @@ var allTemplates = map[string]Config{
 			},
 			// support files
 			{
+				Description:    "README.md",
+				SourceTemplate: "readme.gohtml",
+				Snippets:       defaultSnippets,
+				TargetFileName: "README.md",
+				Type:           TypeSupportOnce,
+			},
+			{
 				Description:    "go.mod",
 				SourceTemplate: "gomod.gohtml",
 				Snippets:       defaultSnippets,
@@ -137,6 +144,13 @@ var allTemplates = map[string]Config{
 				Type:            TypeEnumEach,
 			},
 			// support files - gradle
+			{
+				Description:    "README.md",
+				SourceTemplate: "readme.gohtml",
+				Snippets:       defaultSnippets,
+				TargetFileName: "README.md",
+				Type:           TypeSupportOnce,
+			},
 			{
 				SourceTemplate:  "build.gradle.kts.gohtml",
 				Snippets:        defaultSnippets,

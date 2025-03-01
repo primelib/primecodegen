@@ -1,0 +1,20 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.SupportOnceTemplate*/ -}}
+# {{ .Metadata.DisplayName }}
+
+A go http client library for {{ .Metadata.DisplayName }}.
+
+## Installation
+
+```
+go get -u {{ .Metadata.ArtifactId }}
+```
+
+## Usage
+
+TODO
+
+{{- if .Metadata.LicenseName }}
+## License
+
+This project is licensed under the [{{ .Metadata.LicenseName }}]({{ .Metadata.LicenseUrl }}) license.
+{{- end }}
