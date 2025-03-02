@@ -18,6 +18,8 @@ import io.github.primelib.primecodegenlib.java.feign.common.api.AuthMethod;
 import io.github.primelib.primecodegenlib.java.feign.common.auth.ApiKeyAuthSpec;
 import io.github.primelib.primecodegenlib.java.feign.common.auth.BasicAuthSpec;
 import io.github.primelib.primecodegenlib.java.feign.common.auth.BearerAuthSpec;
+import io.github.primelib.primecodegenlib.java.feign.common.auth.OAuth2ClientCredentialsAuthSpec;
+import io.github.primelib.primecodegenlib.java.feign.common.auth.OAuth2UserCredentialsAuthSpec;
 import io.github.primelib.primecodegenlib.java.feign.common.config.FeignModuleSpec;
 import io.github.primelib.primecodegenlib.java.feign.common.config.ProxySpec;
 
@@ -132,6 +134,22 @@ public final class {{ .Metadata.Name }}FactorySpec<T> extends FeignModuleSpec<{{
 {{- if .Common.Auth.HasAuthScheme "bearer" }}
     public BearerAuthSpec bearerAuth(Consumer<BearerAuthSpec> spec) {
         BearerAuthSpec method = new BearerAuthSpec(spec);
+        auth.add(method);
+        return method;
+    }
+
+{{- end }}
+{{- if .Common.Auth.HasAuthVariant "oauth2ClientCredentialAuth" }}
+    public OAuth2ClientCredentialsAuthSpec oauth2ClientCredentialAuth(Consumer<OAuth2ClientCredentialsAuthSpec> spec) {
+        OAuth2ClientCredentialsAuthSpec method = new OAuth2ClientCredentialsAuthSpec(spec);
+        auth.add(method);
+        return method;
+    }
+
+{{- end }}
+{{- if .Common.Auth.HasAuthVariant "oauth2PasswordAuth" }}
+    public OAuth2UserCredentialsAuthSpec oauth2PasswordAuth(Consumer<OAuth2UserCredentialsAuthSpec> spec) {
+        OAuth2UserCredentialsAuthSpec method = new OAuth2UserCredentialsAuthSpec(spec);
         auth.add(method);
         return method;
     }

@@ -11,16 +11,48 @@ implementation("{{ .Metadata.ArtifactGroupId }}:{{ .Metadata.ArtifactId }}:<vers
 
 ## Usage
 
-*Create client instances using the factory, you can choose different interfaces by changing the `api` parameter.*
+**Create client instances using the factory, you can choose different interfaces by changing the `api` parameter.**
 
 ```java
 {{ .Metadata.Name }}Api client = {{ .Metadata.Name }}Factory.create(spec -> {
     spec.api({{ .Metadata.Name }}Api.class);
     spec.baseUrl("{{ .Common.Endpoints.DefaultEndpoint }}");
-    spec.basicAuth(basic -> {
-        basic.username("admin");
-        basic.password("admin");
+{{- if .Common.Auth.HasAuthScheme "apikey" }}
+    spec.apiKeyAuth(auth -> {
+        auth.propertyKey("x-api-key");
+        auth.apiKey("<apiKey>");
     });
+{{- end }}
+{{- if .Common.Auth.HasAuthScheme "basic" }}
+    spec.basicAuth(auth -> {
+        auth.username("<admin>");
+        auth.password("<password>");
+    });
+{{- end }}
+{{- if .Common.Auth.HasAuthScheme "bearer" }}
+    spec.bearerAuth(auth -> {
+        auth.valueTemplate("Bearer {token}"); // optional, default is "Bearer {token}"
+        auth.token("<token>");
+    });
+{{- end }}
+{{- if .Common.Auth.HasAuthVariant "oauth2ClientCredentialAuth" }}
+    spec.oauth2ClientCredentialAuth(auth -> {
+        auth.tokenEndpoint("<tokenEndpoint>");
+        auth.clientId("<clientId>");
+        auth.clientSecret("<clientSecret>");
+        // auth.idp(...) - instead of endpoint, client ID and client secret you can also pass a custom IDP implementation
+    });
+{{- end }}
+{{- if .Common.Auth.HasAuthVariant "oauth2PasswordAuth" }}
+    spec.oauth2PasswordAuth(auth -> {
+        auth.tokenEndpoint("<tokenEndpoint>");
+        auth.clientId("<clientId>");
+        auth.clientSecret("<clientSecret>");
+        auth.username("<username>");
+        auth.password("<password>");
+        // auth.idp(...) - instead of endpoint, client ID and client secret you can also pass a custom IDP implementation
+    });
+{{- end }}
     //spec.meterRegistry(meterRegistry);
     //spec.logLevel("FULL");
 });

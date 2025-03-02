@@ -120,10 +120,51 @@ func BuildAuth(doc *libopenapi.DocumentModel[v3.Document]) Auth {
 	var auth Auth
 
 	for security := doc.Model.Components.SecuritySchemes.Oldest(); security != nil; security = security.Next() {
-		auth.Methods = append(auth.Methods, AuthMethod{
-			Name:   security.Key,
-			Scheme: strings.ToLower(security.Value.Scheme),
-		})
+		securityValue := security.Value
+
+		authMethodType := strings.ToLower(securityValue.Type)
+		authMethod := AuthMethod{
+			Name:        security.Key,
+			Type:        authMethodType,
+			Scheme:      strings.ToLower(securityValue.Scheme),
+			Description: securityValue.Description,
+		}
+
+		switch authMethodType {
+		case "apikey":
+			if securityValue.In == "header" {
+				authMethod.Variant = "apiKeyHeaderAuth"
+				authMethod.HeaderParam = securityValue.Name
+			} else if securityValue.In == "query" {
+				authMethod.Variant = "apiKeyQueryAuth"
+				authMethod.QueryParam = securityValue.Name
+			}
+		case "http":
+			if securityValue.Scheme == "basic" {
+				authMethod.Variant = "basicAuth"
+			} else if securityValue.Scheme == "bearer" {
+				authMethod.Variant = "bearerAuth"
+
+			}
+		case "oauth2":
+			if securityValue.Flows != nil {
+				if securityValue.Flows.ClientCredentials != nil {
+					authMethod.Variant = "oauth2ClientCredentialAuth"
+					authMethod.TokenUrl = securityValue.Flows.ClientCredentials.TokenUrl
+				} else if securityValue.Flows.Password != nil {
+					authMethod.Variant = "oauth2PasswordAuth"
+					authMethod.TokenUrl = securityValue.Flows.Password.TokenUrl
+				} else if securityValue.Flows.AuthorizationCode != nil {
+					authMethod.Variant = "oauth2AuthorizationCodeAuth"
+					authMethod.TokenUrl = securityValue.Flows.AuthorizationCode.TokenUrl
+				} else if securityValue.Flows.Implicit != nil {
+					authMethod.Variant = "oauth2ImplicitAuth"
+					authMethod.TokenUrl = securityValue.Flows.Implicit.AuthorizationUrl
+				}
+			}
+		}
+
+		auth.Methods = append(auth.Methods, authMethod)
 	}
 
 	return auth
@@ -207,6 +248,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					Required:         getBoolValue(param.Required, false),
 					Deprecated:       param.Deprecated,
 					DeprecatedReason: deprecatedReason,
+					Stability:        getOrDefault(param.Extensions, "x-stability", "stable"),
 				}
 				operation.AddParameter(p)
 				operation.Imports = append(operation.Imports, gen.TypeToImport(pType))
