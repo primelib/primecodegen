@@ -1,6 +1,7 @@
 package openapidocument
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 )
 
@@ -50,7 +52,7 @@ func OpenDocumentWithBaseDir(input []byte, baseDir string) (libopenapi.Document,
 	// create a new document from specification bytes
 	document, err := libopenapi.NewDocumentWithConfiguration(input, &conf)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to create document from spec")
+		return nil, errors.Join(util.ErrOpenDocument, err)
 	}
 
 	return document, nil

@@ -32,20 +32,25 @@ func GenerateTemplateCmd() *cobra.Command {
 			}
 			log.Info().Str("input", in).Str("output", out).Msg("generating")
 
+			// patch
+			bytes, err := os.ReadFile(in)
+			if err != nil {
+				log.Fatal().Err(err).Msg("failed to read document")
+			}
+
+			bytes, err = openapipatch.ApplyPatches(bytes, patches)
+			if err != nil {
+				log.Fatal().Err(err).Msg("failed to apply input patches")
+			}
+
 			// open document
-			doc, err := openapidocument.OpenDocumentFile(in)
+			doc, err := openapidocument.OpenDocument(bytes)
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to open document")
 			}
 			v3doc, errs := doc.BuildV3Model()
 			if len(errs) > 0 {
 				log.Fatal().Errs("spec", errs).Msgf("failed to build v3 high level model")
-			}
-
-			// patch document
-			doc, v3doc, err = openapipatch.PatchV3(patches, doc, v3doc)
-			if err != nil {
-				log.Fatal().Err(err).Msg("failed to patch document")
 			}
 
 			// run generator
