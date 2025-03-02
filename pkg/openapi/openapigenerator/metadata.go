@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/primelib/primecodegen/pkg/template"
@@ -70,14 +71,19 @@ func WriteMetadata(outputDir string, files map[string]template.RenderedFile) err
 	}
 	defer file.Close()
 
-	// write each file name to the file
+	// write each file name to FILES
+	var fileList []string
 	for _, f := range files {
 		if f.State == template.FileRendered {
 			relativeFile := strings.TrimPrefix(strings.TrimPrefix(f.File, outputDir), "/")
-			_, err = file.WriteString(relativeFile + "\n")
-			if err != nil {
-				return fmt.Errorf("failed to write to file: %w", err)
-			}
+			fileList = append(fileList, relativeFile)
+		}
+	}
+	sort.Strings(fileList)
+	for _, fileName := range fileList {
+		_, err = file.WriteString(fileName + "\n")
+		if err != nil {
+			return fmt.Errorf("failed to write to file: %w", err)
 		}
 	}
 

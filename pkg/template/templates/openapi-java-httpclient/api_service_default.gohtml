@@ -56,9 +56,6 @@ public interface {{ .Service.Type }}Api {
     * @deprecated{{ if $op.DeprecatedReason }} {{ $op.DeprecatedReason }}{{ end }}
     {{- end }}
     */
-    {{- if eq $op.Stability "experimental" }}
-    @ApiStatus.Experimental
-    {{- end }}
     @RequestLine("{{ $op.Method | upperCase }} {{ $op.Path }}{{ if $op.QueryParameters }}?{{ range $i, $p := $op.QueryParameters }}{{ $p.Name }}={{$p.Name | wrapIn "{" "}" }}{{ if notLast $op.QueryParameters $i }}&{{ end }}{{ end }}{{ end }}")
     {{- if $op.HeaderParameters }}
     @Headers({
@@ -70,6 +67,9 @@ public interface {{ .Service.Type }}Api {
     {{- end }}
     {{- end }}
     })
+    {{- end }}
+    {{- if eq $op.Stability "experimental" }}
+    @ApiStatus.Experimental
     {{- end }}
     {{- if $op.Deprecated }}
     @Deprecated

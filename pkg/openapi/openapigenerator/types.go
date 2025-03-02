@@ -91,9 +91,24 @@ func (a Auth) HasAuthScheme(scheme string) bool {
 	return false
 }
 
+func (a Auth) HasAuthVariant(variant string) bool {
+	for _, m := range a.Methods {
+		if m.Variant == variant {
+			return true
+		}
+	}
+	return false
+}
+
 type AuthMethod struct {
-	Name   string
-	Scheme string
+	Name        string
+	Description string
+	Type        string // Type of the auth method, e.g. "apiKey", "http", "oauth2"
+	Variant     string // Variant of the auth method, e.g. "apiKey-header", "apiKey-query", "oauth-client-credentials", "oauth-password-credentials"
+	Scheme      string
+	HeaderParam string // HeaderParam is the name of the header parameter, if applicable
+	QueryParam  string // QueryParam is the name of the query parameter, if applicable
+	TokenUrl    string // TokenUrl is the URL to the token endpoint, if applicable
 }
 
 type Tag struct {
@@ -212,6 +227,7 @@ type Parameter struct {
 	StaticValue      string                                  `yaml:"staticValue,omitempty"`
 	Deprecated       bool                                    `yaml:"deprecated,omitempty"`
 	DeprecatedReason string                                  `yaml:"deprecatedReason,omitempty"`
+	Stability        string                                  `yaml:"stability,omitempty"`
 }
 
 type Model struct {

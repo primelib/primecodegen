@@ -55,9 +55,18 @@ public class {{.Operation.Name}}OperationSpec {
     {{- range $param := .Operation.MutableParameters }}
 
     /**
-     * {{ $param.Description | commentSingleLine }}
+     * {{ if $param.Description }}{{ $param.Description | commentSingleLine }}{{ else }}{{ $param.Name }}{{ end }}
+     *
+    {{- if $param.Deprecated }}
+    * @deprecated{{ if $param.DeprecatedReason }} {{ $param.DeprecatedReason }}{{ end }}
+    {{- end }}
      */
-    // TODO: annotations
+    {{- if eq $param.Stability "experimental" }}
+    @ApiStatus.Experimental
+    {{- end }}
+    {{- if $param.Deprecated }}
+    @Deprecated
+    {{- end }}
     private {{ $param.Type.QualifiedDeclaration }} {{ $param.Name }};
     {{- end }}
 
