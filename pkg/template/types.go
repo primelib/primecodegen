@@ -48,6 +48,7 @@ func (c Config) FilesByType(t Type) []File {
 type File struct {
 	Description     string   // Description is a human-readable description of the template
 	SourceTemplate  string   // SourceTemplate is the path to the template file
+	SourceFile      string   // SourceFile is the path to a file that will be copied as is
 	SourceUrl       string   // SourceUrl is the URL where the template or binary file can be downloaded from
 	Snippets        []string // Snippets is a list of paths to files that contain snippets that can be used in the template
 	TargetDirectory string   // TargetDirectory is the directory where the rendered file will be saved

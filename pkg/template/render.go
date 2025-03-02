@@ -53,7 +53,7 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 	group := parallelizer.NewGroup(parallelizer.WithPoolSize(6))
 	defer group.Close()
 	for _, file := range templateFiles {
-		group.Add(func() error {
+		err := group.Add(func() error {
 			var renderedContent bytes.Buffer
 			if file.SourceTemplate != "" {
 				t := tmpl[file.SourceTemplate]
@@ -62,13 +62,16 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 				if err != nil {
 					return errors.Join(ErrFailedToRenderTemplate, fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err))
 				}
+			} else if file.SourceFile != "" {
+				content, err := readTemplateFile([]string{config.ID, "_global"}, file.SourceFile)
+				if err != nil {
+					return errors.Join(ErrFailedToCopyTemplateFile, fmt.Errorf("failed to read template file %s: %w", file.SourceFile, err))
+				}
+				renderedContent.Write([]byte(content))
 			} else if file.SourceUrl != "" {
 				err := util.DownloadBytes(file.SourceUrl, &renderedContent)
 				if err != nil {
-					return errors.Join(
-						ErrFailedToDownloadTemplateFile,
-						fmt.Errorf("failed to download template from %s: %w", file.SourceUrl, err),
-					)
+					return errors.Join(ErrFailedToDownloadTemplateFile, fmt.Errorf("failed to download template from %s: %w", file.SourceUrl, err))
 				}
 			} else {
 				return errors.Join(ErrTemplateFileOrUrlIsRequired, errors.New("template id: "+file.TargetDirectory+"/"+file.TargetFileName))
@@ -122,6 +125,9 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 
 			return nil
 		})
+		if err != nil {
+			return nil, fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err)
+		}
 	}
 
 	err := group.Wait()
@@ -157,35 +163,59 @@ func loadTemplate(templateId string, files []string, customFunctions template.Fu
 	return nil, fmt.Errorf("neither embedded filesystem nor PRIMECODEGEN_TEMPLATE_DIR environment variable is set")
 }
 
+// loadTemplateById reads a template file from either the local filesystem or the embedded filesystem.
+//
+// It searches for the file in the given lookupTemplates directories, following the order of priority.
+//
+// Parameters:
+//   - lookupTemplates: A list of template directories to search in, ordered by priority.
+//   - templateFile: The name of the file to read.
 func loadTemplateById(tmpl *template.Template, lookupTemplates []string, templateFile string) error {
-	// local filesystem (PRIMECODEGEN_TEMPLATE_DIR has priority to allow easy customization of templates)
+	// read contents of the template file
+	content, err := readTemplateFile(lookupTemplates, templateFile)
+	if err != nil {
+		return err
+	}
+
+	// parse the template
+	_, err = tmpl.Parse(string(content))
+	if err != nil {
+		return fmt.Errorf("failed to parse template file %s: %w", templateFile, err)
+	}
+
+	return nil
+}
+
+// readTemplateFile reads a template file from either the local filesystem or the embedded filesystem.
+//
+// It searches for the file in the given lookupTemplates directories, following the order of priority.
+//
+// Parameters:
+//   - lookupTemplates: A list of template directories to search in, ordered by priority.
+//   - templateFile: The name of the file to read.
+func readTemplateFile(lookupTemplates []string, templateFile string) ([]byte, error) {
+	// check local filesystem (PRIMECODEGEN_TEMPLATE_DIR has priority to allow easy customization of templates)
 	templateDir := os.Getenv("PRIMECODEGEN_TEMPLATE_DIR")
 	if templateDir != "" {
 		for _, currentTemplateId := range lookupTemplates {
 			file := filepath.Join(templateDir, currentTemplateId, templateFile)
-			if _, err := os.Stat(file); err == nil {
-				_, err = tmpl.ParseFiles(file)
-				if err != nil {
-					return fmt.Errorf("failed to parse template file %s: %w", file, err)
-				}
-				return nil
+			content, err := os.ReadFile(file)
+			if err == nil {
+				return content, nil
 			}
 		}
 	}
 
-	// embedded filesystem
+	// check embedded filesystem
 	for _, currentTemplateId := range lookupTemplates {
 		embedFSFile := path.Join("templates", currentTemplateId, templateFile)
-		if _, err := templateFS.ReadFile(embedFSFile); err == nil {
-			_, err = tmpl.ParseFS(templateFS, embedFSFile)
-			if err != nil {
-				return fmt.Errorf("failed to parse embedded template file %s: %w", templateFile, err)
-			}
-			return nil
+		content, err := templateFS.ReadFile(embedFSFile)
+		if err == nil {
+			return content, nil
 		}
 	}
 
-	return fmt.Errorf("neither embedded filesystem nor PRIMECODEGEN_TEMPLATE_DIR provides template file %s", templateFile)
+	return nil, fmt.Errorf("template file %s not found in either embedded filesystem or PRIMECODEGEN_TEMPLATE_DIR", templateFile)
 }
 
 // resolveName resolves the file name by executing the template with the provided data
