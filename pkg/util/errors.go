@@ -5,7 +5,8 @@ import (
 )
 
 var (
-	ErrFileMissing            = fmt.Errorf("file is missing")
+	ErrReadDocumentFromFile   = fmt.Errorf("file is missing")
+	ErrOpenDocument           = fmt.Errorf("failed to open document")
 	ErrNoFilesSpecified       = fmt.Errorf("no files specified")
 	ErrDocumentMerge          = fmt.Errorf("failed to merge documents")
 	ErrFailedToPatchDocument  = fmt.Errorf("failed to patch document")

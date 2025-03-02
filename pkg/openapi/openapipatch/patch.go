@@ -3,40 +3,54 @@ package openapipatch
 import (
 	"errors"
 	"fmt"
+	"strings"
 
-	"github.com/pb33f/libopenapi"
-	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/primelib/primecodegen/pkg/commonpatch"
+	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
+	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 )
 
-// PatchV3 applies a list of patches to the given document and returns the modified document
-func PatchV3(patchIds []string, doc libopenapi.Document, v3doc *libopenapi.DocumentModel[v3.Document]) (libopenapi.Document, *libopenapi.DocumentModel[v3.Document], error) {
-	for _, patchId := range patchIds {
-		if patch, ok := V3Patchers[patchId]; ok {
-			log.Debug().Str("id", patch.ID).Msg("applying patch to spec")
-
-			patchErr := patch.Func(v3doc)
+func ApplyPatches(input []byte, patches []string) ([]byte, error) {
+	for _, patch := range patches {
+		// file-based patch
+		if strings.HasPrefix(patch, "file:") {
+			patchFile := strings.TrimPrefix(patch, "file:")
+			patchedBytes, patchErr := commonpatch.ApplyPatchFile(input, patchFile)
 			if patchErr != nil {
-				return doc, v3doc, fmt.Errorf("failed to patch document with [%s]: %w", patch.ID, patchErr)
+				return input, errors.Join(util.ErrFailedToPatchDocument, patchErr)
 			}
 
-			// reload document
-			var errs []error
-			_, doc, _, errs = doc.RenderAndReload()
-			if len(errs) > 0 {
-				return doc, v3doc, fmt.Errorf("failed to reload document after patching: %w", errors.Join(errs...))
+			input = patchedBytes
+		}
+
+		// builtin patch
+		if p, ok := V3Patchers[patch]; ok {
+			log.Debug().Str("id", p.ID).Msg("applying patch to spec")
+
+			doc, err := openapidocument.OpenDocument(input)
+			if err != nil {
+				return input, err
 			}
-			v3doc, errs = doc.BuildV3Model()
+
+			v3doc, errs := doc.BuildV3Model()
 			if len(errs) > 0 {
-				return doc, v3doc, fmt.Errorf("failed to build v3 high level model: %w", errors.Join(errs...))
+				return input, fmt.Errorf("failed to build v3 high level model: %w", errors.Join(errs...))
 			}
-		} else {
-			return doc, v3doc, fmt.Errorf("patch with given id not found: %s", patchId)
+
+			patchErr := p.Func(v3doc)
+			if patchErr != nil {
+				return input, fmt.Errorf("failed to patch document with [%s]: %w", p.ID, patchErr)
+			}
+
+			bytes, err := openapidocument.RenderV3Document(v3doc)
+			if err != nil {
+				return input, errors.Join(util.ErrRenderDocument, err)
+			}
+
+			input = bytes
 		}
 	}
 
-	// reload document
-	_, _, _, _ = doc.RenderAndReload()
-
-	return doc, v3doc, nil
+	return input, nil
 }
