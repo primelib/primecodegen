@@ -141,10 +141,25 @@ func flattenEnumsInComponentProperties(doc *libopenapi.DocumentModel[v3.Document
 func flattenInnerSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
 		valueSchema := schema.Value.Schema()
+
+		// top-level schema
+		if slices.Contains(valueSchema.Type, "array") && valueSchema.Items != nil {
+			itemSchema := valueSchema.Items.A.Schema()
+			if !valueSchema.Items.A.IsReference() && slices.Contains(itemSchema.Type, "object") {
+				key := util.ToPascalCase(schema.Key) + "Item"
+				log.Trace().Msg("moving top-level array inner schema to components: " + key)
+				if ref, err := moveSchemaIntoComponents(doc, key, valueSchema.Items.A); err != nil {
+					return fmt.Errorf("error moving top-level array object schema to components: %w", err)
+				} else if ref != nil {
+					valueSchema.Items.A = ref
+				}
+			}
+		}
+
+		// properties
 		if valueSchema.Properties == nil {
 			continue
 		}
-
 		for p := valueSchema.Properties.Oldest(); p != nil; p = p.Next() {
 			propSchema := p.Value.Schema()
 			if p.Value.IsReference() {
