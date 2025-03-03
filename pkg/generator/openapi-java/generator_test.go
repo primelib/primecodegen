@@ -27,6 +27,8 @@ var (
 	modelArrayOfString []byte
 	//go:embed specs/model-array-of-map.yaml
 	modelArrayOfMap []byte
+	//go:embed specs/model-array-oneof.yaml
+	modelArrayOfOneOf []byte
 )
 
 func TestBasicModel(t *testing.T) {
@@ -65,9 +67,6 @@ func TestArrayOfStringModel(t *testing.T) {
 	assert.Equal(t, "BookDto", templateData.Models[0].Name)
 	assert.Equal(t, true, templateData.Models[0].IsTypeAlias)
 	assert.Equal(t, "List<String>", templateData.Models[0].Parent.QualifiedType)
-
-	dumpJSON(templateData)
-
 }
 
 func TestArrayOfMapModel(t *testing.T) {
@@ -84,6 +83,22 @@ func TestArrayOfMapModel(t *testing.T) {
 	assert.Equal(t, "BookDto", templateData.Models[0].Name)
 	assert.Equal(t, true, templateData.Models[0].IsTypeAlias)
 	assert.Equal(t, "List<Map<String, String>>", templateData.Models[0].Parent.QualifiedType)
+}
+
+func TestArrayOfOneOf(t *testing.T) {
+	// arrange
+	v3doc := openapidocument.OpenV3DocumentForTest(modelArrayOfOneOf)
+
+	// act
+	templateData, err := openapigenerator.BuildTemplateData(v3doc, NewGenerator(), commonPackages)
+	assert.NoError(t, err)
+	assert.NotNil(t, templateData)
+
+	// assert
+	assert.Len(t, templateData.Models, 1)
+	assert.Equal(t, "BookDto", templateData.Models[0].Name)
+	assert.Equal(t, true, templateData.Models[0].IsTypeAlias)
+	assert.Equal(t, "List<String>", templateData.Models[0].Parent.QualifiedType)
 
 	dumpJSON(templateData)
 }

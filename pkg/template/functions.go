@@ -1,6 +1,7 @@
 package template
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"reflect"
@@ -53,6 +54,27 @@ var templateFunctions = template.FuncMap{
 	},
 	"commentSingleLine": func(input string) string {
 		return util.CommentSingleLine(input)
+	},
+	"commentMultiLine": func(prefix, input string) string {
+		var output bytes.Buffer
+
+		lines := strings.Split(input, "\n")
+		for i, line := range lines {
+			if i != 0 {
+				output.WriteString(prefix)
+			}
+			output.WriteString(line)
+			if i < len(lines)-1 {
+				output.WriteString("\n")
+			}
+		}
+
+		return output.String()
+	},
+	"escapeJavadoc": func(input string) string {
+		input = strings.Replace(input, "<", "&lt;", -1)
+		input = strings.Replace(input, ">", "&gt;", -1)
+		return input
 	},
 	"wrapIn": func(left string, right string, input string) string {
 		return left + input + right

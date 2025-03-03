@@ -18,6 +18,7 @@ import {{ $.Common.Packages.Models }}.{{ .Name }};
 import {{ $.Common.Packages.Operations }}.{{ .Name }}OperationSpec;
 {{- end }}
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +31,7 @@ import javax.annotation.processing.Generated;
  * {{ .Service.Type }}ConsumerApi
 {{- if .Service.Description }}
  *
- * {{ .Service.Description }}
+ * {{ .Service.Description | commentMultiLine " * " | escapeJavadoc }}
 {{- end }}
 {{- if .Service.Documentation }}
  *
@@ -52,7 +53,7 @@ public class {{ .Service.Type }}ConsumerApi {
     * {{ $op.Name }}
     * {{ $op.Summary }}
     {{- if $op.Description }}
-    * {{ $op.Description }}
+    * {{ $op.Description | commentMultiLine "    * " | escapeJavadoc }}
     {{- end }}
     *
     {{- if $op.MutableParameters }}

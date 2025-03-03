@@ -29,11 +29,11 @@ import javax.annotation.processing.Generated;
  * {{ .Operation.Name }}
 {{- if .Operation.Description }}
  * <p>
- * {{ .Operation.Description }}
+ * {{ .Operation.Description | commentMultiLine " * " | escapeJavadoc }}
 {{- end }}
  *
 {{- if .Operation.Deprecated }}
-* @deprecated{{ if .Operation.DeprecatedReason }} {{ .Operation.DeprecatedReason }}{{ end }}
+ * @deprecated{{ if .Operation.DeprecatedReason }} {{ .Operation.DeprecatedReason }}{{ end }}
 {{- end }}
  */
 @Getter

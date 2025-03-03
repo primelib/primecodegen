@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -16,6 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
+
 import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.processing.Generated;
@@ -25,7 +27,7 @@ import java.util.function.Consumer;
  * {{ .Enum.Name }}
 {{- if .Enum.Description }}
  * <p>
- * {{ .Enum.Description }}
+ * {{ .Enum.Description| commentMultiLine " * " | escapeJavadoc }}
 {{- end }}
  *
 {{- if .Enum.Deprecated }}
