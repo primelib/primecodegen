@@ -65,11 +65,11 @@ func GenerateTemplateCmd() *cobra.Command {
 				Doc: v3doc,
 			})
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to transform spec into template data for the generator")
+				log.Fatal().Err(err).Str("generator-id", gen.Id()).Msg("failed to transform spec into template data for the generator")
 			}
 			templateDataYaml, err := yaml.Marshal(templateData)
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to marshal template data")
+				log.Fatal().Err(err).Str("generator-id", gen.Id()).Msg("failed to marshal template data")
 			}
 
 			if out == "" {

@@ -60,6 +60,20 @@ func OpenDocumentWithBaseDir(input []byte, baseDir string) (libopenapi.Document,
 	return document, nil
 }
 
+// OpenV3DocumentForTest opens a document and builds a v3 model, asserting no errors (panics on error, for usage in tests only!)
+func OpenV3DocumentForTest(bytes []byte) *libopenapi.DocumentModel[v3.Document] {
+	document, err := OpenDocument(bytes)
+	if err != nil {
+		panic(err)
+	}
+	v3doc, errs := document.BuildV3Model()
+	if len(errs) > 0 {
+		panic(errs)
+	}
+
+	return v3doc
+}
+
 // RenderDocument renders the document as bytes
 func RenderDocument(doc libopenapi.Document) ([]byte, error) {
 	bytes, err := doc.Render()

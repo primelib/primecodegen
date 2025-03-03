@@ -95,7 +95,7 @@ func GenerateCmd() *cobra.Command {
 			log.Info().Str("generator-id", gen.Id()).Str("template", templateId).Bool("dry-run", generatorOpts.DryRun).Str("output-dir", generatorOpts.OutputDir).Msg("running generator")
 			err = gen.Generate(generatorOpts)
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to transform spec into template data for the generator")
+				log.Fatal().Err(err).Str("generator-id", gen.Id()).Msg("failed to transform spec into template data for the generator")
 			}
 		},
 	}

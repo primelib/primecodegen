@@ -182,62 +182,73 @@ func (g *JavaGenerator) ToConstantName(name string) string {
 }
 
 func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerator.CodeTypeSchemaType, required bool) (openapigenerator.CodeType, error) {
+	if schema == nil {
+		return openapigenerator.DefaultCodeType, fmt.Errorf("schema is nil")
+	}
+	isNullable := openapiutil.IsSchemaNullable(schema)
+
 	// multiple types
 	if util.CountExcluding(schema.Type, "null") > 1 {
 		return openapigenerator.CodeType{Name: "Object"}, nil
 	}
 
-	// nullable
-	isNullable := openapiutil.IsSchemaNullable(schema)
-
 	// normal types
 	switch {
-	case slices.Contains(schema.Type, "string") && schema.Format == "":
-		return openapigenerator.CodeType{Name: "String"}, nil
-	case slices.Contains(schema.Type, "string") && schema.Format == "uri":
-		return openapigenerator.CodeType{Name: "String"}, nil
-	case slices.Contains(schema.Type, "string") && schema.Format == "binary":
-		return openapigenerator.CodeType{TypeArgs: []openapigenerator.CodeType{openapigenerator.NewSimpleCodeType(g.BoxType("byte", isNullable), schema)}, IsArray: true}, nil
-	case slices.Contains(schema.Type, "string") && schema.Format == "byte":
-		return openapigenerator.CodeType{TypeArgs: []openapigenerator.CodeType{openapigenerator.NewSimpleCodeType(g.BoxType("byte", isNullable), schema)}, IsArray: true}, nil
-	case slices.Contains(schema.Type, "string") && schema.Format == "date":
-		return openapigenerator.CodeType{Name: "Instant", ImportPath: "java.time"}, nil
-	case slices.Contains(schema.Type, "string") && schema.Format == "date-time":
-		return openapigenerator.CodeType{Name: "Instant", ImportPath: "java.time"}, nil
-	case slices.Contains(schema.Type, "string") && schema.Format != "": // account for made-up formats
-		return openapigenerator.CodeType{Name: "String"}, nil
+	case slices.Contains(schema.Type, "string"):
+		switch schema.Format {
+		case "uri":
+			return openapigenerator.CodeType{Name: "String"}, nil
+		case "binary", "byte":
+			return openapigenerator.CodeType{TypeArgs: []openapigenerator.CodeType{openapigenerator.NewSimpleCodeType(g.BoxType("byte", isNullable), schema)}, IsArray: true}, nil
+		case "date", "date-time":
+			return openapigenerator.CodeType{Name: "Instant", ImportPath: "java.time"}, nil
+		default:
+			return openapigenerator.CodeType{Name: "String"}, nil
+		}
 	case slices.Contains(schema.Type, "boolean"):
 		return openapigenerator.NewSimpleCodeType(g.BoxType("boolean", isNullable), schema), nil
-	case slices.Contains(schema.Type, "integer") && schema.Format == "":
-		return openapigenerator.NewSimpleCodeType(g.BoxType("int", isNullable), schema), nil
-	case slices.Contains(schema.Type, "integer") && schema.Format == "int16":
-		return openapigenerator.NewSimpleCodeType(g.BoxType("int", isNullable), schema), nil
-	case slices.Contains(schema.Type, "integer") && schema.Format == "int32":
-		return openapigenerator.NewSimpleCodeType(g.BoxType("int", isNullable), schema), nil
-	case slices.Contains(schema.Type, "integer") && schema.Format == "int64":
-		return openapigenerator.NewSimpleCodeType(g.BoxType("long", isNullable), schema), nil
-	case slices.Contains(schema.Type, "number") && schema.Format == "":
-		return openapigenerator.NewSimpleCodeType(g.BoxType("double", isNullable), schema), nil
-	case slices.Contains(schema.Type, "number") && schema.Format == "float":
-		return openapigenerator.NewSimpleCodeType(g.BoxType("float", isNullable), schema), nil
-	case slices.Contains(schema.Type, "number") && schema.Format == "double":
-		return openapigenerator.NewSimpleCodeType(g.BoxType("double", isNullable), schema), nil
+	case slices.Contains(schema.Type, "integer"):
+		switch schema.Format {
+		case "int16":
+			return openapigenerator.NewSimpleCodeType(g.BoxType("short", isNullable), schema), nil
+		case "int32":
+			return openapigenerator.NewSimpleCodeType(g.BoxType("int", isNullable), schema), nil
+		case "int64":
+			return openapigenerator.NewSimpleCodeType(g.BoxType("long", isNullable), schema), nil
+		case "uint16":
+			return openapigenerator.NewSimpleCodeType(g.BoxType("int", isNullable), schema), nil
+		case "uint32":
+			return openapigenerator.NewSimpleCodeType(g.BoxType("long", isNullable), schema), nil
+		case "uint64":
+			return openapigenerator.CodeType{Name: "BigInteger", ImportPath: "java.math"}, nil
+		default:
+			return openapigenerator.NewSimpleCodeType("long", schema), nil
+		}
+	case slices.Contains(schema.Type, "number"):
+		switch schema.Format {
+		case "float":
+			return openapigenerator.NewSimpleCodeType(g.BoxType("float", isNullable), schema), nil
+		case "double":
+			return openapigenerator.NewSimpleCodeType(g.BoxType("double", isNullable), schema), nil
+		default:
+			return openapigenerator.NewSimpleCodeType(g.BoxType("double", isNullable), schema), nil
+		}
 	case slices.Contains(schema.Type, "array"):
 		arrayType, err := g.ToCodeType(schema.Items.A.Schema(), schemaType, true)
 		if err != nil {
-			return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled array type. schema: %s, format: %s", schema.Type, schema.Format)
+			return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled array type. schema: %s, format: %s", schema.Type, schema.Format), err)
 		}
 
 		isArrayTypeNullable := openapiutil.IsSchemaNullable(schema.Items.A.Schema())
 		if isArrayTypeNullable {
 			return openapigenerator.NewListCodeType(arrayType, schema), nil
 		}
-		return openapigenerator.NewArrayCodeType(arrayType, schema), nil
+		return openapigenerator.NewListCodeType(arrayType, schema), nil // NewArrayCodeType
 	case slices.Contains(schema.Type, "object"):
 		if schema.AdditionalProperties != nil {
 			additionalPropertyType, err := g.ToCodeType(schema.AdditionalProperties.A.Schema(), schemaType, true)
 			if err != nil {
-				return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled additional properties type. schema: %s, format: %s: %w", schema.Type, schema.Format, err)
+				return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled additional properties type. schema: %s, format: %s", schema.Type, schema.Format), err)
 			}
 
 			return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), additionalPropertyType, schema), nil
