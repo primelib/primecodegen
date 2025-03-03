@@ -116,8 +116,10 @@ func BuildEndpoints(doc *libopenapi.DocumentModel[v3.Document]) Endpoints {
 	return endpoints
 }
 
-func BuildAuth(doc *libopenapi.DocumentModel[v3.Document]) Auth {
-	var auth Auth
+func BuildAuth(doc *libopenapi.DocumentModel[v3.Document]) (auth Auth) {
+	if doc.Model.Components == nil || doc.Model.Components.SecuritySchemes == nil {
+		return auth
+	}
 
 	for security := doc.Model.Components.SecuritySchemes.Oldest(); security != nil; security = security.Next() {
 		securityValue := security.Value
@@ -177,6 +179,10 @@ type OperationOpts struct {
 }
 
 func BuildOperations(opts OperationOpts) ([]Operation, error) {
+	if opts.Doc.Model.Paths == nil {
+		return nil, nil
+	}
+
 	var operations []Operation
 	gen := opts.Generator
 
@@ -327,6 +333,10 @@ type ModelOpts struct {
 }
 
 func BuildComponentModels(opts ModelOpts) ([]Model, error) {
+	if opts.Doc.Model.Components == nil || opts.Doc.Model.Components.Schemas == nil {
+		return nil, nil
+	}
+
 	var models []Model
 	gen := opts.Generator
 
@@ -411,6 +421,10 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 }
 
 func BuildEnums(opts ModelOpts) ([]Enum, error) {
+	if opts.Doc.Model.Components == nil || opts.Doc.Model.Components.Schemas == nil {
+		return nil, nil
+	}
+
 	var enums []Enum
 	gen := opts.Generator
 
