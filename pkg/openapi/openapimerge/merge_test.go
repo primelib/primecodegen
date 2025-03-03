@@ -41,18 +41,18 @@ func TestMergeOpenAPI3Info(t *testing.T) {
 
 	expectedYaml := `openapi: 3.0.0
 info:
-    title: Test API 1, Test API 2
-    description: |-
-        # TEST API 1
+  title: Test API 1, Test API 2
+  description: |-
+    # TEST API 1
 
-        This API implements A
+    This API implements A
 
-        # TEST API 2
+    # TEST API 2
 
-        This API implements B
-    version: |-
-        (Test API 1) 1.0.0
-        (Test API 2) 1.0.0
+    This API implements B
+  version: |-
+    (Test API 1) 1.0.0
+    (Test API 2) 1.0.0
 `
 	assert.Equal(t, expectedYaml, outputData, "The merged spec YAML did not match the expected output")
 }

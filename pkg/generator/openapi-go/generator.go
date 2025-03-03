@@ -164,6 +164,9 @@ func (g *GoGenerator) ToConstantName(name string) string {
 }
 
 func (g *GoGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerator.CodeTypeSchemaType, required bool) (openapigenerator.CodeType, error) {
+	if schema == nil {
+		return openapigenerator.DefaultCodeType, fmt.Errorf("schema is nil")
+	}
 	isNullable := ptr.ValueOrDefault(schema.Nullable, true) == true
 
 	// multiple types
@@ -188,10 +191,18 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerato
 		return openapigenerator.NewSimpleCodeType("bool", schema), nil
 	case slices.Contains(schema.Type, "integer"):
 		switch schema.Format {
+		case "int16":
+			return openapigenerator.NewSimpleCodeType("int16", schema), nil
 		case "int32":
 			return openapigenerator.NewSimpleCodeType("int32", schema), nil
 		case "int64":
 			return openapigenerator.NewSimpleCodeType("int64", schema), nil
+		case "uint16":
+			return openapigenerator.NewSimpleCodeType("uint16", schema), nil
+		case "uint32":
+			return openapigenerator.NewSimpleCodeType("uint32", schema), nil
+		case "uint64":
+			return openapigenerator.NewSimpleCodeType("uint64", schema), nil
 		default:
 			return openapigenerator.NewSimpleCodeType("int64", schema), nil
 		}
@@ -207,7 +218,7 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerato
 	case slices.Contains(schema.Type, "array"):
 		arrayType, err := g.ToCodeType(schema.Items.A.Schema(), schemaType, true)
 		if err != nil {
-			return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled array type. schema: %s, format: %s, message: %w", schema.Type, schema.Format, err)
+			return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled array type. schema: %s, format: %s", schema.Type, schema.Format), err)
 		}
 		arrayType = g.PostProcessType(arrayType)
 
@@ -218,7 +229,7 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerato
 			if schema.AdditionalProperties != nil && schema.Properties == nil {
 				additionalPropertyType, err := g.ToCodeType(schema.AdditionalProperties.A.Schema(), schemaType, true)
 				if err != nil {
-					return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled additional properties type. schema: %s, format: %s: %w", schema.Type, schema.Format, err)
+					return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled additional properties type. schema: %s, format: %s", schema.Type, schema.Format), err)
 				}
 				additionalPropertyType = g.PostProcessType(additionalPropertyType)
 

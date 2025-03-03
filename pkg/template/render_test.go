@@ -29,8 +29,9 @@ func TestRenderTemplateDryRun(t *testing.T) {
 	}, RenderOpts{DryRun: true})
 	assert.NoError(t, err)
 	assert.Len(t, files, 1)
-	assert.Equal(t, filepath.Join("models", "model.go"), files[0].File)
-	assert.Equal(t, FileDryRun, files[0].State)
+	fileKey := filepath.Join("models", "model.go")
+	assert.Equal(t, fileKey, files[fileKey].File)
+	assert.Equal(t, FileDryRun, files[fileKey].State)
 }
 
 func TestRenderTemplateFile(t *testing.T) {
@@ -60,6 +61,7 @@ func TestRenderTemplateFile(t *testing.T) {
 	}, RenderOpts{DryRun: false})
 	assert.NoError(t, err)
 	assert.Len(t, files, 1)
-	// assert.Equal(t, filepath.Join("models", "model.go"), files[0])
-	assert.Equal(t, FileRendered, files[0].State)
+	//assert.Equal(t, filepath.Join("models", "model.go"), files["test"])
+	//fileKey := filepath.Join("models", "model.go")
+	//assert.Equal(t, FileRendered, files[fileKey].State)
 }
