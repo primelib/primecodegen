@@ -243,6 +243,21 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerato
 			return openapigenerator.DefaultCodeType, fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
 		}
 		return openapigenerator.CodeType{Name: g.ToClassName(schema.Title), IsNullable: isNullable, ImportPath: "models"}, nil // TODO: import path
+	case len(schema.Type) == 0 && len(schema.OneOf) > 0:
+		codeTypes := make([]openapigenerator.CodeType, 0, len(schema.OneOf))
+		for _, oneOfSchema := range schema.OneOf {
+			codeType, err := g.ToCodeType(oneOfSchema.Schema(), schemaType, true)
+			if err != nil {
+				return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled oneOf type. schema: %s, format: %s", schema.Type, schema.Format), err)
+			}
+			codeTypes = append(codeTypes, codeType)
+		}
+
+		if openapigenerator.HaveSameCodeTypeName(codeTypes) {
+			return codeTypes[0], nil
+		} else {
+			return openapigenerator.NewSimpleCodeType("interface{}", schema), nil
+		}
 	default:
 		return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
 	}

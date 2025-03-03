@@ -7,6 +7,19 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func HaveSameCodeTypeName(codeTypes []CodeType) bool {
+	if len(codeTypes) == 0 {
+		return false
+	}
+	firstName := codeTypes[0].Name
+	for _, ct := range codeTypes {
+		if ct.Name != firstName {
+			return false
+		}
+	}
+	return true
+}
+
 func getBoolValue(ptrToBool *bool, defaultValue bool) bool {
 	if ptrToBool != nil {
 		return *ptrToBool

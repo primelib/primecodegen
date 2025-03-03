@@ -21,7 +21,7 @@ projectConfiguration {
     artifactDisplayName.set("{{ .Metadata.DisplayName }}")
 {{- end }}
 {{- if .Metadata.Description }}
-    artifactDescription.set("{{ .Metadata.Description }}")
+    artifactDescription.set("{{ .Metadata.Description | commentSingleLine }}")
 {{- end }}
 
     pom = { pom ->

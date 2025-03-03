@@ -14,6 +14,7 @@ import io.reactivex.Flowable;
 import {{ $.Common.Packages.Models }}.{{ .Name }};
 {{- end }}
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,7 +26,7 @@ import javax.annotation.processing.Generated;
  * {{ .Service.Type }}Api
 {{- if .Service.Description }}
  *
- * {{ .Service.Description }}
+ * {{ .Service.Description | commentMultiLine " * " | escapeJavadoc }}
 {{- end }}
 {{- if .Service.Documentation }}
  *
@@ -41,7 +42,7 @@ public interface {{ .Service.Type }}Api {
     * {{ $op.Name }}
     * {{ $op.Summary }}
     {{- if $op.Description }}
-    * {{ $op.Description }}
+    * {{ $op.Description | commentMultiLine "    * " | escapeJavadoc }}
     {{- end }}
     *
     {{- range $param := $op.MutableParameters }}
