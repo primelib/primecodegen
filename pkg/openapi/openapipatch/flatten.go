@@ -140,11 +140,12 @@ func flattenEnumsInComponentProperties(doc *libopenapi.DocumentModel[v3.Document
 
 func flattenInnerSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-		if schema.Value.Schema().Properties == nil {
+		valueSchema := schema.Value.Schema()
+		if valueSchema.Properties == nil {
 			continue
 		}
 
-		for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
+		for p := valueSchema.Properties.Oldest(); p != nil; p = p.Next() {
 			propSchema := p.Value.Schema()
 			if p.Value.IsReference() {
 				continue

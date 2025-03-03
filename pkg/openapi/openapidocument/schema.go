@@ -17,47 +17,62 @@ func SimplifyPolymorphism(schemaName string, schemaProxy *base.SchemaProxy, sche
 	if err != nil {
 		return nil, fmt.Errorf("error building schema: %w", err)
 	}
+
 	if !IsPolymorphicSchema(schema) && schemaProxy.IsReference() {
 		return nil, nil
 	}
 
-	// merge properties of derived schemata referencing a base schema using allOf into the base schema
-	if len(schema.AllOf) > 0 {
-		for _, schemaRef := range schema.AllOf {
-			err = mergeAllOf(schemaRef, schema, schemaName, schemas, schemataMap, "AllOf")
-			if err != nil {
-				return nil, fmt.Errorf("error merging schemas: %w", err)
-			}
-		}
-		// delete allOf (needed by codegeneration)
-		schema.AllOf = nil
+	// merge main schema
+	if err = simplifyPolymorphismForSchema(schema, schemaName, schemas, schemataMap); err != nil {
+		return nil, err
 	}
 
-	// merge properties of derived schemata referenced using anyOf inside a base-schema into the base-schema
-	if len(schema.AnyOf) > 0 {
-		for _, schemaRef := range schema.AnyOf {
-			err = mergeAnyOfOneOf(schemaRef, schema, schemaName, schemas, schemataMap, "AnyOf")
-			if err != nil {
-				return nil, fmt.Errorf("error merging schemas: %w", err)
-			}
-		}
-		// delete anyOf (needed by codegeneration)
-		schema.AnyOf = nil
-	}
+	// merge property schemas
+	if schema.Properties != nil {
+		for op := schema.Properties.Oldest(); op != nil; op = op.Next() {
+			propertySchema := op.Value.Schema()
 
-	// merge properties of derived schemata referenced using oneOf inside a base-schema into the base-schema
-	if len(schema.OneOf) > 0 {
-		for _, schemaRef := range schema.OneOf {
-			err = mergeAnyOfOneOf(schemaRef, schema, schemaName, schemas, schemataMap, "OneOf")
-			if err != nil {
-				return nil, fmt.Errorf("error merging schemas: %w", err)
+			if propertySchema.Properties == nil && IsPolymorphicSchema(propertySchema) {
+				log.Warn().Msg("polymorphic property detected, need to merge into base schema")
+				if err := simplifyPolymorphismForSchema(propertySchema, op.Key, schemas, schemataMap); err != nil {
+					return nil, err
+				}
 			}
 		}
-		// delete OneOf (needed by codegeneration)
-		schema.OneOf = nil
 	}
 
 	return schemaProxy, nil
+}
+
+func simplifyPolymorphismForSchema(schema *base.Schema, schemaName string, schemas *orderedmap.Map[string, *base.SchemaProxy], schemataMap map[string]string) error {
+	if len(schema.AllOf) > 0 {
+		for _, schemaRef := range schema.AllOf {
+			if err := mergeAllOf(schemaRef, schema, schemaName, schemas, schemataMap, "AllOf"); err != nil {
+				return fmt.Errorf("error merging schemas: %w", err)
+			}
+		}
+		schema.AllOf = nil
+	}
+
+	if len(schema.AnyOf) > 0 {
+		for _, schemaRef := range schema.AnyOf {
+			if err := mergeAnyOfOneOf(schemaRef, schema, schemaName, schemas, schemataMap, "AnyOf"); err != nil {
+				return fmt.Errorf("error merging schemas: %w", err)
+			}
+		}
+		schema.AnyOf = nil
+	}
+
+	if len(schema.OneOf) > 0 {
+		for _, schemaRef := range schema.OneOf {
+			if err := mergeAnyOfOneOf(schemaRef, schema, schemaName, schemas, schemataMap, "OneOf"); err != nil {
+				return fmt.Errorf("error merging schemas: %w", err)
+			}
+		}
+		schema.OneOf = nil
+	}
+
+	return nil
 }
 
 func MergeSchemaProxy(baseSP *base.SchemaProxy, overwriteSP *base.SchemaProxy) (*base.Schema, error) {
@@ -371,9 +386,7 @@ func IsEnumSchema(s *base.Schema) bool {
 
 	// 3.1 enum with oneOf and const
 	if s.OneOf != nil {
-		if AllSchemasMatch(s.OneOf, func(s *base.Schema) bool {
-			return s.Const != nil
-		}) {
+		if AllSchemasMatch(s.OneOf, func(s *base.Schema) bool { return s.Const != nil }) {
 			return true
 		}
 	}
