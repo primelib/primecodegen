@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
+	"github.com/primelib/primecodegen/pkg/loader"
 	"github.com/primelib/primecodegen/pkg/openapi/openapimerge"
 	"github.com/primelib/primecodegen/pkg/openapi/openapipatch"
 	"github.com/primelib/primecodegen/pkg/util"
@@ -88,7 +88,7 @@ func runPatchCmd(inputFiles []string, output string, inputPatches, patches []str
 	if err != nil {
 		return "", errors.Join(util.ErrDocumentMerge, err)
 	}
-	bytes, err := openapidocument.RenderV3Document(mergedSpec)
+	bytes, err := loader.InterfaceToYaml(mergedSpec)
 	if err != nil {
 		return "", errors.Join(util.ErrRenderDocument, err)
 	}

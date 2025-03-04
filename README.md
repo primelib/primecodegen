@@ -104,9 +104,10 @@ Environment Variables:
 
 ## Credits
 
-- OpenAPI Parser: [libopenapi](https://github.com/pb33f/libopenapi)
-- Patches - Git: [go-gitdiff](https://github.com/bluekeyes/go-gitdiff)
-- Patches - JSON: [jsonpatch](https://github.com/evanphx/json-patch)
+- OpenAPI Parser: [pb33f/libopenapi](https://github.com/pb33f/libopenapi)
+- Patches - OpenAPI Overlay: [speakeasy/openapi-overlay](https://github.com/speakeasy-api/openapi-overlay)
+- Patches - Git: [bluekeyes/go-gitdiff](https://github.com/bluekeyes/go-gitdiff)
+- Patches - JSON: [evanphx/jsonpatch](https://github.com/evanphx/json-patch)
 
 ## License
 
