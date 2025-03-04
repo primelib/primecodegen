@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
+	"github.com/primelib/primecodegen/pkg/loader"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,7 +31,7 @@ func TestMergeOpenAPI3Info(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Convert
-	yamlData, err := openapidocument.RenderV3Document(v3Model)
+	yamlData, err := loader.InterfaceToYaml(v3Model.Model)
 	assert.NoError(t, err)
 	outputData := string(yamlData)
 

@@ -1,7 +1,6 @@
 package openapidocument
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -12,7 +11,6 @@ import (
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 )
 
 func OpenDocumentFile(file string) (libopenapi.Document, error) {
@@ -100,16 +98,4 @@ func RenderDocumentFile(doc libopenapi.Document, file string) error {
 		return fmt.Errorf("failed to write document to file: %w", err)
 	}
 	return nil
-}
-
-func RenderV3Document(doc *libopenapi.DocumentModel[v3.Document]) ([]byte, error) {
-	var buf bytes.Buffer
-	yamlEncoder := yaml.NewEncoder(&buf)
-	yamlEncoder.SetIndent(2)
-	err := yamlEncoder.Encode(doc.Model)
-	if err != nil {
-		return nil, fmt.Errorf("failed to render document model: %w", err)
-	}
-
-	return buf.Bytes(), nil
 }

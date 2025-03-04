@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cidverse/cidverseutils/filesystem"
-	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
+	"github.com/primelib/primecodegen/pkg/loader"
 	"github.com/primelib/primecodegen/pkg/openapi/openapimerge"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
@@ -34,7 +34,7 @@ func MergeCmd() *cobra.Command {
 			}
 
 			// render
-			rendered, err := openapidocument.RenderV3Document(mergedSpec)
+			rendered, err := loader.InterfaceToYaml(mergedSpec)
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to render document")
 			}
