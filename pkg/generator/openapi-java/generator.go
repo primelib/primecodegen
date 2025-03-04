@@ -305,6 +305,10 @@ func (g *JavaGenerator) PostProcessType(codeType openapigenerator.CodeType) open
 		log.Fatal().Interface("codeType", codeType).Msgf("Array type must have exactly one type argument.")
 		return codeType
 	}
+	if codeType.IsList && len(codeType.TypeArgs) != 1 {
+		log.Fatal().Interface("codeType", codeType).Msgf("List type must have exactly one type argument.")
+		return codeType
+	}
 	if codeType.IsMap && len(codeType.TypeArgs) != 2 {
 		log.Fatal().Interface("codeType", codeType).Msgf("Map type must have exactly two type arguments.")
 		return codeType

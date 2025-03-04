@@ -14,7 +14,7 @@ require (
 	github.com/gosimple/slug v1.15.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/jarcoal/httpmock v1.3.1
-	github.com/pb33f/libopenapi v0.21.7
+	github.com/pb33f/libopenapi v0.21.8
 	github.com/rs/zerolog v1.33.0
 	github.com/shomali11/parallelizer v0.0.0-20220717173222-a6776fbf40a9
 	github.com/spf13/cobra v1.9.1
