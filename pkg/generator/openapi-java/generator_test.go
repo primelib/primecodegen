@@ -21,6 +21,8 @@ var commonPackages = openapigenerator.CommonPackages{
 }
 
 var (
+	//go:embed specs/operation-basic.yaml
+	operationBasic []byte
 	//go:embed specs/model-basic.yaml
 	modelBasic []byte
 	//go:embed specs/model-array-of-string.yaml
@@ -30,6 +32,26 @@ var (
 	//go:embed specs/model-array-oneof.yaml
 	modelArrayOfOneOf []byte
 )
+
+func TestOperationBasic(t *testing.T) {
+	// arrange
+	v3doc := openapidocument.OpenV3DocumentForTest(operationBasic)
+
+	// act
+	templateData, err := openapigenerator.BuildTemplateData(v3doc, NewGenerator(), commonPackages)
+	assert.NoError(t, err)
+	assert.NotNil(t, templateData)
+
+	// assert
+	assert.Len(t, templateData.Operations, 1)
+	assert.Equal(t, "CreateBook", templateData.Operations[0].Name)
+	assert.Equal(t, "post", templateData.Operations[0].Method)
+	assert.Equal(t, "/books", templateData.Operations[0].Path)
+	assert.Len(t, templateData.Models, 1)
+	assert.Equal(t, "BookDto", templateData.Models[0].Name)
+	assert.Equal(t, true, templateData.Models[0].IsTypeAlias)
+	assert.Equal(t, "Object", templateData.Models[0].Parent.QualifiedType)
+}
 
 func TestBasicModel(t *testing.T) {
 	// arrange
@@ -99,8 +121,6 @@ func TestArrayOfOneOf(t *testing.T) {
 	assert.Equal(t, "BookDto", templateData.Models[0].Name)
 	assert.Equal(t, true, templateData.Models[0].IsTypeAlias)
 	assert.Equal(t, "List<String>", templateData.Models[0].Parent.QualifiedType)
-
-	dumpJSON(templateData)
 }
 
 func dumpJSON(v interface{}) {

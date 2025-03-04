@@ -1,0 +1,27 @@
+openapi: 3.0.1
+info:
+  title: Sample API
+  version: 1.0.0
+paths:
+  /books:
+    post:
+      summary: Create a new book
+      operationId: createBook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Book"
+      responses:
+        "201":
+          description: Book created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+components:
+  schemas:
+    Book:
+      title: BookDto
+      type: object
