@@ -14,21 +14,22 @@ var (
 	ErrFailedToCopyBytes = errors.New("failed to copy bytes")
 )
 
-func DownloadBytes(url string, output *bytes.Buffer) (err error) {
+func DownloadBytes(url string) ([]byte, error) {
+	buffer := new(bytes.Buffer)
 	resp, err := http.Get(url)
 	if err != nil {
-		return errors.Join(ErrRequestFailed, err)
+		return nil, errors.Join(ErrRequestFailed, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Join(ErrResponseNotOk, errors.New(fmt.Sprintf("bad status code: %s", resp.Status)))
+		return nil, errors.Join(ErrResponseNotOk, errors.New(fmt.Sprintf("bad status code: %s", resp.Status)))
 	}
 
-	_, err = io.Copy(output, resp.Body)
+	_, err = io.Copy(buffer, resp.Body)
 	if err != nil {
-		return errors.Join(ErrFailedToCopyBytes, err)
+		return nil, errors.Join(ErrFailedToCopyBytes, err)
 	}
 
-	return nil
+	return buffer.Bytes(), nil
 }

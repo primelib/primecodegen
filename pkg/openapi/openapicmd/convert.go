@@ -28,7 +28,7 @@ func ConvertCmd() *cobra.Command {
 
 			// convert
 			for _, path := range inputFiles {
-				converted, err := openapiconvert.ConvertSpec(path, formatIn, formatOut)
+				converted, err := ConvertSpec(path, formatIn, formatOut)
 				if err != nil {
 					log.Fatal().Err(err).Str("input format", formatIn).Str("output format", formatOut).Msg("Error converting OpenAPI Specification")
 				}
@@ -53,4 +53,8 @@ func ConvertCmd() *cobra.Command {
 	cmd.Flags().StringP("format-in", "f", "swagger20", fmt.Sprintf("Input format (supported: %s)", strings.Join(openapiconvert.SupportedInputFormats, ", ")))
 	cmd.Flags().StringP("format-out", "r", "openapi30", fmt.Sprintf("Output format (supported: %s)", strings.Join(openapiconvert.SupportedOutputFormats, ", ")))
 	return cmd
+}
+
+func ConvertSpec(inputFile, formatIn, formatOut string) ([]byte, error) {
+	return openapiconvert.ConvertSpec(inputFile, formatIn, formatOut)
 }
