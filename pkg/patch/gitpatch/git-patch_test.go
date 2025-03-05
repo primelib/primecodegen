@@ -1,4 +1,4 @@
-package commonpatch
+package gitpatch
 
 import (
 	"testing"
@@ -24,10 +24,10 @@ index d8ca62b..183131e 100644
 +++ b/LICENSE.md
 @@ -1,6 +1,6 @@
  MIT License
- 
+
 -Copyright (c) 0000 John Doe
 +Copyright (c) 0000 Jane Doe
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
 `)
