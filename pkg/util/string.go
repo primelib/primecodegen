@@ -60,3 +60,11 @@ func FindCommonStrPrefix(values []string) string {
 
 	return prefix
 }
+
+func TrimSpaceEachLine(input string) string {
+	lines := strings.Split(input, "\n")
+	for i, line := range lines {
+		lines[i] = strings.TrimSpace(line)
+	}
+	return strings.Join(lines, "\n")
+}

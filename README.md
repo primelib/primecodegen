@@ -47,16 +47,18 @@ The `openapi-merge` command can be used to merge multiple OpenAPI specifications
 
 The `openapi-patch` command can be used to apply automatic modifications, merge multiple specifications, and apply custom patches to the OpenAPI specification.
 
-| Command                                                                            | Description                                                      |
-|------------------------------------------------------------------------------------|------------------------------------------------------------------|
-| `primecodegen openapi-patch -i openapi.yaml -o patched.yaml`                       | if no patches are specified, the default ones are applied        |
-| `primecodegen openapi-patch -i openapi.yaml -i openapi.part2.yaml -o patched.yaml` | merge one or more specifications into one                        |
-| `primecodegen openapi-patch -i openapi.yaml -p flattenSchemas -o patched.yaml`     | apply built-in patch with id `flattenSchemas`                    |
-| `primecodegen openapi-patch -i openapi.yaml -f noservers.jsonpatch`                | apply a [jsonpatch](https://jsonpatch.com/) to the specification |
-| `primecodegen openapi-patch -i openapi.yaml -f mypatch.patch`                      | apply a `git patch` to the specification                         |
-| `primecodegen openapi-patch list`                                                  | list available patches                                           |
+| Command                                                                            | Description                                                       |
+|------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| `primecodegen openapi-patch -i openapi.yaml -o patched.yaml`                       | if no patches are specified, the default ones are applied         |
+| `primecodegen openapi-patch -i openapi.yaml -i openapi.part2.yaml -o patched.yaml` | merge one or more specifications into one                         |
+| `primecodegen openapi-patch -i openapi.yaml -p flattenSchemas -o patched.yaml`     | apply built-in patch with id `flattenSchemas`                     |
+| `primecodegen openapi-patch -i openapi.yaml -p json-patch:noservers.jsonpatch`     | apply a [jsonpatch](https://jsonpatch.com/) to the specification  |
+| `primecodegen openapi-patch -i openapi.yaml -p git-patch:mypatch.patch`            | apply a `git patch` to the specification                          |
+| `primecodegen openapi-patch -i openapi.yaml -p openapi-overlay:overlay.yaml`       | apply a openapi overlay                                           |
+| `primecodegen openapi-patch validate openapi-overlay:dir/overlay.yaml`             | validate patch files (json-patch, git-patch, openapi-overlay, ... |
+| `primecodegen openapi-patch list`                                                  | list all available patches                                        |
 
-**Note**: All the options can be combined, e.g. merging multiple specifications, custom user-provided patches and built-in patches.
+**Note**: All the options can be combined, e.g. merging multiple specifications, user-provided patches and built-in patchers.
 
 The following built-in patches are available:
 

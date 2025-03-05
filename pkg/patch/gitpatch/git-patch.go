@@ -1,4 +1,4 @@
-package commonpatch
+package gitpatch
 
 import (
 	"bytes"
@@ -26,4 +26,13 @@ func ApplyGitPatch(input []byte, patchContent []byte) ([]byte, error) {
 	}
 
 	return output.Bytes(), nil
+}
+
+func ValidateGitPatch(patchContent []byte) error {
+	_, _, err := gitdiff.Parse(bytes.NewReader(patchContent))
+	if err != nil {
+		return errors.Join(ErrFailedToParseGitPatch, err)
+	}
+
+	return nil
 }

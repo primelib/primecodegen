@@ -34,7 +34,7 @@ func MergeCmd() *cobra.Command {
 			}
 
 			// render
-			rendered, err := loader.InterfaceToYaml(mergedSpec)
+			rendered, err := loader.InterfaceToYaml(mergedSpec.Model)
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to render document")
 			}

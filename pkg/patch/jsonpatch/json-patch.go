@@ -1,4 +1,4 @@
-package commonpatch
+package jsonpatch
 
 import (
 	"errors"
@@ -24,4 +24,13 @@ func ApplyJSONPatch(input []byte, patchContent []byte) ([]byte, error) {
 	}
 
 	return modified, nil
+}
+
+func ValidateJSONPatch(patchContent []byte) error {
+	_, err := jsonpatch.DecodePatch(patchContent)
+	if err != nil {
+		return errors.Join(ErrFailedToDecodeJSONPatch, err)
+	}
+
+	return nil
 }

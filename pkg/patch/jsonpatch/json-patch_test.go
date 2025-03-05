@@ -1,4 +1,4 @@
-package commonpatch
+package jsonpatch
 
 import (
 	"testing"
