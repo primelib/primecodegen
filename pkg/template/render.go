@@ -69,10 +69,11 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 				}
 				renderedContent.Write([]byte(content))
 			} else if file.SourceUrl != "" {
-				err := util.DownloadBytes(file.SourceUrl, &renderedContent)
+				out, err := util.DownloadBytes(file.SourceUrl)
 				if err != nil {
 					return errors.Join(ErrFailedToDownloadTemplateFile, fmt.Errorf("failed to download template from %s: %w", file.SourceUrl, err))
 				}
+				renderedContent.Write(out)
 			} else {
 				return errors.Join(ErrTemplateFileOrUrlIsRequired, errors.New("template id: "+file.TargetDirectory+"/"+file.TargetFileName))
 			}

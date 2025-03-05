@@ -1,6 +1,7 @@
 package openapicmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -49,53 +50,16 @@ func GenerateCmd() *cobra.Command {
 			metadataLicenseName, _ := cmd.Flags().GetString("md-license-name")
 			metadataLicenseUrl, _ := cmd.Flags().GetString("md-license-url")
 
-			// patch
-			bytes, err := os.ReadFile(in)
-			if err != nil {
-				log.Fatal().Err(err).Msg("failed to read document")
-			}
-
-			bytes, err = openapipatch.ApplyPatches(bytes, patches)
-			if err != nil {
-				log.Fatal().Err(err).Msg("failed to apply input patches")
-			}
-
-			// open document
-			doc, err := openapidocument.OpenDocument(bytes)
-			if err != nil {
-				log.Fatal().Err(err).Msg("failed to open document")
-			}
-			v3doc, errs := doc.BuildV3Model()
-			if len(errs) > 0 {
-				log.Fatal().Errs("spec", errs).Msgf("failed to build v3 high level model")
-			}
-
-			// print final spec
-			if os.Getenv("PRIMECODEGEN_DEBUG_SPEC") == "true" {
-				out, _ := v3doc.Model.Render()
-				fmt.Print(string(out))
-			}
-
-			// run generator
-			gen, err := openapigenerator.GeneratorById(generatorId, generators)
-			if err != nil {
-				log.Fatal().Err(err).Str("generator-id", generatorId).Str("template", templateId).Msg("failed to run generator")
-			}
-			generatorOpts := openapigenerator.GenerateOpts{
-				DryRun:          false,
-				Doc:             v3doc,
-				OutputDir:       out,
-				TemplateId:      templateId,
+			// generate
+			err := Generate(in, patches, generatorId, templateId, out, openapigenerator.GenerateOpts{
 				ArtifactGroupId: metadataGroupId,
 				ArtifactId:      metadataArtifactId,
 				RepositoryUrl:   metadataRepositoryUrl,
 				LicenseName:     metadataLicenseName,
 				LicenseUrl:      metadataLicenseUrl,
-			}
-			log.Info().Str("generator-id", gen.Id()).Str("template", templateId).Bool("dry-run", generatorOpts.DryRun).Str("output-dir", generatorOpts.OutputDir).Msg("running generator")
-			err = gen.Generate(generatorOpts)
+			})
 			if err != nil {
-				log.Fatal().Err(err).Str("generator-id", gen.Id()).Msg("failed to transform spec into template data for the generator")
+				log.Fatal().Err(err).Msg("failed to generate code")
 			}
 		},
 	}
@@ -112,4 +76,56 @@ func GenerateCmd() *cobra.Command {
 	cmd.Flags().String("md-license-url", "", "License URL")
 
 	return cmd
+}
+
+func Generate(inputSpec string, patches []string, generatorId string, templateId string, outputDir string, opts openapigenerator.GenerateOpts) error {
+	// patch
+	bytes, err := os.ReadFile(inputSpec)
+	if err != nil {
+		return errors.Join(util.ErrOpenDocument, err)
+	}
+	bytes, err = openapipatch.ApplyPatches(bytes, patches)
+	if err != nil {
+		return err
+	}
+
+	// open document
+	doc, err := openapidocument.OpenDocument(bytes)
+	if err != nil {
+		return err
+	}
+	v3doc, errs := doc.BuildV3Model()
+	if len(errs) > 0 {
+		return errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
+	}
+
+	// print final spec
+	if os.Getenv("PRIMECODEGEN_DEBUG_SPEC") == "true" {
+		out, _ := v3doc.Model.Render()
+		fmt.Print(string(out))
+	}
+
+	// run generator
+	gen, err := openapigenerator.GeneratorById(generatorId, generators)
+	if err != nil {
+		return errors.Join(util.ErrNoGeneratorWithId, err)
+	}
+	generatorOpts := openapigenerator.GenerateOpts{
+		DryRun:          false,
+		Doc:             v3doc,
+		OutputDir:       outputDir,
+		TemplateId:      templateId,
+		ArtifactGroupId: opts.ArtifactGroupId,
+		ArtifactId:      opts.ArtifactId,
+		RepositoryUrl:   opts.RepositoryUrl,
+		LicenseName:     opts.LicenseName,
+		LicenseUrl:      opts.LicenseUrl,
+	}
+	log.Info().Str("generator-id", gen.Id()).Str("template", templateId).Bool("dry-run", generatorOpts.DryRun).Str("output-dir", generatorOpts.OutputDir).Msg("running generator")
+	err = gen.Generate(generatorOpts)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

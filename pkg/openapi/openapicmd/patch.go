@@ -45,10 +45,10 @@ func PatchCmd() *cobra.Command {
 			patches, _ := cmd.Flags().GetStringSlice("patch")
 
 			// run patch command
-			stdout, err := runPatchCmd(inputFiles, out, inputPatches, patches)
+			stdout, err := Patch(inputFiles, out, inputPatches, patches)
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to patch document")
-			} else if stdout != "" {
+			} else if len(stdout) > 0 {
 				fmt.Printf("%s", stdout)
 			}
 		},
@@ -157,14 +157,14 @@ func PatchValidateCmd() *cobra.Command {
 	return cmd
 }
 
-// runPatchCmd runs the patch command
+// Patch runs the patch command
 //
 // Parameters:
 //   - inputFiles: input specification files
 //   - output: output file
 //   - inputPatches: patches to apply to the input specification(s) pre-merge
 //   - patches: patches to apply to the merged specification
-func runPatchCmd(inputFiles []string, output string, inputPatches, patches []string) (string, error) {
+func Patch(inputFiles []string, output string, inputPatches []string, patches []string) ([]byte, error) {
 	log.Info().Strs("input", inputFiles).Strs("input-patches", inputPatches).Strs("patches", patches).Str("output-file", output).Msg("patching")
 	for i, v := range inputFiles {
 		inputFiles[i] = util.ResolvePath(v)
@@ -175,17 +175,17 @@ func runPatchCmd(inputFiles []string, output string, inputPatches, patches []str
 		for _, f := range inputFiles {
 			bytes, err := os.ReadFile(f)
 			if err != nil {
-				return "", errors.Join(util.ErrReadDocumentFromFile, err)
+				return nil, errors.Join(util.ErrReadDocumentFromFile, err)
 			}
 
 			bytes, err = openapipatch.ApplyPatches(bytes, inputPatches)
 			if err != nil {
-				return "", errors.Join(util.ErrFailedToPatchDocument, err)
+				return nil, errors.Join(util.ErrFailedToPatchDocument, err)
 			}
 
 			err = os.WriteFile(f, bytes, 0644)
 			if err != nil {
-				return "", errors.Join(util.ErrWriteDocumentToFile, err)
+				return nil, errors.Join(util.ErrWriteDocumentToFile, err)
 			}
 		}
 	}
@@ -193,28 +193,28 @@ func runPatchCmd(inputFiles []string, output string, inputPatches, patches []str
 	// read and merge documents
 	mergedSpec, err := openapimerge.MergeOpenAPI3Files(inputFiles)
 	if err != nil {
-		return "", errors.Join(util.ErrDocumentMerge, err)
+		return nil, errors.Join(util.ErrDocumentMerge, err)
 	}
 	bytes, err := loader.InterfaceToYaml(mergedSpec.Model)
 	if err != nil {
-		return "", errors.Join(util.ErrRenderDocument, err)
+		return nil, errors.Join(util.ErrRenderDocument, err)
 	}
 
 	// patch document
 	bytes, err = openapipatch.ApplyPatches(bytes, patches)
 	if err != nil {
-		return "", errors.Join(util.ErrFailedToPatchDocument, err)
+		return nil, errors.Join(util.ErrFailedToPatchDocument, err)
 	}
 
 	// write document
 	if output != "" {
 		err = os.WriteFile(output, bytes, 0644)
 		if err != nil {
-			return "", errors.Join(util.ErrWriteDocumentToFile, err)
+			return nil, errors.Join(util.ErrWriteDocumentToFile, err)
 		}
 	} else {
-		return string(bytes), nil
+		return bytes, nil
 	}
 
-	return "", nil
+	return nil, nil
 }

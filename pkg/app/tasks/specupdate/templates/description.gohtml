@@ -1,0 +1,29 @@
+### Changes Proposed
+
+* updated openapi spec
+
+{{- if .SpecDiff.OpenAPI }}
+### OpenAPI Diff
+{{- range $change := .SpecDiff.OpenAPI }}
+* [{{ if eq $change.Level 3 }}major{{ end }}{{ if eq $change.Level 2 }}minor{{ end }}{{ if eq $change.Level 1 }}patch{{ end }}] {{ $change.Operation }} {{ $change.Path }}: {{ $change.Text }}
+{{- end }}
+{{- end }}
+
+---
+
+### Configuration
+
+- 🚦 **Automerge**: Disabled by config. Please merge this manually once you are satisfied.
+- 🔕 **Ignore**: Close this PR and you won't be reminded about this update again.
+
+{{ if .Footer }}
+---
+
+{{- if .FooterCustom }}
+{{ .FooterCustom }}
+{{- else if eq .PlatformSlug "github" }}
+This PR has been generated automatically by the [PrimeLib GitHub App](https://github.com/apps/primelib-generator).
+{{- else if eq .PlatformSlug "gitlab" }}
+This MR has been generated automatically by the PrimeLib GitLab App.
+{{- end }}
+{{- end }}
