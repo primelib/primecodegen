@@ -17,4 +17,11 @@ const (
 	PatchTypeOpenAPIOverlay PatchType = "openapi-overlay"
 )
 
+type SpecPatch struct {
+	Type    string `yaml:"type"`
+	ID      string `yaml:"id"`
+	File    string `yaml:"file"`
+	Content string `yaml:"content"`
+}
+
 type PatchFile func(input []byte, patch []byte) ([]byte, error)

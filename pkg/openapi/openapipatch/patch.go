@@ -23,6 +23,7 @@ func ApplyPatches(input []byte, patches []string) ([]byte, error) {
 			patchType := parts[0]
 			patchFile := parts[1]
 
+			log.Debug().Str("patchType", patchType).Str("patchFile", patchFile).Msg("applying patch to spec")
 			patchedBytes, patchErr := patch.ApplyPatchFile(input, patchType, patchFile)
 			if patchErr != nil {
 				return input, errors.Join(util.ErrFailedToPatchDocument, patchErr)

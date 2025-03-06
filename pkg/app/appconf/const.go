@@ -15,6 +15,7 @@ type SourceType string
 const (
 	SourceTypeSpec      SourceType = "spec"
 	SourceTypeSwaggerUI SourceType = "swagger-ui"
+	SourceTypeRedoc     SourceType = "redoc"
 )
 
 type SpecType string

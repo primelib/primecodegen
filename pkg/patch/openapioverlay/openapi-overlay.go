@@ -64,3 +64,45 @@ func ValidateOpenAPIOverlay(patchContent []byte) error {
 
 	return nil
 }
+
+func CreateInfoOverlay(name string, description string, licenseName string, licenseUrl string) overlay.Overlay {
+	ov := overlay.Overlay{
+		Extensions:      nil,
+		Version:         "1.0.0",
+		JSONPathVersion: "",
+		Info: overlay.Info{
+			Title:   "Info Overlay",
+			Version: "1.0.0",
+		},
+		Actions: []overlay.Action{},
+	}
+	if name != "" {
+		ov.Actions = append(ov.Actions, overlay.Action{
+			Target: "$.info",
+			Update: loader.YamlNodeFromInterfaceNoErr(map[string]interface{}{
+				"title": name,
+			}),
+		})
+	}
+	if description != "" {
+		ov.Actions = append(ov.Actions, overlay.Action{
+			Target: "$.info",
+			Update: loader.YamlNodeFromInterfaceNoErr(map[string]interface{}{
+				"description": description,
+			}),
+		})
+	}
+	if licenseName != "" && licenseUrl != "" {
+		ov.Actions = append(ov.Actions, overlay.Action{
+			Target: "$.info",
+			Update: loader.YamlNodeFromInterfaceNoErr(map[string]interface{}{
+				"license": map[string]interface{}{
+					"name": licenseName,
+					"url":  licenseUrl,
+				},
+			}),
+		})
+	}
+
+	return ov
+}
