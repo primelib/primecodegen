@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 
 	"github.com/cidverse/go-vcsapp/pkg/platform/api"
 	"github.com/primelib/primecodegen/pkg/app/appconf"
 	"github.com/primelib/primecodegen/pkg/openapi/openapicmd"
-	"github.com/primelib/primecodegen/pkg/util"
+	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
+	"github.com/primelib/primecodegen/pkg/patch"
+	"github.com/primelib/primecodegen/pkg/patch/openapioverlay"
+	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 	"github.com/rs/zerolog/log"
 )
 
@@ -44,7 +46,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 		if s.File != "" && s.URL == "" {
 			bytes, err = os.ReadFile(filepath.Join(targetSpecDir, s.File))
 		} else if s.URL != "" {
-			bytes, err = fetchSpec(s)
+			bytes, err = openapidocument.FetchSpec(s)
 		}
 		if err != nil {
 			return fmt.Errorf("failed to fetch spec: %w", err)
@@ -91,10 +93,31 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 	if spec.Type == appconf.SpecTypeOpenAPI3 {
 		log.Debug().Strs("files", specFiles).Str("output", specFile).Msg("merging and patching openapi spec")
 
-		// TODO: create temp overlay for conf.Spec.Customization or embed patches into conf
+		// inputPatches
+		inputPatches, inputPatchTempFiles, err := processPatches(spec.InputPatches)
+		tempFiles = append(tempFiles, inputPatchTempFiles...)
+		if err != nil {
+			return fmt.Errorf("failed to process patches: %w", err)
+		}
+
+		// apply default overlay
+		ov := openapioverlay.CreateInfoOverlay(repository.Name, repository.Description, repository.LicenseName, repository.LicenseURL)
+		specPatch, err := patch.NewContentPatch("openapi-overlay", ov)
+		if err != nil {
+			return fmt.Errorf("failed to create overlay info patch: %w", err)
+		}
+
+		spec.Patches = append([]sharedpatch.SpecPatch{specPatch}, spec.Patches...)
+
+		// patches
+		patches, patchTempFiles, err := processPatches(spec.Patches)
+		tempFiles = append(tempFiles, patchTempFiles...)
+		if err != nil {
+			return fmt.Errorf("failed to process patches: %w", err)
+		}
 
 		// merge and patch
-		_, err := openapicmd.Patch(specFiles, specFile, spec.InputPatches, spec.Patches)
+		_, err = openapicmd.Patch(specFiles, specFile, inputPatches, patches)
 		if err != nil {
 			return fmt.Errorf("failed to patch openapi spec: %w", err)
 		}
@@ -103,30 +126,35 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 	return nil
 }
 
-// fetchSpec will download the spec from the source and merge it into the output
-func fetchSpec(source appconf.SpecSource) ([]byte, error) {
-	if source.Format == "" || source.Format == appconf.SourceTypeSpec {
-		content, err := util.DownloadBytes(source.URL)
-		if err != nil {
-			return nil, fmt.Errorf("failed to download spec source: %w", err)
-		}
-		return content, nil
-	} else if source.Format == appconf.SourceTypeSwaggerUI {
-		swaggerJsUrl := source.URL + "/swagger-ui-init.js"
-		content, err := util.DownloadBytes(swaggerJsUrl)
-		if err != nil {
-			return nil, fmt.Errorf("failed to download spec source: %w", err)
-		}
+func processPatches(patchesList []sharedpatch.SpecPatch) ([]string, []string, error) {
+	var patches []string
+	var tempFiles []string
 
-		// extract spec
-		re := regexp.MustCompile(`"swaggerDoc":([\S\s]*),[\n\s]*"customOptions"`)
-		match := re.FindStringSubmatch(string(content))
-		if len(match) < 2 {
-			return nil, fmt.Errorf("failed to extract spec from swagger-ui-init.js")
-		}
+	for _, p := range patchesList {
+		if p.ID != "" {
+			if p.Type != "" {
+				patches = append(patches, p.Type+":"+p.ID)
+			} else {
+				patches = append(patches, p.ID)
+			}
+		} else if p.File != "" {
+			patches = append(patches, p.Type+":"+p.File)
+		} else if p.Content != "" {
+			tmpFile, err := os.CreateTemp("", "patch-*."+p.Type)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to create temp file: %w", err)
+			}
+			tempFiles = append(tempFiles, tmpFile.Name())
 
-		return []byte(match[1]), nil
+			if _, err = tmpFile.Write([]byte(p.Content)); err != nil {
+				tmpFile.Close()
+				return nil, nil, fmt.Errorf("failed to write patch content to temp file: %w", err)
+			}
+			tmpFile.Close()
+
+			patches = append(patches, p.Type+":"+tmpFile.Name())
+		}
 	}
 
-	return nil, fmt.Errorf("unsupported source type: %s", source.Format)
+	return patches, tempFiles, nil
 }

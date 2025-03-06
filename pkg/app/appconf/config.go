@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 	"gopkg.in/yaml.v3"
 )
 
@@ -136,12 +137,10 @@ type Spec struct {
 	Sources []SpecSource `yaml:"sources" required:"true"`
 	// Type is the format of the api specification
 	Type SpecType `yaml:"type" required:"true"`
-	// Customization allows overwriting certain parts of the specification
-	Customization Customization `yaml:"customization"`
 	// InputPatches are applied to the source specifications before merging
-	InputPatches []string `yaml:"inputPatches"`
+	InputPatches []sharedpatch.SpecPatch `yaml:"inputPatches"`
 	// Patches are the patches that are applied to the specification
-	Patches []string `yaml:"patches"`
+	Patches []sharedpatch.SpecPatch `yaml:"patches"`
 }
 
 func (s Spec) UrlSlice() []string {
@@ -169,38 +168,6 @@ type SpecSource struct {
 	URL    string     `yaml:"url"`  // URL to the openapi specification
 	Format SourceType `yaml:"format" default:"spec"`
 	Type   SpecType   `yaml:"type"`
-}
-
-type Customization struct {
-	Title       string                `yaml:"title"`
-	Summary     string                `yaml:"summary"`
-	Description string                `yaml:"description"`
-	Version     string                `yaml:"version"`
-	Contact     CustomizationContact  `yaml:"contact"`
-	License     CustomizationLicense  `yaml:"license"`
-	Servers     []CustomizationServer `yaml:"servers"`
-
-	// Prune operations, tags and schemas
-	PruneOperations []string `yaml:"pruneOperations"`
-	PruneTags       []string `yaml:"pruneTags"`
-	PruneSchemas    []string `yaml:"pruneSchemas"`
-}
-
-type CustomizationContact struct {
-	Name  string `yaml:"name"`
-	URL   string `yaml:"url"`
-	Email string `yaml:"email"`
-}
-
-type CustomizationLicense struct {
-	Name       string `yaml:"name"`
-	URL        string `yaml:"url"`
-	Identifier string `yaml:"identifier"`
-}
-
-type CustomizationServer struct {
-	URL         string `yaml:"url"`
-	Description string `yaml:"description"`
 }
 
 type GeneratorConfig struct {
@@ -238,9 +205,6 @@ func LoadConfig(content string) (Configuration, error) {
 		if config.Spec.Sources[i].Format == "" {
 			config.Spec.Sources[i].Format = SourceTypeSpec
 		}
-	}
-	if config.Spec.Customization.Title == "" {
-		config.Spec.Customization.Title = config.Name
 	}
 	if config.Spec.File == "" {
 		config.Spec.File = "openapi.yaml"

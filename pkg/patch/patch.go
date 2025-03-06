@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/primelib/primecodegen/pkg/loader"
 	"github.com/primelib/primecodegen/pkg/patch/gitpatch"
 	"github.com/primelib/primecodegen/pkg/patch/jsonpatch"
 	"github.com/primelib/primecodegen/pkg/patch/openapioverlay"
@@ -92,4 +93,21 @@ func ValidatePatchFile(patchType string, patchFile string) error {
 
 	// process
 	return ValidatePatch(patchTypeEnum, content)
+}
+
+func NewContentPatch(patchType sharedpatch.PatchType, content interface{}) (sharedpatch.SpecPatch, error) {
+	switch patchType {
+	case sharedpatch.PatchTypeOpenAPIOverlay:
+		bytes, err := loader.InterfaceToYaml(content)
+		if err != nil {
+			return sharedpatch.SpecPatch{}, err
+		}
+
+		return sharedpatch.SpecPatch{
+			Type:    string(patchType),
+			Content: string(bytes),
+		}, nil
+	default:
+		return sharedpatch.SpecPatch{}, errors.Join(sharedpatch.ErrUnsupportedPatchType, fmt.Errorf("type: %s", patchType))
+	}
 }

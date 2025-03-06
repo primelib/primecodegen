@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -45,4 +46,18 @@ func InterfaceToYaml(payload interface{}) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func YamlNodeFromInterfaceNoErr(input interface{}) yaml.Node {
+	yamlData, err := yaml.Marshal(input)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to marshal yaml")
+	}
+
+	var yn yaml.Node
+	if err = yaml.Unmarshal(yamlData, &yn); err != nil {
+		log.Fatal().Err(err).Msg("failed to parse into yaml node")
+	}
+
+	return yn
 }
