@@ -39,17 +39,11 @@ func MergeOpenAPI3(specs [][]byte) (*libopenapi.DocumentModel[v3.Document], erro
 	var mergedSpec = ptr.Ptr(openapidocument.EmptyDocument())
 	specVersion := ""
 
-	for _, spec := range specs {
+	if len(specs) == 1 {
 		// open document
-		doc, err := openapidocument.OpenDocument(spec)
+		doc, err := openapidocument.OpenDocument(specs[0])
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to open document")
-		}
-
-		if specVersion == "" {
-			specVersion = doc.GetVersion()
-		} else if specVersion != doc.GetVersion() {
-			return mergedSpec, errors.Join(ErrOpenAPICrossVersionMergeUnsupported, fmt.Errorf("spec version mismatch: %s != %s", specVersion, doc.GetVersion()))
 		}
 
 		// build v3 model
@@ -58,21 +52,43 @@ func MergeOpenAPI3(specs [][]byte) (*libopenapi.DocumentModel[v3.Document], erro
 			return mergedSpec, errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
 		}
 
-		// merge elements
-		mergeInfo(&mergedSpec.Model, &v3Model.Model)
-		mergeServers(&mergedSpec.Model, &v3Model.Model)
-		mergeTags(&mergedSpec.Model, &v3Model.Model)
-		mergePaths(&mergedSpec.Model, &v3Model.Model)
-		mergeComponents(&mergedSpec.Model, &v3Model.Model)
+		mergedSpec = v3Model
+	} else if len(specs) > 1 {
+		for _, spec := range specs {
+			// open document
+			doc, err := openapidocument.OpenDocument(spec)
+			if err != nil {
+				log.Fatal().Err(err).Msg("failed to open document")
+			}
 
-		// reload document
-		_, doc, _, errs = doc.RenderAndReload()
-		if len(errs) > 0 {
-			return mergedSpec, errors.Join(util.ErrRenderDocument, errors.Join(errs...))
-		}
-		v3Model, errs = doc.BuildV3Model()
-		if len(errs) > 0 {
-			return mergedSpec, errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
+			if specVersion == "" {
+				specVersion = doc.GetVersion()
+			} else if specVersion != doc.GetVersion() {
+				return mergedSpec, errors.Join(ErrOpenAPICrossVersionMergeUnsupported, fmt.Errorf("spec version mismatch: %s != %s", specVersion, doc.GetVersion()))
+			}
+
+			// build v3 model
+			v3Model, errs := doc.BuildV3Model()
+			if len(errs) > 0 {
+				return mergedSpec, errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
+			}
+
+			// merge elements
+			mergeInfo(&mergedSpec.Model, &v3Model.Model)
+			mergeServers(&mergedSpec.Model, &v3Model.Model)
+			mergeTags(&mergedSpec.Model, &v3Model.Model)
+			mergePaths(&mergedSpec.Model, &v3Model.Model)
+			mergeComponents(&mergedSpec.Model, &v3Model.Model)
+
+			// reload document
+			_, doc, _, errs = doc.RenderAndReload()
+			if len(errs) > 0 {
+				return mergedSpec, errors.Join(util.ErrRenderDocument, errors.Join(errs...))
+			}
+			v3Model, errs = doc.BuildV3Model()
+			if len(errs) > 0 {
+				return mergedSpec, errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
+			}
 		}
 	}
 
