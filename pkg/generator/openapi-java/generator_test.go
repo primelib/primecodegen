@@ -31,6 +31,10 @@ var (
 	modelArrayOfMap []byte
 	//go:embed specs/model-array-oneof.yaml
 	modelArrayOfOneOf []byte
+	//go:embed specs/callback-basic.yaml
+	callbackBasic []byte
+	//go:embed specs/webhook-basic.yaml
+	webhookBasic []byte
 )
 
 func TestOperationBasic(t *testing.T) {
@@ -121,6 +125,32 @@ func TestArrayOfOneOf(t *testing.T) {
 	assert.Equal(t, "BookDto", templateData.Models[0].Name)
 	assert.Equal(t, true, templateData.Models[0].IsTypeAlias)
 	assert.Equal(t, "List<String>", templateData.Models[0].Parent.QualifiedType)
+}
+
+func TestCallbackBasic(t *testing.T) {
+	// arrange
+	v3doc := openapidocument.OpenV3DocumentForTest(callbackBasic)
+
+	// act
+	templateData, err := openapigenerator.BuildTemplateData(v3doc, NewGenerator(), commonPackages)
+	assert.NoError(t, err)
+	assert.NotNil(t, templateData)
+
+	// assert
+	assert.Len(t, templateData.Models, 1)
+}
+
+func TestWebhookBasic(t *testing.T) {
+	// arrange
+	v3doc := openapidocument.OpenV3DocumentForTest(webhookBasic)
+
+	// act
+	templateData, err := openapigenerator.BuildTemplateData(v3doc, NewGenerator(), commonPackages)
+	assert.NoError(t, err)
+	assert.NotNil(t, templateData)
+
+	// assert
+	assert.Len(t, templateData.Models, 1)
 }
 
 func dumpJSON(v interface{}) {
