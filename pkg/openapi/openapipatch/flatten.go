@@ -32,9 +32,20 @@ func FlattenSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 		return err
 	}
 
+	err = flattenCallbacks(doc)
+	if err != nil {
+		return err
+	}
+
+	err = flattenWebhooks(doc)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
+// flattenInlineRequestBodies flattens inline request schemas into the components section of the document
 func flattenInlineRequestBodies(doc *libopenapi.DocumentModel[v3.Document]) error {
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
@@ -43,20 +54,9 @@ func flattenInlineRequestBodies(doc *libopenapi.DocumentModel[v3.Document]) erro
 			}
 
 			if op.Value.RequestBody != nil {
-				for rb := op.Value.RequestBody.Content.Oldest(); rb != nil; rb = rb.Next() {
-					if rb.Value.Schema.IsReference() { // skip references
-						continue
-					}
-					addSuffix := op.Value.RequestBody.Content.First().Key() != rb.Key // add suffix from the second request body onwards
-
-					// move schema to components and replace with reference
-					key := util.ToPascalCase(op.Value.OperationId) + "B" + util.Ternary(addSuffix, util.UpperCaseFirstLetter(util.ContentTypeToShortName(rb.Key)), "")
-					log.Trace().Msg("moving request schema to components: " + key)
-					if ref, err := moveSchemaIntoComponents(doc, key, rb.Value.Schema); err != nil {
-						return fmt.Errorf("error moving schema to components: %w", err)
-					} else if ref != nil {
-						rb.Value.Schema = ref
-					}
+				err := processRequestBody(doc, op.Value, op.Value.RequestBody, "%sB%s", fmt.Sprintf("operation: %s / path: %s", op.Key, path.Key))
+				if err != nil {
+					return err
 				}
 			}
 		}
@@ -65,8 +65,8 @@ func flattenInlineRequestBodies(doc *libopenapi.DocumentModel[v3.Document]) erro
 	return nil
 }
 
+// flattenInlineResponses flattens inline response schemas into the components section of the document
 func flattenInlineResponses(doc *libopenapi.DocumentModel[v3.Document]) error {
-	// flatten inline responses
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 			if op.Value.Responses.Codes == nil {
@@ -138,6 +138,7 @@ func flattenEnumsInComponentProperties(doc *libopenapi.DocumentModel[v3.Document
 	return nil
 }
 
+// flattenInnerSchemas flattens inner component schemas in components
 func flattenInnerSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
 		valueSchema := schema.Value.Schema()
@@ -190,6 +191,81 @@ func flattenInnerSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 					}
 				}
 			}
+		}
+	}
+
+	return nil
+}
+
+// flattenCallbacks flattens inline callback request schemas into the components section of the document
+func flattenCallbacks(doc *libopenapi.DocumentModel[v3.Document]) error {
+	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
+		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
+			if op.Value.Callbacks == nil {
+				continue
+			}
+
+			for callback := op.Value.Callbacks.Oldest(); callback != nil; callback = callback.Next() {
+				for ce := callback.Value.Expression.Oldest(); ce != nil; ce = ce.Next() {
+					for cop := ce.Value.GetOperations().Oldest(); cop != nil; cop = cop.Next() {
+						if cop.Value.Responses.Codes == nil {
+							continue
+						}
+
+						err := processRequestBody(doc, op.Value, op.Value.RequestBody, "%sWH%s", fmt.Sprintf("operation: %s / path: %s", op.Key, callback.Key))
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// flattenWebhooks flattens inline webhook request schemas into the components section of the document
+func flattenWebhooks(doc *libopenapi.DocumentModel[v3.Document]) error {
+	if doc.Model.Webhooks == nil {
+		return nil
+	}
+
+	for webhook := doc.Model.Webhooks.Oldest(); webhook != nil; webhook = webhook.Next() {
+		for op := webhook.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
+			if op.Value.Responses.Codes == nil {
+				continue
+			}
+
+			err := processRequestBody(doc, op.Value, op.Value.RequestBody, "%sWH%s", fmt.Sprintf("operation: %s / path: %s", op.Key, webhook.Key))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// processRequestBody processes the request body of an operation
+func processRequestBody(doc *libopenapi.DocumentModel[v3.Document], operation *v3.Operation, requestBody *v3.RequestBody, schemaKeyTemplate string, location string) error {
+	for rb := requestBody.Content.Oldest(); rb != nil; rb = rb.Next() {
+		if rb.Value.Schema.IsReference() { // skip references
+			continue
+		}
+		addSuffix := requestBody.Content.First().Key() != rb.Key // add suffix from the second request body onwards
+
+		if operation.OperationId == "" {
+			return fmt.Errorf("operation id is required [%s], you can use generateOperationId to ensure all operations have a id", location)
+		}
+
+		// move schema to components and replace with reference
+		key := fmt.Sprintf(schemaKeyTemplate, util.ToPascalCase(operation.OperationId), util.Ternary(addSuffix, util.UpperCaseFirstLetter(util.ContentTypeToShortName(rb.Key)), ""))
+		log.Trace().Msg("moving request schema to components: " + key)
+		if ref, err := moveSchemaIntoComponents(doc, key, rb.Value.Schema); err != nil {
+			return fmt.Errorf("error moving schema to components: %w", err)
+		} else if ref != nil {
+			rb.Value.Schema = ref
 		}
 	}
 
