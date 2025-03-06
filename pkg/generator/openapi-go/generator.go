@@ -239,6 +239,11 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerato
 			}
 		}
 
+		// exception for any data
+		if schema.Properties == nil && len(schema.OneOf) == 0 && len(schema.AnyOf) == 0 && len(schema.AllOf) == 0 && schema.AdditionalProperties == nil {
+			return openapigenerator.NewSimpleCodeType("interface{}", schema), nil
+		}
+
 		if schema.Title == "" {
 			return openapigenerator.DefaultCodeType, fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
 		}
