@@ -54,10 +54,14 @@ func YamlNodeFromInterfaceNoErr(input interface{}) yaml.Node {
 		log.Fatal().Err(err).Msg("failed to marshal yaml")
 	}
 
-	var yn yaml.Node
-	if err = yaml.Unmarshal(yamlData, &yn); err != nil {
+	var docNode yaml.Node
+	if err = yaml.Unmarshal(yamlData, &docNode); err != nil {
 		log.Fatal().Err(err).Msg("failed to parse into yaml node")
 	}
 
-	return yn
+	if docNode.Kind == yaml.DocumentNode && len(docNode.Content) > 0 {
+		return *docNode.Content[0]
+	}
+
+	return docNode
 }

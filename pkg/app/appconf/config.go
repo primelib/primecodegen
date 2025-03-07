@@ -9,10 +9,7 @@ import (
 )
 
 type Configuration struct {
-	Name        string `yaml:"name"`
-	Summary     string `yaml:"summary,omitempty"`
-	Description string `yaml:"description,omitempty"`
-	Output      string `yaml:"output,omitempty" jsonschema_description:"output directory for the generated code"`
+	Output string `yaml:"output,omitempty" jsonschema_description:"output directory for the generated code"`
 
 	Repository  RepositoryConf   `yaml:"repository"`
 	Maintainers []MaintainerConf `yaml:"maintainers"`
@@ -190,14 +187,6 @@ func LoadConfig(content string) (Configuration, error) {
 	err := yaml.Unmarshal([]byte(content), &config)
 	if err != nil {
 		return Configuration{}, fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	// repository defaults
-	if config.Repository.Name == "" {
-		config.Repository.Name = config.Name
-	}
-	if config.Repository.Description == "" {
-		config.Repository.Description = config.Summary
 	}
 
 	// spec defaults

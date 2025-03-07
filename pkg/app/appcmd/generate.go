@@ -66,7 +66,12 @@ func generateLocal(dir string) {
 
 	// for each module
 	log.Info().Str("dir", dir).Str("config", configPath).Msg("running local generation")
-	genErr := primelib.Generate(dir, conf, api.Repository{})
+	genErr := primelib.Generate(dir, conf, api.Repository{
+		Name:        conf.Repository.Name,
+		Description: conf.Repository.Description,
+		LicenseName: conf.Repository.LicenseName,
+		LicenseURL:  conf.Repository.LicenseURL,
+	})
 	if genErr != nil {
 		log.Fatal().Err(genErr).Msg("failed to generate code")
 	}

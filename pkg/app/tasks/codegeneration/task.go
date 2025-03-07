@@ -113,7 +113,7 @@ func (n PrimeLibGenerateTask) Execute(ctx taskcommon.TaskContext) error {
 	description, err := vcsapp.Render(string(descriptionTemplate), map[string]interface{}{
 		"PlatformName": ctx.Platform.Name(),
 		"PlatformSlug": ctx.Platform.Slug(),
-		"Module":       config.Name,
+		"Module":       config.Repository.Name,
 		"SpecUpdated":  true,
 		"CodeUpdated":  len(filteredChanges) > 1,
 		"SpecDiff":     diff,
