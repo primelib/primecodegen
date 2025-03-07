@@ -67,7 +67,12 @@ func updateLocal(dir string) {
 
 	// for each module
 	log.Info().Str("dir", dir).Str("config", configPath).Msg("running local update")
-	err = primelib.Update(dir, conf, api.Repository{})
+	err = primelib.Update(dir, conf, api.Repository{
+		Name:        conf.Repository.Name,
+		Description: conf.Repository.Description,
+		LicenseName: conf.Repository.LicenseName,
+		LicenseURL:  conf.Repository.LicenseURL,
+	})
 	if err != nil {
 		log.Warn().Err(err).Msg("failed to update spec")
 	}
