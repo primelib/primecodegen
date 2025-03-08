@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/primelib/primecodegen/pkg/tools/speakeasycli"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 )
@@ -28,7 +29,7 @@ var (
 )
 
 // ConvertSpec converts an input specification file to the desired output format.
-func ConvertSpec(inputPath, formatIn, formatOut string) ([]byte, error) {
+func ConvertSpec(inputPath, formatIn, formatOut, converter string) ([]byte, error) {
 	var result []byte
 
 	// validate parameters
@@ -47,12 +48,21 @@ func ConvertSpec(inputPath, formatIn, formatOut string) ([]byte, error) {
 
 	// convert
 	if formatIn == "swagger20" && strings.HasPrefix(formatOut, "openapi30") {
-		result, err = ConvertSwaggerToOpenAPI30(data, "")
-		if err != nil {
-			return nil, err
+		if converter == "speakeasy" {
+			result, err = ConvertSwaggerToOpenAPIUsingSpeakeasy(data)
+			if err != nil {
+				return result, err
+			}
+		} else if converter == "openapi-converter" {
+			result, err = ConvertSwaggerToOpenAPIUsingSwaggerConverter(data, converter)
+			if err != nil {
+				return result, err
+			}
+		} else {
+			return nil, errors.Join(ErrUnsupportedConversion, fmt.Errorf("converter %s does not exist", converter))
 		}
 
-		// ConvertSwaggerToOpenAPI30 returns json, convert to YAML if needed
+		// ConvertSwaggerToOpenAPIUsingSwaggerConverter returns json, convert to YAML if needed
 		if formatOut == "openapi30" {
 			result, err = util.JSONToYAML(result)
 			if err != nil {
@@ -66,7 +76,7 @@ func ConvertSpec(inputPath, formatIn, formatOut string) ([]byte, error) {
 	return result, nil
 }
 
-func ConvertSwaggerToOpenAPI30(swaggerData []byte, converterUrl string) ([]byte, error) {
+func ConvertSwaggerToOpenAPIUsingSwaggerConverter(swaggerData []byte, converterUrl string) ([]byte, error) {
 	if converterUrl == "" {
 		converterUrl, _ = os.LookupEnv(converterEndpointEnvVar)
 		if converterUrl == "" {
@@ -88,4 +98,31 @@ func ConvertSwaggerToOpenAPI30(swaggerData []byte, converterUrl string) ([]byte,
 	defer resp.Body.Close()
 
 	return io.ReadAll(resp.Body)
+}
+
+func ConvertSwaggerToOpenAPIUsingSpeakeasy(swaggerData []byte) ([]byte, error) {
+	// write to temp file
+	tempFile, err := os.CreateTemp("", "swagger-*.yaml")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(tempFile.Name())
+
+	_, err = tempFile.Write(swaggerData)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tempFile.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	// convert
+	output, err := speakeasycli.SpeakEasySwaggerConvertCommand(tempFile.Name())
+	if err != nil {
+		return nil, err
+	}
+
+	return output, nil
 }

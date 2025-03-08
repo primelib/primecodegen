@@ -76,13 +76,14 @@ func PatchListCmd() *cobra.Command {
 
 			// data
 			data := clioutputwriter.TabularData{
-				Headers: []string{"ID", "Description"},
+				Headers: []string{"TYPE", "ID", "Description"},
 				Rows:    [][]interface{}{},
 			}
-			for _, repo := range openapipatch.V3Patchers {
+			for _, p := range openapipatch.EmbeddedPatchers {
 				data.Rows = append(data.Rows, []interface{}{
-					repo.ID,
-					repo.Description,
+					p.Type,
+					p.ID,
+					p.Description,
 				})
 			}
 

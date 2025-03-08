@@ -16,7 +16,7 @@ func TestConvertSwaggerToOpenAPI(t *testing.T) {
 	swaggerData := []byte(`{"swagger": "2.0"}`)
 
 	// act
-	result, err := ConvertSwaggerToOpenAPI30(swaggerData, "")
+	result, err := ConvertSwaggerToOpenAPIUsingSwaggerConverter(swaggerData, "")
 
 	// assert
 	assert.NoError(t, err)

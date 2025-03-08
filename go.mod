@@ -32,7 +32,7 @@ require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/bradleyfalzon/ghinstallation/v2 v2.14.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
-	github.com/charlievieth/fastwalk v1.0.9 // indirect
+	github.com/charlievieth/fastwalk v1.0.10 // indirect
 	github.com/cidverse/go-vcs v0.0.0-20250227174958-f70c3e161d9e // indirect
 	github.com/cloudflare/circl v1.6.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
