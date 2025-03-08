@@ -21,6 +21,7 @@ func ConvertCmd() *cobra.Command {
 			inputFiles, _ := cmd.Flags().GetStringSlice("input")
 			formatIn, _ := cmd.Flags().GetString("format-in")
 			formatOut, _ := cmd.Flags().GetString("format-out")
+			converter, _ := cmd.Flags().GetString("converter")
 			if len(inputFiles) == 0 {
 				log.Fatal().Msg("input specification is required")
 			}
@@ -28,7 +29,7 @@ func ConvertCmd() *cobra.Command {
 
 			// convert
 			for _, path := range inputFiles {
-				converted, err := ConvertSpec(path, formatIn, formatOut)
+				converted, err := ConvertSpec(path, formatIn, formatOut, converter)
 				if err != nil {
 					log.Fatal().Err(err).Str("input format", formatIn).Str("output format", formatOut).Msg("Error converting OpenAPI Specification")
 				}
@@ -52,9 +53,10 @@ func ConvertCmd() *cobra.Command {
 	cmd.Flags().StringP("output-dir", "o", "", "Output Directory")
 	cmd.Flags().StringP("format-in", "f", "swagger20", fmt.Sprintf("Input format (supported: %s)", strings.Join(openapiconvert.SupportedInputFormats, ", ")))
 	cmd.Flags().StringP("format-out", "r", "openapi30", fmt.Sprintf("Output format (supported: %s)", strings.Join(openapiconvert.SupportedOutputFormats, ", ")))
+	cmd.Flags().StringP("converter", "c", "openapi-converter", "Converter to use (supported: openapi-converter, speakeasy)")
 	return cmd
 }
 
-func ConvertSpec(inputFile, formatIn, formatOut string) ([]byte, error) {
-	return openapiconvert.ConvertSpec(inputFile, formatIn, formatOut)
+func ConvertSpec(inputFile, formatIn, formatOut, converter string) ([]byte, error) {
+	return openapiconvert.ConvertSpec(inputFile, formatIn, formatOut, converter)
 }

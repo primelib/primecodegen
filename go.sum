@@ -19,8 +19,8 @@ github.com/bradleyfalzon/ghinstallation/v2 v2.14.0 h1:0D4vKCHOvYrDU8u61TnE2JfNT4
 github.com/bradleyfalzon/ghinstallation/v2 v2.14.0/go.mod h1:LOVmdZYVZ8jqdr4n9wWm1ocDiMz9IfMGfRkaYC1a52A=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
-github.com/charlievieth/fastwalk v1.0.9 h1:Odb92AfoReO3oFBfDGT5J+nwgzQPF/gWAw6E6/lkor0=
-github.com/charlievieth/fastwalk v1.0.9/go.mod h1:yGy1zbxog41ZVMcKA/i8ojXLFsuayX5VvwhQVoj9PBI=
+github.com/charlievieth/fastwalk v1.0.10 h1:0qUbvA2O+K+X+IrTfZTC0UH2DK5MOA+KjVfStAHUnGg=
+github.com/charlievieth/fastwalk v1.0.10/go.mod h1:yGy1zbxog41ZVMcKA/i8ojXLFsuayX5VvwhQVoj9PBI=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=
