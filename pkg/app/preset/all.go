@@ -73,6 +73,16 @@ func Generators(specFile string, conf appconf.Configuration) []generator.Generat
 					ArtifactId:       util.GetMapString(g.Config, "artifactId", ""),
 				},
 			}
+		case appconf.GeneratorTypeSpeakEasy:
+			gen = &generator.SpeakEasyGenerator{
+				OutputName: g.Name,
+				APISpec:    specFile,
+				Args:       g.Arguments,
+				Config: generator.SpeakEasyGeneratorConfig{
+					TemplateLanguage: util.GetMapString(g.Config, "templateLanguage", ""),
+					Repository:       conf.Repository,
+				},
+			}
 		default:
 			continue
 		}

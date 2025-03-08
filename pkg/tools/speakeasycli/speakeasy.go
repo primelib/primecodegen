@@ -27,6 +27,12 @@ func SpeakEasyTransformCommand(file string, transformMethod string) ([]byte, err
 		"--logLevel", "info",
 	)
 	cmd.Stderr = os.Stderr
+	cmd.Env = []string{
+		"PATH=" + os.Getenv("PATH"),
+		"HOME=" + os.Getenv("HOME"),
+		"http_proxy=http://localhost:9999",  // disable telemetry
+		"https_proxy=http://localhost:9999", // disable telemetry
+	}
 	log.Trace().Str("cmd", cmd.String()).Msg("calling speakeasy cli to transform openapi specification")
 	output, err := cmd.Output()
 	if err != nil {
@@ -48,6 +54,12 @@ func SpeakEasySwaggerConvertCommand(file string) ([]byte, error) {
 		"--logLevel", "info",
 	)
 	cmd.Stderr = os.Stderr
+	cmd.Env = []string{
+		"PATH=" + os.Getenv("PATH"),
+		"HOME=" + os.Getenv("HOME"),
+		"http_proxy=http://localhost:9999",  // disable telemetry
+		"https_proxy=http://localhost:9999", // disable telemetry
+	}
 	log.Trace().Str("cmd", cmd.String()).Msg("calling speakeasy cli to convert openapi specification to swagger")
 	output, err := cmd.Output()
 	if err != nil {

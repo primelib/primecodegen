@@ -8,6 +8,7 @@ type GeneratorType string
 const (
 	GeneratorTypeOpenApiGenerator GeneratorType = "openapi-generator"
 	GeneratorTypePrimeCodeGen     GeneratorType = "primecodegen"
+	GeneratorTypeSpeakEasy        GeneratorType = "speakeasy"
 )
 
 type SourceType string

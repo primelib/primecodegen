@@ -48,13 +48,13 @@ func ConvertSpec(inputPath, formatIn, formatOut, converter string) ([]byte, erro
 
 	// convert
 	if formatIn == "swagger20" && strings.HasPrefix(formatOut, "openapi30") {
-		if converter == "speakeasy" {
-			result, err = ConvertSwaggerToOpenAPIUsingSpeakeasy(data)
+		if converter == "" || converter == "openapi-converter" {
+			result, err = ConvertSwaggerToOpenAPIUsingSwaggerConverter(data, converter)
 			if err != nil {
 				return result, err
 			}
-		} else if converter == "openapi-converter" {
-			result, err = ConvertSwaggerToOpenAPIUsingSwaggerConverter(data, converter)
+		} else if converter == "speakeasy" {
+			result, err = ConvertSwaggerToOpenAPIUsingSpeakeasy(data)
 			if err != nil {
 				return result, err
 			}
