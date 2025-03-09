@@ -1,0 +1,272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/primelib/primecodegen/main/configschema/primelib-v1.json",
+  "$ref": "#/$defs/Configuration",
+  "$defs": {
+    "Configuration": {
+      "properties": {
+        "output": {
+          "type": "string",
+          "description": "The output directory for the generated code. When generating multiple languages, the output directory will be used as the root directory for the generated modules."
+        },
+        "repository": {
+          "$ref": "#/$defs/Repository"
+        },
+        "maintainers": {
+          "items": {
+            "$ref": "#/$defs/Maintainer"
+          },
+          "type": "array"
+        },
+        "spec": {
+          "$ref": "#/$defs/Spec"
+        },
+        "presets": {
+          "go": {
+            "$ref": "#/$defs/GoPreset"
+          },
+          "java": {
+            "$ref": "#/$defs/JavaPreset"
+          },
+          "python": {
+            "$ref": "#/$defs/PythonPreset"
+          },
+          "typescript": {
+            "$ref": "#/$defs/TypescriptPreset"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "output",
+        "repository",
+        "maintainers",
+        "spec"
+      ]
+    },
+    "Repository": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "inceptionYear": {
+          "type": "integer"
+        },
+        "licenseName": {
+          "type": "string"
+        },
+        "licenseURL": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "description",
+        "url",
+        "licenseName",
+        "licenseURL"
+      ]
+    },
+    "Maintainer": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "email"
+      ]
+    },
+    "Spec": {
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "The specification file to use for code generation. When sources are specified, this file will be overwritten."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of specification file to use for code generation.",
+          "enum": [
+            "openapi3"
+          ]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Source"
+          }
+        },
+        "patches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Patch"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "file"
+      ]
+    },
+    "Source": {
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "URL to download the spec from a remote location."
+        },
+        "file": {
+          "type": "string",
+          "description": "The source file to read, if a url is specified this will be used as target file instead."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of specification.",
+          "enum": [
+            "openapi3",
+            "swagger2"
+          ]
+        },
+        "patches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Patch"
+          }
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "Patch": {
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the patch."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of patch to apply.",
+          "enum": [
+            "builtin",
+            "openapi-overlay",
+            "json-patch",
+            "speakeasy"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "GoPreset": {
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "ignoreFiles": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "enabled"
+      ]
+    },
+    "JavaPreset": {
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "ignoreFiles": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "groupId": {
+          "type": "string"
+        },
+        "artifactId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "enabled"
+      ]
+    },
+    "PythonPreset": {
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "ignoreFiles": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "pypiPackageName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "enabled"
+      ]
+    },
+    "TypescriptPreset": {
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "ignoreFiles": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "npmOrg": {
+          "type": "string"
+        },
+        "npmName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "enabled"
+      ]
+    }
+  }
+}

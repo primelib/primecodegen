@@ -117,6 +117,7 @@ Projects are configured using a `primelib.yaml` file in the root of the reposito
 **Example - Java**
 
 ```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/primelib/primecodegen/main/configschema/primelib-v1.json
 TODO: add example ...
 ```
 
