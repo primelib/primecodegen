@@ -179,7 +179,36 @@
       },
       "required": [
         "id"
-      ]
+      ],
+      "if": {
+        "properties": {
+          "type": {
+            "enum": [
+              "",
+              "builtin"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "id": {
+            "enum": [
+              "flatten-components",
+              "simplify-polymorphic-schemas",
+              "fix-operation-tags",
+              "fix-missing-schema-title",
+              "fix-remove-common-operation-id-prefix",
+              "prune-operation-tags-keep-first",
+              "prune-operation-tags",
+              "prune-invalid-paths",
+              "generate-tag-from-doc-title",
+              "generate-operation-id",
+              "add-idempotency-key"
+            ]
+          }
+        }
+      }
     },
     "GoPreset": {
       "properties": {

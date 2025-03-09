@@ -413,6 +413,21 @@ func IsPolymorphicSchema(s *base.Schema) bool {
 	return false
 }
 
+func IsEmptySchema(schema *base.Schema) bool {
+	if schema == nil {
+		return true
+	}
+
+	return schema.Properties == nil &&
+		schema.Type == nil &&
+		schema.Items == nil &&
+		schema.AdditionalProperties == nil &&
+		schema.Enum == nil &&
+		schema.AllOf == nil &&
+		schema.AnyOf == nil &&
+		schema.OneOf == nil
+}
+
 func mergeAllOf(schemaRef *base.SchemaProxy, schema *base.Schema, derivedSchemaName string, schemas *orderedmap.Map[string, *base.SchemaProxy], schemataMap map[string]string, polymorphicRel string) error {
 	reference := schemaRef.GetReference()
 	if reference != "" {
