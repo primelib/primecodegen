@@ -52,6 +52,10 @@ var V3Patchers = map[string]V3Config{
 		ID:   "generate-operation-id",
 		Func: GenerateOperationIds,
 	},
+	"add-idempotency-key": {
+		ID:   "add-idempotency-key",
+		Func: AddIdempotencyKey,
+	},
 }
 
 var EmbeddedPatchers = []sharedpatch.SpecPatch{
@@ -105,6 +109,11 @@ var EmbeddedPatchers = []sharedpatch.SpecPatch{
 		Type:        "builtin",
 		ID:          "generate-operation-id",
 		Description: "Generates operation IDs for all operations (overwrites existing IDs)",
+	},
+	{
+		Type:        "builtin",
+		ID:          "add-idempotency-key",
+		Description: "Adds an idempotency key to all POST operations in the OpenAPI document (see https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header)",
 	},
 	// speakeasy transformations
 	{

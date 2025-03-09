@@ -3,13 +3,11 @@ package openapipatch
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
-	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 )
 
@@ -69,31 +67,6 @@ func MissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document]) error {
 	return nil
 }
 
-// PruneCommonOperationIdPrefix sets the operation IDs of all operations and fixes some commonly seen issues.
-func PruneCommonOperationIdPrefix(doc *libopenapi.DocumentModel[v3.Document]) error {
-	var operationIds []string
-
-	// scan all current operation IDs
-	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
-		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
-			operationIds = append(operationIds, op.Value.OperationId)
-		}
-	}
-
-	// detect common prefix
-	commonPrefix := util.FindCommonStrPrefix(operationIds)
-	if commonPrefix != "" {
-		log.Debug().Str("prefix", commonPrefix).Msg("found common operation id prefix, removing it from all operation IDs")
-		for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
-			for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
-				op.Value.OperationId = strings.TrimPrefix(op.Value.OperationId, commonPrefix)
-			}
-		}
-	}
-
-	return nil
-}
-
 // InvalidMaxValue fixes integers and longs, where the maximum value is out of bounds for the type
 func InvalidMaxValue(doc *libopenapi.DocumentModel[v3.Document]) error {
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
@@ -140,7 +113,7 @@ func deleteEmptySchemas(v3Model *libopenapi.DocumentModel[v3.Document], schemata
 		if !present {
 			continue
 		}
-		if isEmptySchema(value.Schema()) {
+		if openapidocument.IsEmptySchema(value.Schema()) {
 			keysForDeletion = append(keysForDeletion, schema.Key)
 		}
 	}
@@ -151,21 +124,6 @@ func deleteEmptySchemas(v3Model *libopenapi.DocumentModel[v3.Document], schemata
 		replaceEmptySchemaRefsByBaseSchemaRefs(keysForDeletion[deleteKeyIdx], derivedSchemaReplacement, v3Model)
 		v3Model.Model.Components.Schemas.Delete(keysForDeletion[deleteKeyIdx])
 	}
-}
-
-func isEmptySchema(schema *base.Schema) bool {
-	if schema == nil {
-		return true
-	}
-
-	return schema.Properties == nil &&
-		schema.Type == nil &&
-		schema.Items == nil &&
-		schema.AdditionalProperties == nil &&
-		schema.Enum == nil &&
-		schema.AllOf == nil &&
-		schema.AnyOf == nil &&
-		schema.OneOf == nil
 }
 
 // Replace refs to schemas merged into their base-schemas with refs to these base-schemas everywhere
