@@ -112,6 +112,10 @@
             "openapi3"
           ]
         },
+        "sourcesDir": {
+          "type": "string",
+          "description": "The directory source specs are stored in / downloaded to."
+        },
         "sources": {
           "type": "array",
           "items": {
