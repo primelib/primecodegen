@@ -94,7 +94,7 @@ func (n SpecUpdateTask) Execute(ctx taskcommon.TaskContext) error {
 	description, err := vcsapp.Render(string(descriptionTemplate), map[string]interface{}{
 		"PlatformName": ctx.Platform.Name(),
 		"PlatformSlug": ctx.Platform.Slug(),
-		"Name":         conf.Name,
+		"Name":         conf.Repository.Name,
 		"SpecDiff":     diff,
 		"Footer":       os.Getenv("PRIMEAPP_FOOTER_HIDE") != "true",
 		"FooterCustom": os.Getenv("PRIMEAPP_FOOTER_CUSTOM"),
