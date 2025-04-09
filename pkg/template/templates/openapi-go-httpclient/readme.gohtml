@@ -13,7 +13,7 @@ go get -u {{ .Metadata.ArtifactId }}
 
 TODO
 
-{{- if .Metadata.LicenseName }}
+{{ if .Metadata.LicenseName }}
 ## License
 
 This project is licensed under the [{{ .Metadata.LicenseName }}]({{ .Metadata.LicenseUrl }}) license.

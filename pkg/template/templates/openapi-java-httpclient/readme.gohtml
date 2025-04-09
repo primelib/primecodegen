@@ -58,7 +58,7 @@ implementation("{{ .Metadata.ArtifactGroupId }}:{{ .Metadata.ArtifactId }}:<vers
 });
 ```
 
-{{- if .Metadata.LicenseName }}
+{{ if .Metadata.LicenseName }}
 ## License
 
 This project is licensed under the [{{ .Metadata.LicenseName }}]({{ .Metadata.LicenseUrl }}) license.
