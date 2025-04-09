@@ -155,6 +155,10 @@ func (g *JavaGenerator) ToFunctionName(name string) string {
 func (g *JavaGenerator) ToPropertyName(name string) string {
 	name = util.ToCamelCase(name)
 
+	if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
+		name = "p" + name
+	}
+
 	if slices.Contains(g.reservedWords, name) {
 		return name + "Prop"
 	}
@@ -164,6 +168,10 @@ func (g *JavaGenerator) ToPropertyName(name string) string {
 
 func (g *JavaGenerator) ToParameterName(name string) string {
 	name = util.ToCamelCase(name)
+
+	if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
+		name = "p" + name
+	}
 
 	if slices.Contains(g.reservedWords, name) {
 		return name + "Prop"
@@ -245,7 +253,17 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 		}
 		return openapigenerator.NewListCodeType(arrayType, schema), nil // NewArrayCodeType
 	case slices.Contains(schema.Type, "object"):
-		if schema.AdditionalProperties != nil {
+		if schema.PatternProperties != nil {
+			pp := schema.PatternProperties.First()
+			ppSchema := pp.Value().Schema()
+
+			additionalPropertyType, err := g.ToCodeType(ppSchema, schemaType, true)
+			if err != nil {
+				return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled pattern properties type. schema: %s, format: %s", schema.Type, schema.Format), err)
+			}
+
+			return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), additionalPropertyType, schema), nil
+		} else if schema.AdditionalProperties != nil {
 			additionalPropertyType, err := g.ToCodeType(schema.AdditionalProperties.A.Schema(), schemaType, true)
 			if err != nil {
 				return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled additional properties type. schema: %s, format: %s", schema.Type, schema.Format), err)
