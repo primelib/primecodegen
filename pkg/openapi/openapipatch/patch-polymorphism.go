@@ -41,7 +41,7 @@ func SimplifyPolymorphicBooleans(doc *libopenapi.DocumentModel[v3.Document]) err
 				schema.AnyOf = nil
 				schema.Enum = nil
 				schema.Format = ""
-				log.Info().Str("schema", schema.Title).Msg("Simplified polymorphic boolean schema to plain boolean")
+				log.Trace().Str("schema", schema.Title).Msg("Simplified polymorphic boolean schema to plain boolean")
 			}
 		}
 	}
