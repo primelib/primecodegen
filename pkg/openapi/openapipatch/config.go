@@ -48,6 +48,10 @@ var V3Patchers = map[string]V3Config{
 		ID:   "simplify-polymorphic-schemas",
 		Func: MergePolymorphicSchemas,
 	},
+	"simplify-polymorphic-booleans": {
+		ID:   "simplify-polymorphic-booleans",
+		Func: SimplifyPolymorphicBooleans,
+	},
 	"fix-operation-tags": {
 		ID:   "fix-operation-tags",
 		Func: RepairOperationTags,
