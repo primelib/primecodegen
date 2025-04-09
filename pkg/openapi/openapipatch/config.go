@@ -76,6 +76,10 @@ var V3Patchers = map[string]V3Config{
 		ID:   "prune-invalid-paths",
 		Func: PruneInvalidPaths,
 	},
+	"prune-unusual-paths": {
+		ID:   "prune-unusual-paths",
+		Func: PruneUnusualPaths,
+	},
 	"generate-tag-from-doc-title": {
 		ID:   "generate-tag-from-doc-title",
 		Func: CreateOperationTagsFromDocTitle,
@@ -166,6 +170,11 @@ var EmbeddedPatchers = []sharedpatch.SpecPatch{
 		Type:        "builtin",
 		ID:          "prune-invalid-paths",
 		Description: "Removes all paths that are invalid (e.g. empty path, path with invalid characters)",
+	},
+	{
+		Type:        "builtin",
+		ID:          "prune-unusual-paths",
+		Description: "Removes all paths that are unusual (e.g. path parameters with underscores, ...)",
 	},
 	{
 		Type:        "builtin",
