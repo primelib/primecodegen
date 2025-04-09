@@ -12,6 +12,34 @@ type V3Config struct {
 }
 
 var V3Patchers = map[string]V3Config{
+	"fix-oas-300-version": {
+		ID:   "fix-oas-300-version",
+		Func: FixOAS300Version,
+	},
+	"fix-oas-301-version": {
+		ID:   "fix-oas-301-version",
+		Func: FixOAS301Version,
+	},
+	"fix-oas-302-version": {
+		ID:   "fix-oas-302-version",
+		Func: FixOAS302Version,
+	},
+	"fix-oas-303-version": {
+		ID:   "fix-oas-303-version",
+		Func: FixOAS303Version,
+	},
+	"fix-oas-304-version": {
+		ID:   "fix-oas-304-version",
+		Func: FixOAS304Version,
+	},
+	"fix-oas-310-version": {
+		ID:   "fix-oas-310-version",
+		Func: FixOAS310Version,
+	},
+	"fix-oas-311-version": {
+		ID:   "fix-oas-311-version",
+		Func: FixOAS311Version,
+	},
 	"flatten-components": {
 		ID:   "flatten-components",
 		Func: FlattenSchemas,
@@ -60,6 +88,41 @@ var V3Patchers = map[string]V3Config{
 
 var EmbeddedPatchers = []sharedpatch.SpecPatch{
 	// builtin transformations
+	{
+		Type:        "builtin",
+		ID:          "fix-oas-300-version",
+		Description: "Fixes specs authored in OpenAPI 3.0.0 format but mistakenly labeled as a different version, without converting schema content.",
+	},
+	{
+		Type:        "builtin",
+		ID:          "fix-oas-301-version",
+		Description: "Fixes specs authored in OpenAPI 3.0.1 format but mistakenly labeled as a different version, without converting schema content.",
+	},
+	{
+		Type:        "builtin",
+		ID:          "fix-oas-302-version",
+		Description: "Fixes specs authored in OpenAPI 3.0.2 format but mistakenly labeled as a different version, without converting schema content.",
+	},
+	{
+		Type:        "builtin",
+		ID:          "fix-oas-303-version",
+		Description: "Fixes specs authored in OpenAPI 3.0.3 format but mistakenly labeled as a different version, without converting schema content.",
+	},
+	{
+		Type:        "builtin",
+		ID:          "fix-oas-304-version",
+		Description: "Fixes specs authored in OpenAPI 3.0.4 format but mistakenly labeled as a different version, without converting schema content.",
+	},
+	{
+		Type:        "builtin",
+		ID:          "fix-oas-310-version",
+		Description: "Fixes specs authored in OpenAPI 3.1.0 format but mistakenly labeled as a different version, without converting schema content.",
+	},
+	{
+		Type:        "builtin",
+		ID:          "fix-oas-311-version",
+		Description: "Fixes specs authored in OpenAPI 3.1.1 format but mistakenly labeled as a different version, without converting schema content.",
+	},
 	{
 		Type:        "builtin",
 		ID:          "flatten-components",
