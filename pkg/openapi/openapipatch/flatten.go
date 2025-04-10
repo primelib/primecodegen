@@ -158,36 +158,35 @@ func flattenInnerSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 		}
 
 		// properties
-		if valueSchema.Properties == nil {
-			continue
-		}
-		for p := valueSchema.Properties.Oldest(); p != nil; p = p.Next() {
-			propSchema := p.Value.Schema()
-			if p.Value.IsReference() {
-				continue
-			}
-
-			// inner objects
-			if slices.Contains(propSchema.Type, "object") {
-				key := util.ToPascalCase(p.Key)
-				log.Trace().Msg("moving inner schema to components: " + key)
-				if ref, err := moveSchemaIntoComponents(doc, key, p.Value); err != nil {
-					return fmt.Errorf("error moving enum property schema to components: %w", err)
-				} else if ref != nil {
-					p.Value = ref
+		if valueSchema.Properties != nil {
+			for p := valueSchema.Properties.Oldest(); p != nil; p = p.Next() {
+				propSchema := p.Value.Schema()
+				if p.Value.IsReference() {
+					continue
 				}
-			}
 
-			// inner array objects
-			if slices.Contains(propSchema.Type, "array") && propSchema.Items != nil {
-				itemSchema := propSchema.Items.A.Schema()
-				if !propSchema.Items.A.IsReference() && slices.Contains(itemSchema.Type, "object") {
-					key := util.ToPascalCase(p.Key) + "Item"
-					log.Trace().Msg("moving array inner schema to components: " + key)
-					if ref, err := moveSchemaIntoComponents(doc, key, propSchema.Items.A); err != nil {
-						return fmt.Errorf("error moving array object schema to components: %w", err)
+				// inner objects
+				if slices.Contains(propSchema.Type, "object") {
+					key := util.ToPascalCase(p.Key)
+					log.Trace().Msg("moving inner schema to components: " + key)
+					if ref, err := moveSchemaIntoComponents(doc, key, p.Value); err != nil {
+						return fmt.Errorf("error moving enum property schema to components: %w", err)
 					} else if ref != nil {
-						propSchema.Items.A = ref
+						p.Value = ref
+					}
+				}
+
+				// inner array objects
+				if slices.Contains(propSchema.Type, "array") && propSchema.Items != nil {
+					itemSchema := propSchema.Items.A.Schema()
+					if !propSchema.Items.A.IsReference() && slices.Contains(itemSchema.Type, "object") {
+						key := util.ToPascalCase(p.Key) + "Item"
+						log.Trace().Msg("moving array inner schema to components: " + key)
+						if ref, err := moveSchemaIntoComponents(doc, key, propSchema.Items.A); err != nil {
+							return fmt.Errorf("error moving array object schema to components: %w", err)
+						} else if ref != nil {
+							propSchema.Items.A = ref
+						}
 					}
 				}
 			}
