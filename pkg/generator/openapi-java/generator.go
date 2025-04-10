@@ -70,7 +70,7 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		PackageConfig: opts.PackageConfig,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to build template data: %w", err)
+		return fmt.Errorf("failed to build template data in %s: %w", g.Id(), err)
 	}
 
 	// generate files
@@ -183,6 +183,10 @@ func (g *JavaGenerator) ToParameterName(name string) string {
 func (g *JavaGenerator) ToConstantName(name string) string {
 	name = util.ToUpperSnakeCase(name)
 
+	if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
+		name = "p" + name
+	}
+
 	if slices.Contains(g.reservedWords, name) {
 		return name
 	}
@@ -265,13 +269,15 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 			}
 
 			return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), additionalPropertyType, schema), nil
-		} else if schema.AdditionalProperties != nil {
+		} else if schema.AdditionalProperties != nil && schema.AdditionalProperties.IsA() {
 			additionalPropertyType, err := g.ToCodeType(schema.AdditionalProperties.A.Schema(), schemaType, true)
 			if err != nil {
 				return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled additional properties type. schema: %s, format: %s", schema.Type, schema.Format), err)
 			}
 
 			return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), additionalPropertyType, schema), nil
+		} else if schema.AdditionalProperties != nil && schema.AdditionalProperties.IsB() && schema.AdditionalProperties.B {
+			return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), openapigenerator.NewSimpleCodeType("Object", schema), schema), nil
 		} else if schema.AdditionalProperties == nil && schema.Properties == nil {
 			return openapigenerator.CodeType{Name: "Object"}, nil
 		} else {

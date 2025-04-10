@@ -9,12 +9,12 @@ import (
 
 // SimplifyPolymorphicBooleans looks for booleans defined as polymorphic types and simplifies them
 func SimplifyPolymorphicBooleans(doc *libopenapi.DocumentModel[v3.Document]) error {
-	allSchemas := openapidocument.CollectSchemas(doc)
-	if len(allSchemas) == 0 {
+	walkedDoc := openapidocument.WalkDocument(doc)
+	if len(walkedDoc.Schemas) == 0 {
 		return nil
 	}
 
-	for _, schema := range allSchemas {
+	for _, schema := range walkedDoc.Schemas {
 		if schema == nil {
 			continue
 		}
@@ -51,12 +51,12 @@ func SimplifyPolymorphicBooleans(doc *libopenapi.DocumentModel[v3.Document]) err
 
 // SimplifyAllOf merges allOf subschemas into the parent schema
 func SimplifyAllOf(doc *libopenapi.DocumentModel[v3.Document]) error {
-	allSchemas := openapidocument.CollectSchemas(doc)
-	if len(allSchemas) == 0 {
+	walkedDoc := openapidocument.WalkDocument(doc)
+	if len(walkedDoc.Schemas) == 0 {
 		return nil
 	}
 
-	for _, schema := range allSchemas {
+	for _, schema := range walkedDoc.Schemas {
 		if schema == nil || len(schema.AllOf) == 0 {
 			continue
 		}

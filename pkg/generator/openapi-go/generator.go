@@ -59,7 +59,7 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		PackageConfig: opts.PackageConfig,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to build template data: %w", err)
+		return fmt.Errorf("failed to build template data in %s: %w", g.Id(), err)
 	}
 
 	// generate files
@@ -165,6 +165,10 @@ func (g *GoGenerator) ToParameterName(name string) string {
 func (g *GoGenerator) ToConstantName(name string) string {
 	name = util.ToPascalCase(name)
 
+	if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
+		name = "P" + name
+	}
+
 	if slices.Contains(g.reservedWords, name) {
 		return name + "Prop"
 	}
@@ -244,7 +248,7 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerato
 				}
 
 				return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("string", schema), additionalPropertyType, schema), nil
-			} else if schema.AdditionalProperties != nil && schema.Properties == nil {
+			} else if schema.AdditionalProperties != nil && schema.AdditionalProperties.IsA() {
 				additionalPropertyType, err := g.ToCodeType(schema.AdditionalProperties.A.Schema(), schemaType, true)
 				if err != nil {
 					return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled additional properties type. schema: %s, format: %s", schema.Type, schema.Format), err)
@@ -252,6 +256,8 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerato
 				additionalPropertyType = g.PostProcessType(additionalPropertyType)
 
 				return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("string", schema), additionalPropertyType, schema), nil
+			} else if schema.AdditionalProperties != nil && schema.AdditionalProperties.IsB() && schema.AdditionalProperties.B {
+				return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("string", schema), openapigenerator.NewSimpleCodeType("interface{}", schema), schema), nil
 			} else if schema.AdditionalProperties == nil && schema.Properties == nil {
 				return openapigenerator.NewSimpleCodeType("interface{}", schema), nil
 			}
