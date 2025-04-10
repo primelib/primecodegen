@@ -34,7 +34,7 @@ require (
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/charlievieth/fastwalk v1.0.10 // indirect
 	github.com/cidverse/go-vcs v0.0.0-20250401201942-98fa0819aba6 // indirect
-	github.com/cloudflare/circl v1.6.0 // indirect
+	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20240618133044-5a0af90af097 // indirect

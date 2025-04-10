@@ -52,6 +52,10 @@ var V3Patchers = map[string]V3Config{
 		ID:   "simplify-polymorphic-booleans",
 		Func: SimplifyPolymorphicBooleans,
 	},
+	"simplify-all-of": {
+		ID:   "simplify-all-of",
+		Func: SimplifyAllOf,
+	},
 	"fix-operation-tags": {
 		ID:   "fix-operation-tags",
 		Func: RepairOperationTags,
@@ -140,6 +144,11 @@ var EmbeddedPatchers = []sharedpatch.SpecPatch{
 		Type:        "builtin",
 		ID:          "simplify-polymorphic-schemas",
 		Description: "Merges polymorphic schemas (oneOf, anyOf, allOf) into a single schema",
+	},
+	{
+		Type:        "builtin",
+		ID:          "simplify-all-of",
+		Description: "Merges allOf subschemas into the parent schema",
 	},
 	{
 		Type:        "builtin",
