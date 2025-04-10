@@ -29,6 +29,13 @@ func CollectSchemas(doc *libopenapi.DocumentModel[v3.Document]) []*base.Schema {
 	}
 	for s := doc.Model.Components.Schemas.Oldest(); s != nil; s = s.Next() {
 		schemas = append(schemas, s.Value.Schema())
+
+		// properties
+		if s.Value.Schema().Properties != nil {
+			for p := s.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
+				schemas = append(schemas, p.Value.Schema())
+			}
+		}
 	}
 
 	return schemas

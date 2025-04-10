@@ -48,3 +48,32 @@ func SimplifyPolymorphicBooleans(doc *libopenapi.DocumentModel[v3.Document]) err
 
 	return nil
 }
+
+// SimplifyAllOf merges allOf subschemas into the parent schema
+func SimplifyAllOf(doc *libopenapi.DocumentModel[v3.Document]) error {
+	allSchemas := openapidocument.CollectSchemas(doc)
+	if len(allSchemas) == 0 {
+		return nil
+	}
+
+	for _, schema := range allSchemas {
+		if schema == nil || len(schema.AllOf) == 0 {
+			continue
+		}
+
+		for _, sub := range schema.AllOf {
+			subSchema := sub.Schema()
+			if subSchema == nil {
+				continue
+			}
+
+			_, err := openapidocument.MergeSchema(schema, subSchema)
+			if err != nil {
+				return err
+			}
+		}
+		schema.AllOf = nil
+	}
+
+	return nil
+}
