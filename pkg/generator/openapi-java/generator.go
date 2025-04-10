@@ -210,6 +210,8 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 			return openapigenerator.CodeType{TypeArgs: []openapigenerator.CodeType{openapigenerator.NewSimpleCodeType(g.BoxType("byte", isNullable), schema)}, IsArray: true}, nil
 		case "date", "date-time":
 			return openapigenerator.CodeType{Name: "Instant", ImportPath: "java.time"}, nil
+		case "uuid:":
+			return openapigenerator.CodeType{Name: "UUID", ImportPath: "java.util"}, nil
 		default:
 			return openapigenerator.CodeType{Name: "String"}, nil
 		}
