@@ -231,7 +231,7 @@ func (g *GoGenerator) ToCodeType(schema *base.Schema, schemaType openapigenerato
 		arrayType = g.PostProcessType(arrayType)
 
 		return openapigenerator.NewArrayCodeType(arrayType, schema), nil
-	case slices.Contains(schema.Type, "object"):
+	case slices.Contains(schema.Type, "object") || schema.Type == nil:
 		// exception for maps
 		if schemaType == openapigenerator.CodeTypeSchemaParent {
 			if schema.PatternProperties != nil {

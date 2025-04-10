@@ -254,7 +254,7 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 			return openapigenerator.NewListCodeType(arrayType, schema), nil
 		}
 		return openapigenerator.NewListCodeType(arrayType, schema), nil // NewArrayCodeType
-	case slices.Contains(schema.Type, "object"):
+	case slices.Contains(schema.Type, "object") || schema.Type == nil:
 		if schema.PatternProperties != nil {
 			pp := schema.PatternProperties.First()
 			ppSchema := pp.Value().Schema()
