@@ -7,11 +7,11 @@ toolchain go1.23.6
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/bluekeyes/go-gitdiff v0.8.1
-	github.com/cidverse/cidverseutils/core v0.0.0-20250401202032-ac7521ed90dd
+	github.com/cidverse/cidverseutils/core v0.0.0-20250420190557-91249a22dcfe
 	github.com/cidverse/cidverseutils/filesystem v0.1.2-0.20250210224234-b2040fc3a6b4
 	github.com/cidverse/cidverseutils/zerologconfig v0.1.1
 	github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf
-	github.com/cidverse/go-vcsapp v0.0.0-20250415205252-bd9599d694d4
+	github.com/cidverse/go-vcsapp v0.0.0-20250417143403-7a77ec7caaa7
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/gosimple/slug v1.15.0
 	github.com/iancoleman/strcase v0.3.0
