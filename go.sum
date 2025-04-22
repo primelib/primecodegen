@@ -24,8 +24,8 @@ github.com/charlievieth/fastwalk v1.0.10/go.mod h1:yGy1zbxog41ZVMcKA/i8ojXLFsuay
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=
-github.com/cidverse/cidverseutils/core v0.0.0-20250401202032-ac7521ed90dd h1:sf3GB5whzVAEOhlLBsym1cZ3XrfJAvWorRUpM8qK9lc=
-github.com/cidverse/cidverseutils/core v0.0.0-20250401202032-ac7521ed90dd/go.mod h1:ce0txxfVVA+69HYQGpedk2W2TwRdsoLT5NFfZU8uuoI=
+github.com/cidverse/cidverseutils/core v0.0.0-20250420190557-91249a22dcfe h1:i/FlCoAiTOcWDF6LWeSdLMjmDyNblNRj3R4s/r1jqWM=
+github.com/cidverse/cidverseutils/core v0.0.0-20250420190557-91249a22dcfe/go.mod h1:ce0txxfVVA+69HYQGpedk2W2TwRdsoLT5NFfZU8uuoI=
 github.com/cidverse/cidverseutils/filesystem v0.1.2-0.20250210224234-b2040fc3a6b4 h1:IByI4DV/hqnAeqbzQ+GzlCsQNzoUX0U6mnR/5PqaLYY=
 github.com/cidverse/cidverseutils/filesystem v0.1.2-0.20250210224234-b2040fc3a6b4/go.mod h1:LEluoAt92YcTw8ESiR6d0WK4X3P0GWRCxYm6iXl+8+g=
 github.com/cidverse/cidverseutils/zerologconfig v0.1.1 h1:+DU7kB7rNqPLIYIZtPtvHkMWSu9cenXpxcZuqZ7SZtY=
@@ -34,8 +34,8 @@ github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf h1:/DLETx+e0J8mWZy
 github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf/go.mod h1:nvQPqid2KB17xXiiFp/Fhd+dO5lusCSuBQtOXfsd+mk=
 github.com/cidverse/go-vcs v0.0.0-20250416055844-4218094c633e h1:RAC/LJwTTbai9XnkC9ePxzOx9JARqPOf+yZ22vrGfHc=
 github.com/cidverse/go-vcs v0.0.0-20250416055844-4218094c633e/go.mod h1:wfsgDLjEigpXumFdC5gJ4lk0Le/r1bB6VRxzSrEI1e4=
-github.com/cidverse/go-vcsapp v0.0.0-20250415205252-bd9599d694d4 h1:BhVlsPOqEKh7ELNh804xXLvLSCO4eOIsiW+v3sagqJA=
-github.com/cidverse/go-vcsapp v0.0.0-20250415205252-bd9599d694d4/go.mod h1:4ClAqRYfdAgGmoQSdCrSaIx8gpSNearCkX+9v/+nz2M=
+github.com/cidverse/go-vcsapp v0.0.0-20250417143403-7a77ec7caaa7 h1:jz0/IXi7FIC8uSpzz39e+B3NsBucfYG+N0rYZvhD0Cw=
+github.com/cidverse/go-vcsapp v0.0.0-20250417143403-7a77ec7caaa7/go.mod h1:3PtSc1fHyKl9Nf7r+A/v0TyyMtnOjGRU/+OyyFrd8kU=
 github.com/cloudflare/circl v1.6.1 h1:zqIqSPIndyBh1bjLVVDHMPpVKqp8Su/V+6MeDzzQBQ0=
 github.com/cloudflare/circl v1.6.1/go.mod h1:uddAzsPgqdMAYatqJ0lsjX1oECcQLIlRpzZh3pJrofs=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
