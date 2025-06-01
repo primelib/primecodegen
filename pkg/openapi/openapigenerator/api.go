@@ -8,7 +8,7 @@ import (
 	"github.com/primelib/primecodegen/pkg/openapi/openapiutil"
 )
 
-var DefaultCodeGenerationPatches = []string{"fixOperationTags", "generateOperationIds", "flattenSchemas", "mergePolymorphicSchemas", "missingSchemaTitle"}
+var DefaultCodeGenerationPatches = []string{"fix-operation-tags", "generate-operation-id", "flatten-components", "simplify-polymorphic-schemas", "fix-missing-schema-title"}
 
 // CodeGenerator is the interface that all code generators must implement
 type CodeGenerator interface {
