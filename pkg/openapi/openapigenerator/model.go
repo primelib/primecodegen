@@ -319,6 +319,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 			}
 
 			operation.Imports = uniqueSortImports(operation.Imports)
+			operation.Extensions = op.Value.Extensions
 			operations = append(operations, operation)
 		}
 	}
