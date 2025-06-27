@@ -124,7 +124,7 @@ func TestArrayOfOneOf(t *testing.T) {
 	assert.Len(t, templateData.Models, 1)
 	assert.Equal(t, "BookDto", templateData.Models[0].Name)
 	assert.Equal(t, true, templateData.Models[0].IsTypeAlias)
-	assert.Equal(t, "List<String>", templateData.Models[0].Parent.QualifiedType)
+	assert.Equal(t, "List<Object>", templateData.Models[0].Parent.QualifiedType)
 }
 
 func TestCallbackBasic(t *testing.T) {
