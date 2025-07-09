@@ -7,16 +7,16 @@ toolchain go1.24.4
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/bluekeyes/go-gitdiff v0.8.1
-	github.com/cidverse/cidverseutils/core v0.0.0-20250627221305-78405635788a
+	github.com/cidverse/cidverseutils/core v0.0.0-20250708222230-23e5f3ae93d9
 	github.com/cidverse/cidverseutils/filesystem v0.1.2-0.20250627221305-78405635788a
 	github.com/cidverse/cidverseutils/zerologconfig v0.1.1
 	github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf
-	github.com/cidverse/go-vcsapp v0.0.0-20250706152621-454830512683
+	github.com/cidverse/go-vcsapp v0.0.0-20250707173907-2031953406e7
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/gosimple/slug v1.15.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/jarcoal/httpmock v1.4.0
-	github.com/pb33f/doctor v0.0.29
+	github.com/pb33f/doctor v0.0.31
 	github.com/pb33f/libopenapi v0.23.0
 	github.com/rs/zerolog v1.34.0
 	github.com/shomali11/parallelizer v0.0.0-20220717173222-a6776fbf40a9
@@ -34,7 +34,7 @@ require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.16.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/charlievieth/fastwalk v1.0.12 // indirect
-	github.com/cidverse/go-vcs v0.0.0-20250706134612-0bfe27a102ce // indirect
+	github.com/cidverse/go-vcs v0.0.0-20250709174645-b748b55c4cde // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -58,7 +58,7 @@ require (
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/pjbgf/sha1cd v0.3.2 // indirect
+	github.com/pjbgf/sha1cd v0.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
@@ -68,12 +68,12 @@ require (
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.9-0.20250401010720-46d686821e33 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	gitlab.com/gitlab-org/api/client-go v0.133.0 // indirect
+	gitlab.com/gitlab-org/api/client-go v0.134.0 // indirect
 	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.26.0 // indirect
+	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/text v0.27.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

@@ -2,6 +2,7 @@ package openapiconvert
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -20,12 +21,18 @@ const (
 	converterEndpoint       = "https://converter.swagger.io/api/convert"
 )
 
+const (
+	FormatSwagger20     = "swagger2"
+	FormatOpenAPI30     = "openapi3"
+	FormatOpenAPI30JSON = "openapi3-json"
+)
+
 var (
 	ErrInvalidInputFormat    = fmt.Errorf("invalid input format")
 	ErrInvalidOutputFormat   = fmt.Errorf("invalid output format")
 	ErrUnsupportedConversion = fmt.Errorf("unsupported conversion")
-	SupportedInputFormats    = []string{"swagger20"}
-	SupportedOutputFormats   = []string{"openapi30", "openapi30-json"}
+	SupportedInputFormats    = []string{FormatSwagger20}
+	SupportedOutputFormats   = []string{FormatOpenAPI30, FormatOpenAPI30JSON}
 )
 
 // ConvertSpec converts an input specification file to the desired output format.
@@ -34,7 +41,7 @@ func ConvertSpec(inputPath, formatIn, formatOut, converter string) ([]byte, erro
 
 	// validate parameters
 	if !slices.Contains(SupportedInputFormats, formatIn) {
-		return nil, errors.Join(ErrInvalidInputFormat, fmt.Errorf("unsupported format: %s, supported are %s", formatOut, strings.Join(SupportedInputFormats, ", ")))
+		return nil, errors.Join(ErrInvalidInputFormat, fmt.Errorf("unsupported format: %s, supported are %s", formatIn, strings.Join(SupportedInputFormats, ", ")))
 	}
 	if !slices.Contains(SupportedOutputFormats, formatOut) {
 		return nil, errors.Join(ErrInvalidOutputFormat, fmt.Errorf("unsupported output format: %s, supported are %s", formatOut, strings.Join(SupportedOutputFormats, ", ")))
@@ -47,7 +54,7 @@ func ConvertSpec(inputPath, formatIn, formatOut, converter string) ([]byte, erro
 	}
 
 	// convert
-	if formatIn == "swagger20" && strings.HasPrefix(formatOut, "openapi30") {
+	if formatIn == FormatSwagger20 && strings.HasPrefix(formatOut, FormatOpenAPI30) {
 		if converter == "" || converter == "openapi-converter" {
 			result, err = ConvertSwaggerToOpenAPIUsingSwaggerConverter(data, converter)
 			if err != nil {
@@ -63,7 +70,7 @@ func ConvertSpec(inputPath, formatIn, formatOut, converter string) ([]byte, erro
 		}
 
 		// ConvertSwaggerToOpenAPIUsingSwaggerConverter returns json, convert to YAML if needed
-		if formatOut == "openapi30" {
+		if formatOut == FormatOpenAPI30 {
 			result, err = util.JSONToYAML(result)
 			if err != nil {
 				return result, err
@@ -97,7 +104,18 @@ func ConvertSwaggerToOpenAPIUsingSwaggerConverter(swaggerData []byte, converterU
 	}
 	defer resp.Body.Close()
 
-	return io.ReadAll(resp.Body)
+	jsonBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	var prettyJSON bytes.Buffer
+	err = json.Indent(&prettyJSON, jsonBytes, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to format JSON response: %w", err)
+	}
+
+	return prettyJSON.Bytes(), nil
 }
 
 func ConvertSwaggerToOpenAPIUsingSpeakeasy(swaggerData []byte) ([]byte, error) {
