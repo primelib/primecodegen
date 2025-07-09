@@ -8,6 +8,7 @@ import (
 	"github.com/cidverse/go-vcsapp/pkg/platform/api"
 	"github.com/primelib/primecodegen/pkg/app/appconf"
 	"github.com/primelib/primecodegen/pkg/openapi/openapicmd"
+	"github.com/primelib/primecodegen/pkg/openapi/openapiconvert"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/patch"
 	"github.com/primelib/primecodegen/pkg/patch/openapioverlay"
@@ -77,7 +78,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 		// convert from swagger to openapi
 		if spec.Type == appconf.SpecTypeOpenAPI3 && specFilesType[i] == appconf.SpecTypeSwagger2 {
 			log.Debug().Str("file", f).Msg("converting from swagger to openapi")
-			output, err := openapicmd.ConvertSpec(f, "swagger2", "openapi3", "")
+			output, err := openapicmd.ConvertSpec(f, openapiconvert.FormatSwagger20, openapiconvert.FormatOpenAPI30JSON, "")
 			if err != nil {
 				return fmt.Errorf("failed to convert swagger to openapi: %w", err)
 			}

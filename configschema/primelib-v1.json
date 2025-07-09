@@ -208,6 +208,7 @@
               "prune-invalid-paths",
               "generate-tag-from-doc-title",
               "generate-operation-id",
+              "generate-missing-operation-id",
               "add-idempotency-key"
             ]
           }
