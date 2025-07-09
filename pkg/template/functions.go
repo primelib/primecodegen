@@ -11,6 +11,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var javadocPlaceholders = map[string]string{
+	"&amp;":  "__ENTITY_PLACEHOLDER_AMP__",
+	"&lt;":   "__ENTITY_PLACEHOLDER_LT__",
+	"&gt;":   "__ENTITY_PLACEHOLDER_GT__",
+	"&quot;": "__ENTITY_PLACEHOLDER_QUOT__",
+	"&apos;": "__ENTITY_PLACEHOLDER_APOS__",
+	"&#39;":  "__ENTITY_PLACEHOLDER_39__",
+}
+
 var templateFunctions = template.FuncMap{
 	"hasPrefix": func(s, prefix string) bool {
 		return strings.HasPrefix(s, prefix)
@@ -58,8 +67,22 @@ var templateFunctions = template.FuncMap{
 		return util.CommentMultiLine(input, prefix)
 	},
 	"escapeJavadoc": func(input string) string {
-		input = strings.Replace(input, "<", "&lt;", -1)
-		input = strings.Replace(input, ">", "&gt;", -1)
+		// replace known HTML entities with a placeholders
+		for entity, placeholder := range javadocPlaceholders {
+			input = strings.ReplaceAll(input, entity, placeholder)
+		}
+
+		// escape bare &
+		input = strings.ReplaceAll(input, "&", "&amp;")
+		// escape < and >
+		input = strings.ReplaceAll(input, "<", "&lt;")
+		input = strings.ReplaceAll(input, ">", "&gt;")
+
+		// restore
+		for entity, placeholder := range javadocPlaceholders {
+			input = strings.ReplaceAll(input, placeholder, entity)
+		}
+
 		return input
 	},
 	"wrapIn": func(left string, right string, input string) string {

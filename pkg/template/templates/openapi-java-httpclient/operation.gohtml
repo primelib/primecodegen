@@ -55,7 +55,7 @@ public class {{.Operation.Name}}OperationSpec {
     {{- range $param := .Operation.MutableParameters }}
 
     /**
-     * {{ if $param.Description }}{{ $param.Description | commentSingleLine }}{{ else }}{{ $param.Name }}{{ end }}
+     * {{ if $param.Description }}{{ $param.Description | escapeJavadoc | commentMultiLine "     * " }}{{ else }}{{ $param.Name }}{{ end }}
      *
     {{- if $param.Deprecated }}
     * @deprecated{{ if $param.DeprecatedReason }} {{ $param.DeprecatedReason }}{{ end }}

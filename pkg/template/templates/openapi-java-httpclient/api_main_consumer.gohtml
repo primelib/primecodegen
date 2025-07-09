@@ -40,7 +40,7 @@ public class {{ .Metadata.Name }}ConsumerApi {
     * {{ $op.Name }}
     * {{ $op.Summary }}
     {{- if $op.Description }}
-    * {{ $op.Description | commentMultiLine "    * " | escapeJavadoc }}
+    * {{ $op.Description | escapeJavadoc | commentMultiLine "    * " }}
     {{- end }}
     *
     {{- if $op.MutableParameters }}

@@ -29,7 +29,7 @@ public interface {{ .Metadata.Name }}Api {
     * {{ $op.Name }}
     * {{ $op.Summary }}
     {{- if $op.Description }}
-    * {{ $op.Description | commentMultiLine "    * " | escapeJavadoc }}
+    * {{ $op.Description | escapeJavadoc | commentMultiLine "    * " }}
     {{- end }}
     *
     {{- range $param := $op.MutableParameters }}

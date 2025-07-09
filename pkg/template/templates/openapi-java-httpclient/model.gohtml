@@ -30,11 +30,11 @@ import java.util.function.Consumer;
  * {{ .Model.Name }}
 {{- if .Model.Description }}
  * <p>
- * {{ .Model.Description | commentMultiLine " * " | escapeJavadoc }}
+ * {{ .Model.Description | escapeJavadoc | commentMultiLine " * " }}
 {{- end }}
  *
 {{- if .Model.Deprecated }}
-* @deprecated{{ if .Model.DeprecatedReason }} {{ .Model.DeprecatedReason }}{{ end }}
+* @deprecated{{ if .Model.DeprecatedReason }} {{ .Model.DeprecatedReason | escapeJavadoc }}{{ end }}
 {{- end }}
  */
 @Getter
@@ -68,7 +68,7 @@ public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Pa
 {{ range $p := .Model.Properties }}
 {{- if $p.Description }}
     /**
-     * {{ $p.Description }}
+     * {{ $p.Description | escapeJavadoc }}
      */
 {{- end }}
     @JsonProperty("{{$p.FieldName}}")
