@@ -152,18 +152,16 @@ var allTemplates = map[string]Config{
 				Type:           TypeSupportOnce,
 			},
 			{
-				SourceTemplate:  "build.gradle.kts.gohtml",
-				Snippets:        defaultSnippets,
-				TargetDirectory: "",
-				TargetFileName:  "build.gradle.kts",
-				Type:            TypeSupportOnce,
+				SourceTemplate: "build.gradle.kts.gohtml",
+				Snippets:       defaultSnippets,
+				TargetFileName: "build.gradle.kts",
+				Type:           TypeSupportOnce,
 			},
 			{
-				SourceTemplate:  "settings.gradle.kts.gohtml",
-				Snippets:        defaultSnippets,
-				TargetDirectory: "",
-				TargetFileName:  "settings.gradle.kts",
-				Type:            TypeSupportOnce,
+				SourceTemplate: "settings.gradle.kts.gohtml",
+				Snippets:       defaultSnippets,
+				TargetFileName: "settings.gradle.kts",
+				Type:           TypeSupportOnce,
 			},
 			{
 				SourceTemplate:  "libs.versions.toml.gohtml",
@@ -171,6 +169,12 @@ var allTemplates = map[string]Config{
 				TargetDirectory: "gradle",
 				TargetFileName:  "libs.versions.toml",
 				Type:            TypeSupportOnce,
+			},
+			{
+				SourceTemplate: "gradle.properties.gohtml",
+				Snippets:       defaultSnippets,
+				TargetFileName: "gradle.properties",
+				Type:           TypeSupportOnce,
 			},
 			// gradle wrapper
 			{

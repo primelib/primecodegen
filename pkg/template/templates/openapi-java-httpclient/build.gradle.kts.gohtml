@@ -23,6 +23,7 @@ projectConfiguration {
 {{- if .Metadata.Description }}
     artifactDescription.set("{{ .Metadata.Description | commentSingleLine }}")
 {{- end }}
+    javadocLint.set(listOf("none"))
 
     pom = { pom ->
         {{- if .Metadata.RepositoryUrl }}
