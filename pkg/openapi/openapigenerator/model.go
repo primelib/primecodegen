@@ -309,11 +309,37 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				}
 
 				if resp.Key == "200" || resp.Key == "201" {
-					responseType, err := gen.ToCodeType(resp.Value.Content.First().Value().Schema.Schema(), CodeTypeSchemaResponse, false)
+					respContent := resp.Value.Content.First()
+
+					// return type
+					responseType, err := gen.ToCodeType(respContent.Value().Schema.Schema(), CodeTypeSchemaResponse, false)
 					if err != nil {
 						return operations, fmt.Errorf("error converting type of [%s:%s:responseType:%s]: %w", path.Key, op.Key, resp.Key, err)
 					}
 					operation.ReturnType = gen.PostProcessType(responseType)
+
+					// accept header as static parameter
+					mediaType := respContent.Key() // e.g. "application/json"
+					if mediaType != "" {
+						acceptType, err := gen.ToCodeType(&base.Schema{Type: []string{"string"}, Format: ""}, CodeTypeSchemaParameter, true)
+						if err != nil {
+							return operations, fmt.Errorf("error converting type of [%s:%s:acceptHeader]: %w", path.Key, op.Key, err)
+						}
+
+						headerParam := Parameter{
+							Name:        gen.ToParameterName("Accept"),
+							FieldName:   "Accept",
+							In:          "header",
+							Type:        acceptType,
+							Required:    true,
+							StaticValue: mediaType,
+						}
+
+						if !slices.Contains(addedParameters, gen.ToParameterName(headerParam.Name)) {
+							operation.AddParameter(headerParam)
+						}
+					}
+
 					break
 				}
 			}
