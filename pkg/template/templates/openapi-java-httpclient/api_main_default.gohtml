@@ -15,11 +15,14 @@ import {{ $.Common.Packages.Models }}.{{ .Name }};
 {{- end }}
 
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
+import java.time.Instant;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import javax.annotation.processing.Generated;
 
 @Generated(value = "io.github.primelib.primecodegen")
@@ -64,7 +67,7 @@ public interface {{ .Metadata.Name }}Api {
     {{- end }}
     {{ $op.ReturnType.QualifiedType }} {{ $op.Name }}{{- if gt (len $op.MutableParameters) 0 }}(
         {{- range $i, $param := $op.MutableParameters }}
-            {{if $param.Required}}@NotNull{{else}}@Nullable{{end}} {{if ne $param.In "body"}}@Param("{{ $param.Name }}") {{end}}{{$param.Type.QualifiedType}} {{$param.Name}}{{if notLast $op.MutableParameters $i}},{{end}}
+            {{if $param.Required}}@NonNull{{else}}@Nullable{{end}} {{if ne $param.In "body"}}@Param("{{ $param.Name }}") {{end}}{{$param.Type.Type}} {{$param.Name}}{{if notLast $op.MutableParameters $i}},{{end}}
         {{- end }}
     );{{ else }}();{{ end }}
 {{ end }}

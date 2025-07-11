@@ -7,7 +7,7 @@ import (
 )
 
 func ToOperationId(method string, url string) string {
-	operationID := strings.Replace(url, "/api", "", 1)
+	operationID := strings.Replace(url, "/api/", "", 1)
 	operationID = strings.Replace(operationID, "/oauth2/", "/OAuth2/", 1)
 	operationID = convertPathParameterToSingularIfFollowedByVariable(operationID)
 	//operationID = URLRemovePathParams(operationID)
