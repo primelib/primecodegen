@@ -161,10 +161,11 @@ func (s Spec) GetSourcesDir(rootDir string) string {
 }
 
 type SpecSource struct {
-	File   string     `yaml:"file"` // File path to the openapi specification
-	URL    string     `yaml:"url"`  // URL to the openapi specification
-	Format SourceType `yaml:"format" default:"spec"`
-	Type   SpecType   `yaml:"type"`
+	File    string                  `yaml:"file"` // File path to the openapi specification
+	URL     string                  `yaml:"url"`  // URL to the openapi specification
+	Format  SourceType              `yaml:"format" default:"spec"`
+	Type    SpecType                `yaml:"type"`
+	Patches []sharedpatch.SpecPatch `yaml:"patches"` // Patches are the patches that are applied to the specification
 }
 
 type GeneratorConfig struct {
@@ -183,9 +184,8 @@ type GeneratorArgs struct {
 }
 
 func LoadConfig(content string) (Configuration, error) {
-	var config Configuration
-	err := yaml.Unmarshal([]byte(content), &config)
-	if err != nil {
+	config := Configuration{}
+	if err := yaml.Unmarshal([]byte(content), &config); err != nil {
 		return Configuration{}, fmt.Errorf("failed to parse config: %w", err)
 	}
 
@@ -198,20 +198,23 @@ func LoadConfig(content string) (Configuration, error) {
 	if config.Spec.File == "" {
 		config.Spec.File = "openapi.yaml"
 	}
-	if config.Spec.InputPatches != nil {
-		for i, patch := range config.Spec.InputPatches {
-			if patch.Type == "" {
-				config.Spec.InputPatches[i].Type = "builtin"
-			}
-		}
+	for i := range config.Spec.InputPatches {
+		defaultPatchType(&config.Spec.InputPatches[i])
 	}
-	if config.Spec.Patches != nil {
-		for i, patch := range config.Spec.Patches {
-			if patch.Type == "" {
-				config.Spec.Patches[i].Type = "builtin"
-			}
+	for i := range config.Spec.Patches {
+		defaultPatchType(&config.Spec.Patches[i])
+	}
+	for i := range config.Spec.Sources {
+		for j := range config.Spec.Sources[i].Patches {
+			defaultPatchType(&config.Spec.Sources[i].Patches[j])
 		}
 	}
 
 	return config, nil
+}
+
+func defaultPatchType(p *sharedpatch.SpecPatch) {
+	if p.Type == "" {
+		p.Type = "builtin"
+	}
 }

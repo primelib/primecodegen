@@ -28,7 +28,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 	// download spec sources
 	targetSpecDir := spec.GetSourcesDir(dir)
 	var specFiles []string
-	var specFilesType []appconf.SpecType
+	var specInfo []appconf.SpecSource
 	var tempFiles []string
 	defer func() {
 		for _, f := range tempFiles {
@@ -70,13 +70,13 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 			return fmt.Errorf("failed to write api spec to file: %w", err)
 		}
 		specFiles = append(specFiles, targetFile)
-		specFilesType = append(specFilesType, s.Type)
+		specInfo = append(specInfo, s)
 	}
 
 	// spec type conversions
 	for i, f := range specFiles {
 		// convert from swagger to openapi
-		if spec.Type == appconf.SpecTypeOpenAPI3 && specFilesType[i] == appconf.SpecTypeSwagger2 {
+		if spec.Type == appconf.SpecTypeOpenAPI3 && specInfo[i].Type == appconf.SpecTypeSwagger2 {
 			log.Debug().Str("file", f).Msg("converting from swagger to openapi")
 			output, err := openapicmd.ConvertSpec(f, openapiconvert.FormatSwagger20, openapiconvert.FormatOpenAPI30JSON, "")
 			if err != nil {
@@ -86,6 +86,26 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 			err = os.WriteFile(f, output, 644)
 			if err != nil {
 				return fmt.Errorf("failed to write converted spec to file: %w", err)
+			}
+		}
+	}
+
+	// spec patching (per source file)
+	for i, f := range specFiles {
+		if len(specInfo[i].Patches) == 0 {
+			continue
+		}
+
+		if spec.Type == appconf.SpecTypeOpenAPI3 {
+			log.Debug().Str("file", f).Msg("patching openapi spec")
+			bytes, err := openapicmd.Patch([]string{f}, "", nil, specInfo[i].Patches)
+			if err != nil {
+				return fmt.Errorf("failed to patch openapi spec: %w", err)
+			}
+
+			err = os.WriteFile(f, bytes, 0644)
+			if err != nil {
+				return fmt.Errorf("failed to write patched spec to file: %w", err)
 			}
 		}
 	}
