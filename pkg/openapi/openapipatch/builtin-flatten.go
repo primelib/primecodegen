@@ -12,13 +12,13 @@ import (
 )
 
 var FlattenComponentsPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "flatten-components",
-	Description: "Flattens inline request bodies and response schemas into the components section of the document",
-	Func:        FlattenComponents,
+	Type:                "builtin",
+	ID:                  "flatten-components",
+	Description:         "Flattens inline request bodies and response schemas into the components section of the document",
+	PatchV3DocumentFunc: FlattenComponents,
 }
 
-func FlattenComponents(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func FlattenComponents(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	err := flattenRequestParameters(doc)
 	if err != nil {
 		return err

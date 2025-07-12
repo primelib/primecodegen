@@ -9,7 +9,6 @@ import (
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/patch"
 	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
-	"github.com/primelib/primecodegen/pkg/tools/speakeasycli"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 )
@@ -18,8 +17,9 @@ func ApplyPatches(input []byte, patches []sharedpatch.SpecPatch) ([]byte, error)
 	for _, p := range patches {
 		log.Info().Str("id", p.String()).Msg("applying patch to spec")
 
-		if p.Type == "builtin" {
-			if patcher, ok := EmbeddedPatcherMap[p.Type+":"+p.ID]; ok {
+		if patcher, ok := EmbeddedPatcherMap[p.Type+":"+p.ID]; ok {
+			// In-Memory Patcher (libopenapi)
+			if patcher.PatchV3DocumentFunc != nil {
 				doc, err := openapidocument.OpenDocument(input)
 				if err != nil {
 					return input, err
@@ -30,7 +30,7 @@ func ApplyPatches(input []byte, patches []sharedpatch.SpecPatch) ([]byte, error)
 					return input, fmt.Errorf("failed to build v3 high level model: %w", errors.Join(errs...))
 				}
 
-				patchErr := patcher.Func(v3doc, p.Config)
+				patchErr := patcher.PatchV3DocumentFunc(v3doc, p.Config)
 				if patchErr != nil {
 					return input, fmt.Errorf("failed to patch document with [%s]: %w", patcher.ID, patchErr)
 				}
@@ -41,31 +41,34 @@ func ApplyPatches(input []byte, patches []sharedpatch.SpecPatch) ([]byte, error)
 				}
 
 				input = bytes
-			} else {
-				return input, errors.Join(util.ErrFailedToPatchDocument, fmt.Errorf("builtin patch [%s] is not supported", p))
-			}
-		} else if p.Type == "speakeasy" {
-			tempFile, err := os.CreateTemp("", "input-*.yaml")
-			if err != nil {
-				return input, errors.Join(util.ErrFailedToPatchDocument, err)
-			}
-			defer os.Remove(tempFile.Name())
-
-			_, err = tempFile.Write(input)
-			if err != nil {
-				return input, errors.Join(util.ErrFailedToPatchDocument, err)
-			}
-			err = tempFile.Close()
-			if err != nil {
-				return input, errors.Join(util.ErrFailedToPatchDocument, err)
+				continue
 			}
 
-			patchedBytes, patchErr := speakeasycli.SpeakEasyTransformCommand(tempFile.Name(), p.File)
-			if patchErr != nil {
-				return input, errors.Join(util.ErrFailedToPatchDocument, patchErr)
-			}
+			// File-based Patch (external tool call)
+			if patcher.PatchFileFunc != nil {
+				tempFile, err := os.CreateTemp("", "input-*.yaml")
+				if err != nil {
+					return input, errors.Join(util.ErrFailedToPatchDocument, err)
+				}
+				defer os.Remove(tempFile.Name())
 
-			input = patchedBytes
+				_, err = tempFile.Write(input)
+				if err != nil {
+					return input, errors.Join(util.ErrFailedToPatchDocument, err)
+				}
+				err = tempFile.Close()
+				if err != nil {
+					return input, errors.Join(util.ErrFailedToPatchDocument, err)
+				}
+
+				patchedBytes, patchErr := patcher.PatchFileFunc(tempFile.Name(), p.Config)
+				if patchErr != nil {
+					return input, patchErr
+				}
+
+				input = patchedBytes
+				continue
+			}
 		} else {
 			patchedBytes, patchErr := patch.ApplyPatchFile(input, p)
 			if patchErr != nil {

@@ -9,14 +9,14 @@ import (
 )
 
 var MergePolymorphicSchemasPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "simplify-polymorphic-schemas",
-	Description: "Merges polymorphic schemas (oneOf, anyOf, allOf) into a single schema",
-	Func:        MergePolymorphicSchemas,
+	Type:                "builtin",
+	ID:                  "simplify-polymorphic-schemas",
+	Description:         "Merges polymorphic schemas (oneOf, anyOf, allOf) into a single schema",
+	PatchV3DocumentFunc: MergePolymorphicSchemas,
 }
 
 // MergePolymorphicSchemas merges polymorphic schemas (anyOf, oneOf, allOf) into a single flat schema
-func MergePolymorphicSchemas(v3Model *libopenapi.DocumentModel[v3.Document], config string) error {
+func MergePolymorphicSchemas(v3Model *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	// Remember derived schemata (key) to be replaced by their base schemata (value)
 	derivedSchemaReplacementMap := make(map[string]string)
 
@@ -38,14 +38,14 @@ func MergePolymorphicSchemas(v3Model *libopenapi.DocumentModel[v3.Document], con
 }
 
 var MergePolymorphicPropertiesPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "simplify-polymorphic-properties",
-	Description: "Merges polymorphic property values (anyOf, oneOf, allOf) into a single flat schema referenced by properties",
-	Func:        MergePolymorphicProperties,
+	Type:                "builtin",
+	ID:                  "simplify-polymorphic-properties",
+	Description:         "Merges polymorphic property values (anyOf, oneOf, allOf) into a single flat schema referenced by properties",
+	PatchV3DocumentFunc: MergePolymorphicProperties,
 }
 
 // MergePolymorphicProperties merges polymorphic property values (anyOf, oneOf, allOf) into a single flat schema referenced by resp. properties
-func MergePolymorphicProperties(v3Model *libopenapi.DocumentModel[v3.Document], config string) error {
+func MergePolymorphicProperties(v3Model *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	// schema properties
 	for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
 
@@ -67,14 +67,14 @@ func MergePolymorphicProperties(v3Model *libopenapi.DocumentModel[v3.Document], 
 }
 
 var SimplifyPolymorphicBooleansPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "simplify-polymorphic-booleans",
-	Description: "Merges polymorphic boolean schemas (oneOf, anyOf, allOf) into a single boolean schema",
-	Func:        SimplifyPolymorphicBooleans,
+	Type:                "builtin",
+	ID:                  "simplify-polymorphic-booleans",
+	Description:         "Merges polymorphic boolean schemas (oneOf, anyOf, allOf) into a single boolean schema",
+	PatchV3DocumentFunc: SimplifyPolymorphicBooleans,
 }
 
 // SimplifyPolymorphicBooleans looks for booleans defined as polymorphic types and simplifies them
-func SimplifyPolymorphicBooleans(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func SimplifyPolymorphicBooleans(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	walkedDoc := openapidocument.WalkDocument(doc)
 	if len(walkedDoc.Schemas) == 0 {
 		return nil
@@ -116,14 +116,14 @@ func SimplifyPolymorphicBooleans(doc *libopenapi.DocumentModel[v3.Document], con
 }
 
 var SimplifyAllOfPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "simplify-all-of",
-	Description: "Merges allOf subschemas into the parent schema",
-	Func:        SimplifyAllOf,
+	Type:                "builtin",
+	ID:                  "simplify-all-of",
+	Description:         "Merges allOf subschemas into the parent schema",
+	PatchV3DocumentFunc: SimplifyAllOf,
 }
 
 // SimplifyAllOf merges allOf subschemas into the parent schema
-func SimplifyAllOf(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func SimplifyAllOf(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	walkedDoc := openapidocument.WalkDocument(doc)
 	if len(walkedDoc.Schemas) == 0 {
 		return nil
