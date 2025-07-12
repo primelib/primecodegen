@@ -11,8 +11,20 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func FlattenSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
-	err := flattenInlineRequestBodies(doc)
+var FlattenComponentsPatch = BuiltInPatcher{
+	Type:        "builtin",
+	ID:          "flatten-components",
+	Description: "Flattens inline request bodies and response schemas into the components section of the document",
+	Func:        FlattenComponents,
+}
+
+func FlattenComponents(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+	err := flattenRequestParameters(doc)
+	if err != nil {
+		return err
+	}
+
+	err = flattenInlineRequestBodies(doc)
 	if err != nil {
 		return err
 	}
@@ -40,6 +52,41 @@ func FlattenSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 	err = flattenWebhooks(doc)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func flattenRequestParameters(doc *libopenapi.DocumentModel[v3.Document]) error {
+	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
+		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
+			if op.Value.Parameters == nil {
+				continue
+			}
+
+			for _, param := range op.Value.Parameters {
+				if param.Schema == nil {
+					continue
+				}
+
+				if param.Schema.IsReference() { // skip references
+					continue
+				}
+
+				// TODO: filter to only replace non-primitive types
+
+				// move schema to components and replace with reference
+				/*
+					key := util.ToPascalCase(op.Value.OperationId) + "P" + param.Name
+					log.Trace().Msg("moving request parameter schema to components: " + key)
+					if ref, err := moveSchemaIntoComponents(doc, key, param.Schema); err != nil {
+						return fmt.Errorf("error moving schema to components: %w", err)
+					} else if ref != nil {
+						param.Schema = ref
+					}
+				*/
+			}
+		}
 	}
 
 	return nil
@@ -189,6 +236,27 @@ func flattenInnerSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
 						}
 					}
 				}
+			}
+		}
+
+		// anyOf, oneOf, allOf
+		if valueSchema.AnyOf != nil {
+			for _, anyOf := range valueSchema.AnyOf {
+				if anyOf.IsReference() {
+					continue
+				}
+
+				/*
+					if slices.Contains(anyOf.Type, "object") {
+						key := util.ToPascalCase(schema.Key) + "AnyOf"
+						log.Trace().Msg("moving anyOf schema to components: " + key)
+						if ref, err := moveSchemaIntoComponents(doc, key, anyOf); err != nil {
+							return fmt.Errorf("error moving anyOf schema to components: %w", err)
+						} else if ref != nil {
+							anyOf = ref
+						}
+					}
+				*/
 			}
 		}
 	}

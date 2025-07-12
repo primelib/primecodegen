@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 
 	openapi_go "github.com/primelib/primecodegen/pkg/generator/openapi-go"
 	openapi_java "github.com/primelib/primecodegen/pkg/generator/openapi-java"
@@ -84,7 +85,7 @@ func Generate(inputSpec string, patches []string, generatorId string, templateId
 	if err != nil {
 		return errors.Join(util.ErrOpenDocument, err)
 	}
-	bytes, err = openapipatch.ApplyPatches(bytes, patches)
+	bytes, err = openapipatch.ApplyPatches(bytes, sharedpatch.ParsePatchSpecsFromStrings(patches))
 	if err != nil {
 		return err
 	}
