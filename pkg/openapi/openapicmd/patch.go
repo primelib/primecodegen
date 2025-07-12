@@ -11,6 +11,7 @@ import (
 	"github.com/primelib/primecodegen/pkg/openapi/openapimerge"
 	"github.com/primelib/primecodegen/pkg/openapi/openapipatch"
 	"github.com/primelib/primecodegen/pkg/patch"
+	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -45,7 +46,7 @@ func PatchCmd() *cobra.Command {
 			patches, _ := cmd.Flags().GetStringSlice("patch")
 
 			// run patch command
-			stdout, err := Patch(inputFiles, out, inputPatches, patches)
+			stdout, err := Patch(inputFiles, out, sharedpatch.ParsePatchSpecsFromStrings(inputPatches), sharedpatch.ParsePatchSpecsFromStrings(patches))
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to patch document")
 			} else if len(stdout) > 0 {
@@ -165,8 +166,8 @@ func PatchValidateCmd() *cobra.Command {
 //   - output: output file
 //   - inputPatches: patches to apply to the input specification(s) pre-merge
 //   - patches: patches to apply to the merged specification
-func Patch(inputFiles []string, output string, inputPatches []string, patches []string) ([]byte, error) {
-	log.Info().Strs("input", inputFiles).Strs("input-patches", inputPatches).Strs("patches", patches).Str("output-file", output).Msg("patching")
+func Patch(inputFiles []string, output string, inputPatches []sharedpatch.SpecPatch, patches []sharedpatch.SpecPatch) ([]byte, error) {
+	log.Info().Strs("input", inputFiles).Strs("input-patches", sharedpatch.SpecPatchesToStringSlice(inputPatches)).Strs("patches", sharedpatch.SpecPatchesToStringSlice(patches)).Str("output-file", output).Msg("patching")
 	for i, v := range inputFiles {
 		inputFiles[i] = util.ResolvePath(v)
 	}

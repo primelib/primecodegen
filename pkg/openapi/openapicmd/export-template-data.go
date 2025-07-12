@@ -7,6 +7,7 @@ import (
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
 	"github.com/primelib/primecodegen/pkg/openapi/openapipatch"
+	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -38,7 +39,7 @@ func GenerateTemplateCmd() *cobra.Command {
 				log.Fatal().Err(err).Msg("failed to read document")
 			}
 
-			bytes, err = openapipatch.ApplyPatches(bytes, patches)
+			bytes, err = openapipatch.ApplyPatches(bytes, sharedpatch.ParsePatchSpecsFromStrings(patches))
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to apply input patches")
 			}

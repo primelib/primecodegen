@@ -2,7 +2,6 @@ package openapipatch
 
 import (
 	"fmt"
-	"slices"
 
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
@@ -10,83 +9,6 @@ import (
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/rs/zerolog/log"
 )
-
-// MergePolymorphicSchemas merges polymorphic schemas (anyOf, oneOf, allOf) into a single flat schema
-func MergePolymorphicSchemas(v3Model *libopenapi.DocumentModel[v3.Document]) error {
-	// Remember derived schemata (key) to be replaced by their base schemata (value)
-	derivedSchemaReplacementMap := make(map[string]string)
-
-	// component schemas
-	for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-		var err error
-		schema.Value, err = openapidocument.SimplifyPolymorphism(schema.Key, schema.Value, v3Model.Model.Components.Schemas, derivedSchemaReplacementMap)
-		if err != nil {
-			return err
-		}
-	}
-
-	// TODO: Handle polymorphic responses, request bodies, parameter definitions
-
-	// Delete empty schemas
-	deleteEmptySchemas(v3Model, derivedSchemaReplacementMap)
-
-	return nil
-}
-
-// MergePolymorphicProperties merges polymorphic property values (anyOf, oneOf, allOf) into a single flat schema referenced by resp. properties
-func MergePolymorphicProperties(v3Model *libopenapi.DocumentModel[v3.Document]) error {
-	// schema properties
-	for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-
-		if schema.Value.Schema().Properties != nil {
-			for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
-				/* TODO:
-				Probably new method:
-					A: Iterate over polymorphic properties
-					B: Create a new schema for union of all properties in any-,all- and oneOf referenced schemas
-					C: Iterate over all schema references introduced by any-,all- or oneOf and copy all of their properties into new schema
-					D: Replace polymorphic relation (any-,all-, oneOf) with schema reference to newly created union schema
-				Open: Avoid duplication for identical polymorphic relations in property values
-				*/
-			}
-		}
-	}
-
-	return nil
-}
-
-// MissingSchemaTitle fills in missing schema titles with the schema key
-func MissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document]) error {
-	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-		if schema.Value.Schema().Title == "" {
-			schema.Value.Schema().Title = schema.Key
-			log.Trace().Str("schema", schema.Key).Msg("missing schema title, setting to schema key")
-		}
-	}
-
-	return nil
-}
-
-// InvalidMaxValue fixes integers and longs, where the maximum value is out of bounds for the type
-func InvalidMaxValue(doc *libopenapi.DocumentModel[v3.Document]) error {
-	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-		if schema.Value.Schema().Properties == nil {
-			continue
-		}
-
-		for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
-			s := p.Value.Schema()
-			if slices.Contains(s.Type, "integer") && p.Value.Schema().Maximum != nil {
-				if *p.Value.Schema().Maximum > 2147483647 {
-					// p.Value.Schema().Maximum = float64(2147483647)
-					log.Trace().Str("schema", schema.Key).Str("property", p.Key).Msg("fixing maximum value for integer")
-				}
-			}
-		}
-	}
-
-	return nil
-}
 
 func moveSchemaIntoComponents(doc *libopenapi.DocumentModel[v3.Document], key string, schema *base.SchemaProxy) (*base.SchemaProxy, error) {
 	if schema.IsReference() { // skip references

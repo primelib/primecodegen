@@ -26,28 +26,35 @@ func ApplyPatch(patchType sharedpatch.PatchType, input []byte, patchContent []by
 	}
 }
 
-func ApplyPatchFile(input []byte, patchType string, patchFile string) ([]byte, error) {
-	// read content
-	content, err := os.ReadFile(patchFile)
-	if err != nil {
-		return nil, errors.Join(sharedpatch.ErrFailedToReadPatchFile, err)
+func ApplyPatchFile(input []byte, patch sharedpatch.SpecPatch) ([]byte, error) {
+	var content []byte
+	var err error
+	if patch.Content != "" {
+		content = []byte(patch.Content)
+	} else if patch.File != "" {
+		content, err = os.ReadFile(patch.File)
+		if err != nil {
+			return nil, errors.Join(sharedpatch.ErrFailedToReadPatchFile, err)
+		}
+	} else {
+		return nil, sharedpatch.ErrExternalPatchMustHaveContentOrFile
 	}
 
 	// to enum
 	var patchTypeEnum sharedpatch.PatchType
-	switch patchType {
+	switch patch.Type {
 	case "file":
-		if strings.HasSuffix(patchFile, ".jsonpatch") {
+		if strings.HasSuffix(patch.File, ".jsonpatch") {
 			patchTypeEnum = sharedpatch.PatchTypeJSONPatch
-		} else if strings.HasSuffix(patchFile, ".patch") {
+		} else if strings.HasSuffix(patch.File, ".patch") {
 			patchTypeEnum = sharedpatch.PatchTypeGitPatch
 		} else {
-			return nil, errors.Join(sharedpatch.ErrUnsupportedPatchType, fmt.Errorf("file: %s", patchFile))
+			return nil, errors.Join(sharedpatch.ErrUnsupportedPatchType, fmt.Errorf("file: %s", patch.File))
 		}
 	case string(sharedpatch.PatchTypeJSONPatch), string(sharedpatch.PatchTypeGitPatch), string(sharedpatch.PatchTypeOpenAPIOverlay):
-		patchTypeEnum = sharedpatch.PatchType(patchType)
+		patchTypeEnum = sharedpatch.PatchType(patch.Type)
 	default:
-		return nil, errors.Join(sharedpatch.ErrUnsupportedPatchType, fmt.Errorf("type: %s", patchType))
+		return nil, errors.Join(sharedpatch.ErrUnsupportedPatchType, fmt.Errorf("type: %s", patch.Type))
 	}
 
 	// process

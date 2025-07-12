@@ -8,8 +8,15 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var AddIdempotencyKeyPatch = BuiltInPatcher{
+	Type:        "builtin",
+	ID:          "add-idempotency-key",
+	Description: "Adds an idempotency key to all POST operations in the OpenAPI document (see https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header)",
+	Func:        AddIdempotencyKey,
+}
+
 // AddIdempotencyKey adds an idempotency key to all POST operations in the OpenAPI document - see https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/
-func AddIdempotencyKey(doc *libopenapi.DocumentModel[v3.Document]) error {
+func AddIdempotencyKey(doc *libopenapi.DocumentModel[v3.Document], config string) error {
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 			if op.Key == "post" {

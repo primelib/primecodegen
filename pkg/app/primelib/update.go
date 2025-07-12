@@ -95,7 +95,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 		log.Debug().Strs("files", specFiles).Str("output", specFile).Msg("merging and patching openapi spec")
 
 		// inputPatches
-		inputPatches, inputPatchTempFiles, err := processPatches(spec.InputPatches)
+		_, inputPatchTempFiles, err := processPatches(spec.InputPatches)
 		tempFiles = append(tempFiles, inputPatchTempFiles...)
 		if err != nil {
 			return fmt.Errorf("failed to process patches: %w", err)
@@ -111,14 +111,14 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 		spec.Patches = append([]sharedpatch.SpecPatch{specPatch}, spec.Patches...)
 
 		// patches
-		patches, patchTempFiles, err := processPatches(spec.Patches)
+		_, patchTempFiles, err := processPatches(spec.Patches)
 		tempFiles = append(tempFiles, patchTempFiles...)
 		if err != nil {
 			return fmt.Errorf("failed to process patches: %w", err)
 		}
 
 		// merge and patch
-		_, err = openapicmd.Patch(specFiles, specFile, inputPatches, patches)
+		_, err = openapicmd.Patch(specFiles, specFile, spec.InputPatches, spec.Patches)
 		if err != nil {
 			return fmt.Errorf("failed to patch openapi spec: %w", err)
 		}

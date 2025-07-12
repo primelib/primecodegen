@@ -198,6 +198,20 @@ func LoadConfig(content string) (Configuration, error) {
 	if config.Spec.File == "" {
 		config.Spec.File = "openapi.yaml"
 	}
+	if config.Spec.InputPatches != nil {
+		for i, patch := range config.Spec.InputPatches {
+			if patch.Type == "" {
+				config.Spec.InputPatches[i].Type = "builtin"
+			}
+		}
+	}
+	if config.Spec.Patches != nil {
+		for i, patch := range config.Spec.Patches {
+			if patch.Type == "" {
+				config.Spec.Patches[i].Type = "builtin"
+			}
+		}
+	}
 
 	return config, nil
 }

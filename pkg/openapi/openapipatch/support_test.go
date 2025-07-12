@@ -32,7 +32,7 @@ func TestPruneOperationTags(t *testing.T) {
 	assert.Equal(t, 0, len(errors))
 
 	// prune operation tags
-	_ = PruneOperationTags(v3doc)
+	_ = PruneOperationTags(v3doc, "")
 
 	// check if tags are pruned
 	v, _ := v3doc.Model.Paths.PathItems.Get("/test")
@@ -105,7 +105,7 @@ func TestCreateOperationTagsFromDocTitle(t *testing.T) {
 	assert.Equal(t, 0, len(errors))
 
 	// act
-	err = CreateOperationTagsFromDocTitle(v3doc)
+	err = CreateOperationTagsFromDocTitle(v3doc, "")
 	assert.NoError(t, err)
 
 	// assert
@@ -191,7 +191,7 @@ func TestMergePolymorphicSchemas(t *testing.T) {
 	}
 
 	// act
-	_ = MergePolymorphicSchemas(v3Model)
+	_ = MergePolymorphicSchemas(v3Model, "")
 
 	// assert
 	_, document, v3model, errors := document.RenderAndReload()
