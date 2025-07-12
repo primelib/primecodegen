@@ -13,20 +13,20 @@ import (
 )
 
 var GenerateTagFromDocTitlePatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "generate-tag-from-doc-title",
-	Description: "Removes all tags and createsone tag based on the document title, useful when merging multiple specs",
-	Func:        GenerateTagFromDocTitle,
+	Type:                "builtin",
+	ID:                  "generate-tag-from-doc-title",
+	Description:         "Removes all tags and createsone tag based on the document title, useful when merging multiple specs",
+	PatchV3DocumentFunc: GenerateTagFromDocTitle,
 }
 
 // GenerateTagFromDocTitle removes all tags and creates one new tag per API spec doc from document title setting it on each operation.
 // Note: This patch must be applied before merging specs.
-func GenerateTagFromDocTitle(doc *libopenapi.DocumentModel[v3.Document], config string) error {
-	err := PruneDocumentTags(doc, "")
+func GenerateTagFromDocTitle(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
+	err := PruneDocumentTags(doc, make(map[string]interface{}))
 	if err != nil {
 		return err
 	}
-	err = PruneOperationTags(doc, "")
+	err = PruneOperationTags(doc, make(map[string]interface{}))
 	if err != nil {
 		return err
 	}
@@ -50,24 +50,24 @@ func GenerateTagFromDocTitle(doc *libopenapi.DocumentModel[v3.Document], config 
 }
 
 var GenerateOperationIdsPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "generate-operation-id",
-	Description: "Generates operation IDs for all operations (overwrites existing IDs)",
-	Func:        GenerateOperationIds,
+	Type:                "builtin",
+	ID:                  "generate-operation-id",
+	Description:         "Generates operation IDs for all operations (overwrites existing IDs)",
+	PatchV3DocumentFunc: GenerateOperationIds,
 }
 
-func GenerateOperationIds(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func GenerateOperationIds(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	return generateOperationIds(doc, true)
 }
 
 var GenerateMissingOperationIdsPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "generate-missing-operation-id",
-	Description: "Generates operation IDs for all operations that are missing an ID (does not overwrite existing IDs)",
-	Func:        GenerateMissingOperationIds,
+	Type:                "builtin",
+	ID:                  "generate-missing-operation-id",
+	Description:         "Generates operation IDs for all operations that are missing an ID (does not overwrite existing IDs)",
+	PatchV3DocumentFunc: GenerateMissingOperationIds,
 }
 
-func GenerateMissingOperationIds(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func GenerateMissingOperationIds(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	return generateOperationIds(doc, false)
 }
 

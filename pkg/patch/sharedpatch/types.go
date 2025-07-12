@@ -23,12 +23,12 @@ const (
 )
 
 type SpecPatch struct {
-	Type        string `yaml:"type"`
-	ID          string `yaml:"id,omitempty"`
-	File        string `yaml:"file,omitempty"`
-	Content     string `yaml:"content,omitempty"`
-	Config      string `yaml:"config,omitempty"` // JSON or YAML config for the patch
-	Description string `yaml:"description,omitempty"`
+	Type        string                 `yaml:"type"`
+	ID          string                 `yaml:"id,omitempty"`
+	File        string                 `yaml:"file,omitempty"`
+	Content     string                 `yaml:"content,omitempty"`
+	Config      map[string]interface{} `yaml:"config,omitempty"` // JSON or YAML config for the patch
+	Description string                 `yaml:"description,omitempty"`
 }
 
 func (p SpecPatch) String() string {

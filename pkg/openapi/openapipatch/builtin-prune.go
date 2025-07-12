@@ -8,13 +8,13 @@ import (
 )
 
 var PruneInvalidPathsPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "prune-invalid-paths",
-	Description: "Removes all paths that are invalid (e.g. empty path, path with invalid characters)",
-	Func:        PruneInvalidPaths,
+	Type:                "builtin",
+	ID:                  "prune-invalid-paths",
+	Description:         "Removes all paths that are invalid (e.g. empty path, path with invalid characters)",
+	PatchV3DocumentFunc: PruneInvalidPaths,
 }
 
-func PruneInvalidPaths(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func PruneInvalidPaths(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		url := path.Key
 
@@ -27,13 +27,13 @@ func PruneInvalidPaths(doc *libopenapi.DocumentModel[v3.Document], config string
 }
 
 var PruneUnusualPathsPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "prune-unusual-paths",
-	Description: "Removes all paths that are unusual (e.g. path parameters with underscores, ...)",
-	Func:        PruneUnusualPaths,
+	Type:                "builtin",
+	ID:                  "prune-unusual-paths",
+	Description:         "Removes all paths that are unusual (e.g. path parameters with underscores, ...)",
+	PatchV3DocumentFunc: PruneUnusualPaths,
 }
 
-func PruneUnusualPaths(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func PruneUnusualPaths(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		url := path.Key
 
@@ -56,25 +56,25 @@ func PruneUnusualPaths(doc *libopenapi.DocumentModel[v3.Document], config string
 }
 
 var PruneDocumentTagsPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "prune-document-tags",
-	Description: "Removes all tags from the document",
-	Func:        PruneDocumentTags,
+	Type:                "builtin",
+	ID:                  "prune-document-tags",
+	Description:         "Removes all tags from the document",
+	PatchV3DocumentFunc: PruneDocumentTags,
 }
 
-func PruneDocumentTags(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func PruneDocumentTags(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	doc.Model.Tags = nil
 	return nil
 }
 
 var PruneOperationTagsPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "prune-operation-tags",
-	Description: "Removes all tags from operations",
-	Func:        PruneOperationTags,
+	Type:                "builtin",
+	ID:                  "prune-operation-tags",
+	Description:         "Removes all tags from operations",
+	PatchV3DocumentFunc: PruneOperationTags,
 }
 
-func PruneOperationTags(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func PruneOperationTags(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 			op.Value.Tags = nil
@@ -85,13 +85,13 @@ func PruneOperationTags(doc *libopenapi.DocumentModel[v3.Document], config strin
 }
 
 var PruneOperationTagsExceptFirstPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "prune-operation-tags-keep-first",
-	Description: "Removes all tags from operations except the first one",
-	Func:        PruneOperationTagsExceptFirst,
+	Type:                "builtin",
+	ID:                  "prune-operation-tags-keep-first",
+	Description:         "Removes all tags from operations except the first one",
+	PatchV3DocumentFunc: PruneOperationTagsExceptFirst,
 }
 
-func PruneOperationTagsExceptFirst(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func PruneOperationTagsExceptFirst(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 			if len(op.Value.Tags) > 1 {

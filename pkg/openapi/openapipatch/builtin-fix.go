@@ -13,14 +13,14 @@ import (
 )
 
 var FixInvalidMaxValuePatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "fix-invalid-max-value",
-	Description: "Fixes integer and long schemas where the maximum value is out of bounds for the type, e.g. max: 9223372036854775807 for long.",
-	Func:        FixInvalidMaxValue,
+	Type:                "builtin",
+	ID:                  "fix-invalid-max-value",
+	Description:         "Fixes integer and long schemas where the maximum value is out of bounds for the type, e.g. max: 9223372036854775807 for long.",
+	PatchV3DocumentFunc: FixInvalidMaxValue,
 }
 
 // FixInvalidMaxValue fixes integers and longs, where the maximum value is out of bounds for the type
-func FixInvalidMaxValue(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func FixInvalidMaxValue(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
 		if schema.Value.Schema().Properties == nil {
 			continue
@@ -41,14 +41,14 @@ func FixInvalidMaxValue(doc *libopenapi.DocumentModel[v3.Document], config strin
 }
 
 var FixOperationTagsPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "fix-operation-tags",
-	Description: "Ensures all operations have at least one tag, and that tags are documented in the document",
-	Func:        FixOperationTags,
+	Type:                "builtin",
+	ID:                  "fix-operation-tags",
+	Description:         "Ensures all operations have at least one tag, and that tags are documented in the document",
+	PatchV3DocumentFunc: FixOperationTags,
 }
 
 // FixOperationTags ensures all operations have tags, and that tags are documented in the document
-func FixOperationTags(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func FixOperationTags(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	documentedTags := make(map[string]bool)
 	for _, tag := range doc.Model.Tags {
 		documentedTags[tag.Name] = true
@@ -77,14 +77,14 @@ func FixOperationTags(doc *libopenapi.DocumentModel[v3.Document], config string)
 }
 
 var FixMissingSchemaTitlePatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "fix-missing-schema-title",
-	Description: "Adds a title to all schemas that are missing a title",
-	Func:        FixMissingSchemaTitle,
+	Type:                "builtin",
+	ID:                  "fix-missing-schema-title",
+	Description:         "Adds a title to all schemas that are missing a title",
+	PatchV3DocumentFunc: FixMissingSchemaTitle,
 }
 
 // FixMissingSchemaTitle fills in missing schema titles with the schema key
-func FixMissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func FixMissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
 		if schema.Value.Schema().Title == "" {
 			schema.Value.Schema().Title = schema.Key
@@ -96,14 +96,14 @@ func FixMissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document], config st
 }
 
 var FixRemoveCommonOperationIdPrefixPatch = BuiltInPatcher{
-	Type:        "builtin",
-	ID:          "fix-remove-common-operation-id-prefix",
-	Description: "Removes common prefixes from operation IDs",
-	Func:        FixRemoveCommonOperationIdPrefix,
+	Type:                "builtin",
+	ID:                  "fix-remove-common-operation-id-prefix",
+	Description:         "Removes common prefixes from operation IDs",
+	PatchV3DocumentFunc: FixRemoveCommonOperationIdPrefix,
 }
 
 // FixRemoveCommonOperationIdPrefix sets the operation IDs of all operations and fixes some commonly seen issues.
-func FixRemoveCommonOperationIdPrefix(doc *libopenapi.DocumentModel[v3.Document], config string) error {
+func FixRemoveCommonOperationIdPrefix(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	var operationIds []string
 
 	// scan all current operation IDs
