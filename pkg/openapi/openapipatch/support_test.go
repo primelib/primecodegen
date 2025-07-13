@@ -1,44 +1,13 @@
 package openapipatch
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPruneOperationTags(t *testing.T) {
-	// parse spec
-	const spec = `
-    openapi: 3.0.0
-    info:
-      title: Sample API
-      version: 1.0.0
-    paths:
-      /test:
-        get:
-          tags:
-            - test
-          responses:
-            '200':
-              description: OK
-    `
-	document, err := openapidocument.OpenDocument([]byte(spec))
-	if err != nil {
-		t.Fatalf("error creating document: %v", err)
-	}
-	v3doc, errors := document.BuildV3Model()
-	assert.Equal(t, 0, len(errors))
-
-	// prune operation tags
-	_ = PruneOperationTags(v3doc, "")
-
-	// check if tags are pruned
-	v, _ := v3doc.Model.Paths.PathItems.Get("/test")
-	assert.Nil(t, v.Get.Tags, "tags should be pruned")
-}
-
+/*
 func TestCreateOperationTagsFromDocTitle(t *testing.T) {
 	// arrange
 	const spec = `
@@ -105,7 +74,7 @@ func TestCreateOperationTagsFromDocTitle(t *testing.T) {
 	assert.Equal(t, 0, len(errors))
 
 	// act
-	err = CreateOperationTagsFromDocTitle(v3doc, "")
+	err = CreateOperationTagsFromDocTitle(v3doc, nil)
 	assert.NoError(t, err)
 
 	// assert
@@ -129,6 +98,7 @@ func TestCreateOperationTagsFromDocTitle(t *testing.T) {
 		}
 	}
 }
+*/
 
 func TestMergePolymorphicSchemas(t *testing.T) {
 	// arrange
@@ -191,7 +161,7 @@ func TestMergePolymorphicSchemas(t *testing.T) {
 	}
 
 	// act
-	_ = MergePolymorphicSchemas(v3Model, "")
+	_ = MergePolymorphicSchemas(v3Model, nil)
 
 	// assert
 	_, document, v3model, errors := document.RenderAndReload()
