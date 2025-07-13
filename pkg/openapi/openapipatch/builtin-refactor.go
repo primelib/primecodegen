@@ -5,6 +5,8 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
+	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 )
 
@@ -56,33 +58,59 @@ func AddPathPrefix(doc *libopenapi.DocumentModel[v3.Document], config map[string
 		return err
 	}
 
-	// store original paths and values to avoid modifying the map while iterating
-	var originalPathKeys []string
-	var originalValues []*v3.PathItem
-	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
-		if path.Key == "" {
-			continue
-		}
-
-		originalPathKeys = append(originalPathKeys, path.Key)
-		originalValues = append(originalValues, path.Value)
-	}
-
-	// delete the original paths
-	for _, key := range originalPathKeys {
-		doc.Model.Paths.PathItems.Delete(key)
-	}
-
-	// add the prefix to each original path key and re-add the path items
-	for i, originalPathKey := range originalPathKeys {
-		newPathKey := prefix + originalPathKey
-		log.Trace().Str("originalPath", originalPathKey).Str("newPath", newPathKey).Msg("changing path")
-		if _, exists := doc.Model.Paths.PathItems.Get(newPathKey); !exists {
-			doc.Model.Paths.PathItems.Set(newPathKey, originalValues[i])
-		} else {
-			log.Error().Str("originalPath", originalPathKey).Str("newPath", newPathKey).Msg("path already exists, skipping")
-		}
-	}
+	// rename path keys
+	_ = util.RenameOrderedMapKeys(
+		doc.Model.Paths.PathItems,
+		func(oldKey string) string {
+			return prefix + oldKey
+		},
+	)
 
 	return nil
+}
+
+var AddComponentSchemaPrefixPatch = BuiltInPatcher{
+	Type:                "builtin",
+	ID:                  "add-component-schema-prefix",
+	Description:         "Adds a prefix to all component schemas in the OpenAPI document",
+	PatchV3DocumentFunc: AddComponentSchemaPrefix,
+}
+
+func AddComponentSchemaPrefix(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
+	// validate config
+	prefix, err := getStringConfig(config, "prefix")
+	if err != nil {
+		return err
+	}
+
+	// rename keys and update references
+	referenceMapping := util.RenameOrderedMapKeys(
+		doc.Model.Components.Schemas,
+		func(oldKey string) string {
+			return prefix + oldKey
+		},
+	)
+	refMapping := make(map[string]string)
+	for oldKey, newKey := range referenceMapping {
+		refMapping["#/components/schemas/"+oldKey] = "#/components/schemas/" + newKey
+	}
+	updateAllSchemaRefs(doc, refMapping)
+
+	return nil
+}
+
+func updateAllSchemaRefs(
+	doc *libopenapi.DocumentModel[v3.Document],
+	referenceMapping map[string]string,
+) {
+	log.Trace().Int("numRefs", len(referenceMapping)).Msg("updating schema references in document")
+	openapidocument.VisitAllSchemas(doc, func(name string, schema *base.SchemaProxy) *base.SchemaProxy {
+		if schema.IsReference() {
+			if newReference, ok := referenceMapping[schema.GetReference()]; ok {
+				log.Trace().Str("oldRef", schema.GetReference()).Str("newRef", newReference).Msg("updating schema reference")
+				schema = base.CreateSchemaProxyRef(newReference)
+			}
+		}
+		return schema
+	})
 }

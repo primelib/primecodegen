@@ -209,7 +209,10 @@
               "generate-tag-from-doc-title",
               "generate-operation-id",
               "generate-missing-operation-id",
-              "add-idempotency-key"
+              "add-idempotency-key",
+              "add-path-prefix",
+              "add-component-schema-prefix",
+              "add-component-operation-prefix"
             ]
           }
         }

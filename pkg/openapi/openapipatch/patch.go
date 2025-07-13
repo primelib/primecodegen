@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/primelib/primecodegen/pkg/loader"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/patch"
 	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
@@ -14,6 +13,8 @@ import (
 )
 
 func ApplyPatches(input []byte, patches []sharedpatch.SpecPatch) ([]byte, error) {
+	inputFormat := util.DetectJSONOrYAML(input)
+
 	for _, p := range patches {
 		log.Info().Str("id", p.String()).Msg("applying patch to spec")
 
@@ -35,11 +36,10 @@ func ApplyPatches(input []byte, patches []sharedpatch.SpecPatch) ([]byte, error)
 					return input, fmt.Errorf("failed to patch document with [%s]: %w", patcher.ID, patchErr)
 				}
 
-				bytes, err := loader.InterfaceToYaml(v3doc.Model)
+				bytes, err := openapidocument.RenderV3ModelFormat(v3doc, inputFormat)
 				if err != nil {
 					return input, errors.Join(util.ErrRenderDocument, err)
 				}
-
 				input = bytes
 				continue
 			}
