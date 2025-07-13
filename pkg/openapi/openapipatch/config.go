@@ -50,6 +50,7 @@ var EmbeddedPatchers = []BuiltInPatcher{
 	// - refactoring / modifications
 	AddIdempotencyKeyPatch,
 	AddPathPrefixPatch,
+	AddComponentSchemaPrefixPatch,
 	// speakeasy transformations
 	SpeakeasyRemoveUnusedPatch,
 	SpeakeasyCleanupPatch,
