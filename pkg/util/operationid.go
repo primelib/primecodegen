@@ -15,7 +15,7 @@ func ToOperationId(method string, url string) string {
 
 	// get version and remove it from the operationID
 	version := ParseURLAPIVersion(url)
-	operationID = strings.Replace(operationID, "/v"+version+"/", "", 1)
+	operationID = strings.Replace(operationID, "v"+version+"/", "", 1)
 	operationID = strings.Replace(operationID, "*", "", 1)
 	operationID = strings.Replace(operationID, ".", "", -1)
 
