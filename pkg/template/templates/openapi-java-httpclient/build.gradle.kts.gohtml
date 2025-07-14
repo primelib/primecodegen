@@ -33,6 +33,13 @@ projectConfiguration {
             url.set("https://{{ .Metadata.RepositoryUrl }}/issues")
         }
         {{- end }}
+        pom.developers {
+            developer {
+                id.set("PrimeCodeGen")
+                name.set("PrimeLib PrimeCodeGen")
+                roles.addAll("maintainer")
+            }
+        }
         pom.licenses {
             license {
                 {{- if .Metadata.LicenseName }}

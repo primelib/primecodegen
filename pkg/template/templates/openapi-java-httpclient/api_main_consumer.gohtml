@@ -70,13 +70,13 @@ public class {{ .Metadata.Name }}ConsumerApi {
     @Deprecated
     {{- end }}
     {{- if $op.Parameters }}
-    public {{ $op.ReturnType.QualifiedType }} {{ $op.Name }}(Consumer<{{ $op.Name }}OperationSpec> spec) {
+    public {{ $op.ReturnType.QualifiedType }} {{ $op.Name | toFunctionName }}(Consumer<{{ $op.Name }}OperationSpec> spec) {
         {{$op.Name }}OperationSpec r = new {{ $op.Name }}OperationSpec(spec);
-        {{ if ne $op.ReturnType.QualifiedType "void" }}return {{ end }}api.{{ $op.Name }}({{ range $i, $param := $op.MutableParameters }}r.{{ $param.Name }}(){{ if notLast $op.MutableParameters $i }}, {{ end }}{{ end }});
+        {{ if ne $op.ReturnType.QualifiedType "void" }}return {{ end }}api.{{ $op.Name | toFunctionName }}({{ range $i, $param := $op.MutableParameters }}r.{{ $param.Name }}(){{ if notLast $op.MutableParameters $i }}, {{ end }}{{ end }});
     }
     {{- else }}
-    public {{ $op.ReturnType.QualifiedType }} {{ $op.Name }}() {
-        {{ if ne $op.ReturnType.QualifiedType "void" }}return {{ end }}api.{{ $op.Name }}();
+    public {{ $op.ReturnType.QualifiedType }} {{ $op.Name | toFunctionName }}() {
+        {{ if ne $op.ReturnType.QualifiedType "void" }}return {{ end }}api.{{ $op.Name | toFunctionName }}();
     }
     {{- end }}
 {{ end }}
