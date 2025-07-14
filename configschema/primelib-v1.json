@@ -181,9 +181,6 @@
           ]
         }
       },
-      "required": [
-        "id"
-      ],
       "if": {
         "properties": {
           "type": {
@@ -210,12 +207,16 @@
               "generate-operation-id",
               "generate-missing-operation-id",
               "add-idempotency-key",
+              "set-operation-tag",
               "add-path-prefix",
               "add-component-schema-prefix",
               "add-component-operation-prefix"
             ]
           }
-        }
+        },
+        "required": [
+          "id"
+        ]
       }
     },
     "GoPreset": {

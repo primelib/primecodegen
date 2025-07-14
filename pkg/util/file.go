@@ -7,7 +7,7 @@ import (
 func DetectJSONOrYAML(input []byte) (format string) {
 	trimmed := bytes.TrimLeft(input, " \t\r\n")
 	if len(trimmed) == 0 {
-		return "yaml" // default to yaml if empty
+		return "yaml"
 	}
 
 	switch trimmed[0] {

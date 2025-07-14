@@ -2,6 +2,7 @@ package openapidocument
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"github.com/pb33f/libopenapi"
@@ -22,8 +23,8 @@ func RenderV3ModelFormat(doc *libopenapi.DocumentModel[v3.Document], format stri
 		return buf.Bytes(), nil
 	} else if format == "json" {
 		var buf bytes.Buffer
-		jsonEncoder := yaml.NewEncoder(&buf)
-		jsonEncoder.SetIndent(2)
+		jsonEncoder := json.NewEncoder(&buf)
+		jsonEncoder.SetIndent("", "  ")
 		err := jsonEncoder.Encode(doc.Model)
 		if err != nil {
 			return nil, fmt.Errorf("failed to render data: %w", err)

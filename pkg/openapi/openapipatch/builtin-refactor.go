@@ -44,6 +44,30 @@ func AddIdempotencyKey(doc *libopenapi.DocumentModel[v3.Document], config map[st
 	return nil
 }
 
+var SetOperationTagPatch = BuiltInPatcher{
+	Type:                "builtin",
+	ID:                  "set-operation-tag",
+	Description:         "Sets a tag for all operations in the OpenAPI document",
+	PatchV3DocumentFunc: SetOperationTag,
+}
+
+func SetOperationTag(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
+	// validate config
+	tag, err := getStringConfig(config, "tag")
+	if err != nil {
+		return err
+	}
+
+	// set tag for all operations
+	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
+		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
+			op.Value.Tags = []string{tag}
+		}
+	}
+
+	return nil
+}
+
 var AddPathPrefixPatch = BuiltInPatcher{
 	Type:                "builtin",
 	ID:                  "add-path-prefix",
