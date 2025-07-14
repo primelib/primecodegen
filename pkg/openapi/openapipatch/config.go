@@ -49,6 +49,7 @@ var EmbeddedPatchers = []BuiltInPatcher{
 	GenerateMissingOperationIdsPatch,
 	// - refactoring / modifications
 	AddIdempotencyKeyPatch,
+	SetOperationTagPatch,
 	AddPathPrefixPatch,
 	AddComponentSchemaPrefixPatch,
 	// speakeasy transformations

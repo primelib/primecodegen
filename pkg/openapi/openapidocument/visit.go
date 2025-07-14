@@ -125,14 +125,14 @@ func visitNestedSchemas(
 	}
 
 	// Visit allOf, anyOf, oneOf
-	for _, subSchema := range s.AllOf {
-		subSchema = visitNestedSchemas("", subSchema, visitor)
+	for i := range s.AllOf {
+		s.AllOf[i] = visitNestedSchemas("", s.AllOf[i], visitor)
 	}
-	for _, subSchema := range s.AnyOf {
-		subSchema = visitNestedSchemas("", subSchema, visitor)
+	for i := range s.AnyOf {
+		s.AnyOf[i] = visitNestedSchemas("", s.AnyOf[i], visitor)
 	}
-	for _, subSchema := range s.OneOf {
-		subSchema = visitNestedSchemas("", subSchema, visitor)
+	for i := range s.OneOf {
+		s.OneOf[i] = visitNestedSchemas("", s.OneOf[i], visitor)
 	}
 
 	// Visit items (for arrays)

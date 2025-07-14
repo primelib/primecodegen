@@ -114,7 +114,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 	if spec.Type == appconf.SpecTypeOpenAPI3 {
 		log.Debug().Strs("files", specFiles).Str("output", specFile).Msg("merging and patching openapi spec")
 
-		// inputPatches
+		// inputPatches - TODO: rework patch pre-processing?
 		_, inputPatchTempFiles, err := processPatches(spec.InputPatches)
 		tempFiles = append(tempFiles, inputPatchTempFiles...)
 		if err != nil {
@@ -130,7 +130,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 
 		spec.Patches = append([]sharedpatch.SpecPatch{specPatch}, spec.Patches...)
 
-		// patches
+		// patches - TODO: rework patch pre-processing?
 		_, patchTempFiles, err := processPatches(spec.Patches)
 		tempFiles = append(tempFiles, patchTempFiles...)
 		if err != nil {
