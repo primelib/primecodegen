@@ -1,4 +1,4 @@
-package template
+package templateapi
 
 import (
 	"text/template"
@@ -54,6 +54,7 @@ type File struct {
 	TargetDirectory string   // TargetDirectory is the directory where the rendered file will be saved
 	TargetFileName  string   // TargetFileName contains the template for the file name
 	Type            Type     // Type is the type of the template
+	Kind            Kind     // Kind is the kind of the template, can be used to filter which templates to render
 	Category        []string // Category is a list of categories that the template belongs to, can be used to filter which templates to render
 	// TODO: allow to filter or transform template data per file
 }
@@ -67,4 +68,13 @@ const (
 	TypeModelEach     Type = "model_each"
 	TypeEnumEach      Type = "enum_each"
 	TypeSupportOnce   Type = "support_once"
+)
+
+type Kind string
+
+const (
+	KindAPI           Kind = "api"
+	KindModel         Kind = "model"
+	KindDocumentation Kind = "documentation"
+	KindBuildSystem   Kind = "buildsystem"
 )

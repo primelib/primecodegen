@@ -12,6 +12,7 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/primelib/primecodegen/pkg/template/templateapi"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 	"github.com/shomali11/parallelizer"
@@ -20,18 +21,18 @@ import (
 //go:embed templates/*
 var templateFS embed.FS
 
-func RenderTemplateById(templateId string, outputDir string, templateType Type, data interface{}, opts RenderOpts) (map[string]RenderedFile, error) {
+func RenderTemplateById(templateId string, outputDir string, templateType templateapi.Type, data interface{}, opts templateapi.RenderOpts) (map[string]templateapi.RenderedFile, error) {
 	templateConfig, exists := allTemplates[templateId]
 	if !exists {
-		return nil, errors.Join(ErrTemplateNotFound, fmt.Errorf("template id not found: %s", templateId))
+		return nil, errors.Join(templateapi.ErrTemplateNotFound, fmt.Errorf("template id not found: %s", templateId))
 	}
 
 	return RenderTemplate(templateConfig, outputDir, templateType, data, opts)
 }
 
 // RenderTemplate renders the template with the provided data and returns the rendered files
-func RenderTemplate(config Config, outputDir string, templateType Type, data interface{}, opts RenderOpts) (map[string]RenderedFile, error) {
-	files := make(map[string]RenderedFile)
+func RenderTemplate(config templateapi.Config, outputDir string, templateType templateapi.Type, data interface{}, opts templateapi.RenderOpts) (map[string]templateapi.RenderedFile, error) {
+	files := make(map[string]templateapi.RenderedFile)
 	var filesMutex sync.Mutex
 	templateFiles := config.FilesByType(templateType)
 
@@ -44,7 +45,7 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 
 		t, err := loadTemplate(config.ID, append([]string{file.SourceTemplate}, file.Snippets...), opts.TemplateFunctions)
 		if err != nil {
-			return nil, errors.Join(ErrFailedToParseTemplate, fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err))
+			return nil, errors.Join(templateapi.ErrFailedToParseTemplate, fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err))
 		}
 		tmpl[file.SourceTemplate] = t
 	}
@@ -60,22 +61,22 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 
 				err := t.Execute(&renderedContent, data)
 				if err != nil {
-					return errors.Join(ErrFailedToRenderTemplate, fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err))
+					return errors.Join(templateapi.ErrFailedToRenderTemplate, fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err))
 				}
 			} else if file.SourceFile != "" {
 				content, err := readTemplateFile([]string{config.ID, "_global"}, file.SourceFile)
 				if err != nil {
-					return errors.Join(ErrFailedToCopyTemplateFile, fmt.Errorf("failed to read template file %s: %w", file.SourceFile, err))
+					return errors.Join(templateapi.ErrFailedToCopyTemplateFile, fmt.Errorf("failed to read template file %s: %w", file.SourceFile, err))
 				}
 				renderedContent.Write([]byte(content))
 			} else if file.SourceUrl != "" {
 				out, err := util.DownloadBytes(file.SourceUrl)
 				if err != nil {
-					return errors.Join(ErrFailedToDownloadTemplateFile, fmt.Errorf("failed to download template from %s: %w", file.SourceUrl, err))
+					return errors.Join(templateapi.ErrFailedToDownloadTemplateFile, fmt.Errorf("failed to download template from %s: %w", file.SourceUrl, err))
 				}
 				renderedContent.Write(out)
 			} else {
-				return errors.Join(ErrTemplateFileOrUrlIsRequired, errors.New("template id: "+file.TargetDirectory+"/"+file.TargetFileName))
+				return errors.Join(templateapi.ErrTemplateFileOrUrlIsRequired, errors.New("template id: "+file.TargetDirectory+"/"+file.TargetFileName))
 			}
 
 			// variables in dir or name
@@ -99,13 +100,13 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 				output = opts.PostProcess(resolvedFile, output)
 			}
 
-			var state FileState
+			var state templateapi.FileState
 			if opts.DryRun {
-				state = FileDryRun
+				state = templateapi.FileDryRun
 			} else if skippedByName {
-				state = FileSkippedName
+				state = templateapi.FileSkippedName
 			} else if skippedByScope {
-				state = FileSkippedScope
+				state = templateapi.FileSkippedScope
 			} else {
 				err = os.MkdirAll(targetDir, 0755)
 				if err != nil {
@@ -116,12 +117,12 @@ func RenderTemplate(config Config, outputDir string, templateType Type, data int
 				if err != nil {
 					return fmt.Errorf("failed to write rendered file %s: %w", targetFile, err)
 				}
-				state = FileRendered
+				state = templateapi.FileRendered
 			}
 			log.Debug().Str("template-id", config.ID).Str("file", targetFile).Msg("Rendered file")
 
 			filesMutex.Lock()
-			files[targetFile] = RenderedFile{File: targetFile, TemplateFile: file.SourceTemplate, State: state}
+			files[targetFile] = templateapi.RenderedFile{File: targetFile, TemplateFile: file.SourceTemplate, State: state}
 			filesMutex.Unlock()
 
 			return nil
@@ -147,7 +148,7 @@ func loadTemplate(templateId string, files []string, customFunctions template.Fu
 	lookupTemplates := []string{templateId, "_global"}
 
 	tmpl := template.New(name)
-	tmpl.Funcs(templateFunctions)
+	tmpl.Funcs(templateapi.TemplateFunctions)
 	if customFunctions != nil {
 		tmpl.Funcs(customFunctions)
 	}
@@ -221,7 +222,7 @@ func readTemplateFile(lookupTemplates []string, templateFile string) ([]byte, er
 
 // resolveName resolves the file name by executing the template with the provided data
 func resolveName(input string, data interface{}) (string, error) {
-	tmpl, err := template.New("name").Funcs(templateFunctions).Parse(input)
+	tmpl, err := template.New("name").Funcs(templateapi.TemplateFunctions).Parse(input)
 	if err != nil {
 		return "", err
 	}

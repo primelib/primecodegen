@@ -1,4 +1,4 @@
-package template
+package templateapi
 
 import (
 	"encoding/json"
@@ -20,7 +20,7 @@ var javadocPlaceholders = map[string]string{
 	"&#39;":  "__ENTITY_PLACEHOLDER_39__",
 }
 
-var templateFunctions = template.FuncMap{
+var TemplateFunctions = template.FuncMap{
 	"hasPrefix": func(s, prefix string) bool {
 		return strings.HasPrefix(s, prefix)
 	},

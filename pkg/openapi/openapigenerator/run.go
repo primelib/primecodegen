@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/primelib/primecodegen/pkg/template"
+	"github.com/primelib/primecodegen/pkg/template/templateapi"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 	"github.com/shomali11/parallelizer"
@@ -23,9 +24,9 @@ func GeneratorById(id string, allGenerators []CodeGenerator) (CodeGenerator, err
 	return nil, fmt.Errorf("generator with id %s not found", id)
 }
 
-func GenerateFiles(templateId string, outputDir string, templateData DocumentModel, renderOpts template.RenderOpts, generatorOpts GenerateOpts) (map[string]template.RenderedFile, error) {
+func GenerateFiles(templateId string, outputDir string, templateData DocumentModel, renderOpts templateapi.RenderOpts, generatorOpts GenerateOpts) (map[string]templateapi.RenderedFile, error) {
 	log.Debug().Str("template-id", templateId).Str("output-dir", outputDir).Msg("Generating files")
-	files := make(map[string]template.RenderedFile)
+	files := make(map[string]templateapi.RenderedFile)
 	var filesMutex sync.Mutex
 
 	// print template data
@@ -113,22 +114,22 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 
 	for _, d := range data {
 		group.Add(func() error {
-			var renderedFiles map[string]template.RenderedFile
+			var renderedFiles map[string]templateapi.RenderedFile
 			var renderErr error
 
 			switch d.(type) {
 			case SupportOnceTemplate:
-				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeSupportOnce, d, renderOpts)
+				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, templateapi.TypeSupportOnce, d, renderOpts)
 			case APIOnceTemplate:
-				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeAPIOnce, d, renderOpts)
+				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, templateapi.TypeAPIOnce, d, renderOpts)
 			case APIEachTemplate:
-				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeAPIEach, d, renderOpts)
+				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, templateapi.TypeAPIEach, d, renderOpts)
 			case OperationEachTemplate:
-				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeOperationEach, d, renderOpts)
+				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, templateapi.TypeOperationEach, d, renderOpts)
 			case ModelEachTemplate:
-				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeModelEach, d, renderOpts)
+				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, templateapi.TypeModelEach, d, renderOpts)
 			case EnumEachTemplate:
-				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, template.TypeEnumEach, d, renderOpts)
+				renderedFiles, renderErr = template.RenderTemplateById(templateId, outputDir, templateapi.TypeEnumEach, d, renderOpts)
 			}
 
 			if renderErr != nil {

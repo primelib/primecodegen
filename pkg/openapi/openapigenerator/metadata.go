@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/primelib/primecodegen/pkg/template"
+	"github.com/primelib/primecodegen/pkg/template/templateapi"
 	"github.com/rs/zerolog/log"
 )
 
@@ -55,7 +55,7 @@ func RemoveGeneratedFile(outputDir string, file string) error {
 }
 
 // WriteMetadata generates metadata about the generated files for the output directory
-func WriteMetadata(outputDir string, files map[string]template.RenderedFile) error {
+func WriteMetadata(outputDir string, files map[string]templateapi.RenderedFile) error {
 	writtenFiles := path.Join(outputDir, ".openapi-generator", "FILES")
 
 	// ensure output directory exists
@@ -74,7 +74,7 @@ func WriteMetadata(outputDir string, files map[string]template.RenderedFile) err
 	// write each file name to FILES
 	var fileList []string
 	for _, f := range files {
-		if f.State == template.FileRendered {
+		if f.State == templateapi.FileRendered {
 			relativeFile := strings.TrimPrefix(strings.TrimPrefix(f.File, outputDir), "/")
 			fileList = append(fileList, relativeFile)
 		}

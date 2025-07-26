@@ -5,33 +5,34 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/primelib/primecodegen/pkg/template/templateapi"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRenderTemplateDryRun(t *testing.T) {
-	config := Config{
+	config := templateapi.Config{
 		ID:          "openapi-go-httpclient",
 		Description: "dummy template for a go model",
-		Files: []File{
+		Files: []templateapi.File{
 			{
 				Description:     "model file",
 				SourceTemplate:  "model.gohtml",
 				Snippets:        defaultSnippets,
 				TargetDirectory: "models",
 				TargetFileName:  "model.go",
-				Type:            TypeModelEach,
+				Type:            templateapi.TypeModelEach,
 			},
 		},
 	}
 
-	files, err := RenderTemplate(config, "", TypeModelEach, map[string]string{
+	files, err := RenderTemplate(config, "", templateapi.TypeModelEach, map[string]string{
 		"model": "User",
-	}, RenderOpts{DryRun: true})
+	}, templateapi.RenderOpts{DryRun: true})
 	assert.NoError(t, err)
 	assert.Len(t, files, 1)
 	fileKey := filepath.Join("models", "model.go")
 	assert.Equal(t, fileKey, files[fileKey].File)
-	assert.Equal(t, FileDryRun, files[fileKey].State)
+	assert.Equal(t, templateapi.FileDryRun, files[fileKey].State)
 }
 
 func TestRenderTemplateFile(t *testing.T) {
@@ -41,24 +42,24 @@ func TestRenderTemplateFile(t *testing.T) {
 	}
 	defer os.RemoveAll(outputDir)
 
-	config := Config{
+	config := templateapi.Config{
 		ID:          "openapi-go-httpclient",
 		Description: "dummy template for a go model",
-		Files: []File{
+		Files: []templateapi.File{
 			{
 				Description:     "model file",
 				SourceTemplate:  "model.gohtml",
 				Snippets:        defaultSnippets,
 				TargetDirectory: "models",
 				TargetFileName:  "model.go",
-				Type:            TypeModelEach,
+				Type:            templateapi.TypeModelEach,
 			},
 		},
 	}
 
-	files, err := RenderTemplate(config, outputDir, TypeModelEach, map[string]string{
+	files, err := RenderTemplate(config, outputDir, templateapi.TypeModelEach, map[string]string{
 		"model": "User",
-	}, RenderOpts{DryRun: false})
+	}, templateapi.RenderOpts{DryRun: false})
 	assert.NoError(t, err)
 	assert.Len(t, files, 1)
 	//assert.Equal(t, filepath.Join("models", "model.go"), files["test"])
