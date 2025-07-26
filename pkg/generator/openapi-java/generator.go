@@ -13,7 +13,7 @@ import (
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
 	"github.com/primelib/primecodegen/pkg/openapi/openapiutil"
-	"github.com/primelib/primecodegen/pkg/template"
+	"github.com/primelib/primecodegen/pkg/template/templateapi"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 )
@@ -74,7 +74,7 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 	}
 
 	// generate files
-	files, err := openapigenerator.GenerateFiles(fmt.Sprintf("openapi-%s-%s", g.Id(), opts.TemplateId), opts.OutputDir, templateData, template.RenderOpts{
+	files, err := openapigenerator.GenerateFiles(fmt.Sprintf("openapi-%s-%s", g.Id(), opts.TemplateId), opts.OutputDir, templateData, templateapi.RenderOpts{
 		DryRun:               opts.DryRun,
 		Types:                nil,
 		IgnoreFiles:          nil,
@@ -391,7 +391,7 @@ func (g *JavaGenerator) TypeToImport(iType openapigenerator.CodeType) string {
 
 const googleJavaFormatBinary = "google-java-format"
 
-func (g *JavaGenerator) PostProcessing(files map[string]template.RenderedFile) error {
+func (g *JavaGenerator) PostProcessing(files map[string]templateapi.RenderedFile) error {
 	if os.Getenv("PRIMECODEGEN_SKIP_POST_PROCESSING") == "true" {
 		slog.Debug("Skipping post processing java files")
 		return nil
@@ -400,7 +400,7 @@ func (g *JavaGenerator) PostProcessing(files map[string]template.RenderedFile) e
 	if openapigenerator.IsBinaryAvailable(googleJavaFormatBinary) {
 		var formatFiles []string
 		for _, f := range files {
-			if strings.HasSuffix(f.File, ".java") && f.State == template.FileRendered {
+			if strings.HasSuffix(f.File, ".java") && f.State == templateapi.FileRendered {
 				formatFiles = append(formatFiles, f.File)
 			}
 		}

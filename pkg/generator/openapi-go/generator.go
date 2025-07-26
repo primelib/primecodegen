@@ -13,7 +13,7 @@ import (
 	"github.com/cidverse/go-ptr"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
-	"github.com/primelib/primecodegen/pkg/template"
+	"github.com/primelib/primecodegen/pkg/template/templateapi"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 )
@@ -63,7 +63,7 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 	}
 
 	// generate files
-	files, err := openapigenerator.GenerateFiles(fmt.Sprintf("openapi-%s-%s", g.Id(), opts.TemplateId), opts.OutputDir, templateData, template.RenderOpts{
+	files, err := openapigenerator.GenerateFiles(fmt.Sprintf("openapi-%s-%s", g.Id(), opts.TemplateId), opts.OutputDir, templateData, templateapi.RenderOpts{
 		DryRun:               opts.DryRun,
 		Types:                nil,
 		IgnoreFiles:          nil,

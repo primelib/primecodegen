@@ -11,7 +11,7 @@ require (
 	github.com/cidverse/cidverseutils/filesystem v0.1.2-0.20250627221305-78405635788a
 	github.com/cidverse/cidverseutils/zerologconfig v0.1.1
 	github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf
-	github.com/cidverse/go-vcsapp v0.0.0-20250707173907-2031953406e7
+	github.com/cidverse/go-vcsapp v0.0.0-20250723203101-b585ebdba44a
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/gosimple/slug v1.15.0
 	github.com/iancoleman/strcase v0.3.0
@@ -46,7 +46,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/go-github/v72 v72.0.0 // indirect
-	github.com/google/go-github/v73 v73.0.0 // indirect
+	github.com/google/go-github/v74 v74.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
@@ -64,11 +64,11 @@ require (
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/speakeasy-api/jsonpath v0.6.2 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.9-0.20250401010720-46d686821e33 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	gitlab.com/gitlab-org/api/client-go v0.134.0 // indirect
+	gitlab.com/gitlab-org/api/client-go v0.137.0 // indirect
 	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
