@@ -1,8 +1,8 @@
 module github.com/primelib/primecodegen
 
-go 1.24
+go 1.24.0
 
-toolchain go1.24.4
+toolchain go1.24.5
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
@@ -16,8 +16,8 @@ require (
 	github.com/gosimple/slug v1.15.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/jarcoal/httpmock v1.4.0
-	github.com/pb33f/doctor v0.0.31
-	github.com/pb33f/libopenapi v0.23.0
+	github.com/pb33f/doctor v0.0.33
+	github.com/pb33f/libopenapi v0.25.2
 	github.com/rs/zerolog v1.34.0
 	github.com/shomali11/parallelizer v0.0.0-20220717173222-a6776fbf40a9
 	github.com/speakeasy-api/openapi-overlay v0.10.3
@@ -55,9 +55,9 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
-	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/pb33f/ordered-map/v2 v2.2.0 // indirect
 	github.com/pjbgf/sha1cd v0.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
@@ -66,7 +66,6 @@ require (
 	github.com/speakeasy-api/jsonpath v0.6.2 // indirect
 	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
-	github.com/wk8/go-ordered-map/v2 v2.1.9-0.20250401010720-46d686821e33 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	gitlab.com/gitlab-org/api/client-go v0.137.0 // indirect
 	golang.org/x/crypto v0.40.0 // indirect
