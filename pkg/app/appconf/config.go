@@ -9,7 +9,8 @@ import (
 )
 
 type Configuration struct {
-	Output string `yaml:"output,omitempty" jsonschema_description:"output directory for the generated code"`
+	Output       string `yaml:"output,omitempty" jsonschema_description:"output directory for the generated code"`
+	OutputSubDir bool   `yaml:"outputSubDir,omitempty" jsonschema_description:"create a subdirectory for each generator in the output directory"`
 
 	Repository  RepositoryConf   `yaml:"repository"`
 	Maintainers []MaintainerConf `yaml:"maintainers"`
@@ -25,7 +26,7 @@ func (c Configuration) HasGenerator() bool {
 }
 
 func (c Configuration) MultiLanguage() bool {
-	return (c.Presets.EnabledCount() + len(c.Generators)) > 1
+	return c.OutputSubDir || (c.Presets.EnabledCount()+len(c.Generators)) > 1
 }
 
 type RepositoryConf struct {

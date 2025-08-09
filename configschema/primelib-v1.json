@@ -9,6 +9,10 @@
           "type": "string",
           "description": "The output directory for the generated code. When generating multiple languages, the output directory will be used as the root directory for the generated modules."
         },
+        "outputSubDir": {
+          "type": "boolean",
+          "description": "This will create a subdirectory for each language in the output directory, enabled automatically when using more than one preset or generator."
+        },
         "repository": {
           "$ref": "#/$defs/Repository"
         },
