@@ -484,6 +484,9 @@ func BuildEnums(opts ModelOpts) ([]Enum, error) {
 			return enums, fmt.Errorf("error building enum definitions: %w", err)
 		}
 		for k, v := range allowedValues {
+			if v.Name == "" {
+				v.Name = "None" // default name for empty enum value
+			}
 			v.Name = gen.ToConstantName(v.Name)
 			add.AllowedValues[k] = v
 		}
