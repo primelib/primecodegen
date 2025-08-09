@@ -92,7 +92,7 @@ public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Pa
      * <p>
      * NOTE: This constructor is not considered stable and may change if the model is updated. Consider using {@link #{{.Model.Name}}(Consumer)} instead.
 {{- range $p := .Model.Properties }}
-     * @param {{ $p.Name }} {{ if $p.Description }}{{ $p.Description }}{{ else }}{{ $p.Name }}{{ end }}
+     * @param {{ $p.Name }} {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}{{ $p.Name }}{{ end }}
 {{- end }}
      */
     @ApiStatus.Internal
