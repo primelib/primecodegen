@@ -15,6 +15,17 @@ func moveSchemaIntoComponents(doc *libopenapi.DocumentModel[v3.Document], key st
 		return nil, nil
 	}
 
+	// check for key conflict
+	if existingSchema, present := doc.Model.Components.Schemas.Get(key); present {
+		if openapidocument.Compare(schema, existingSchema) {
+			// match: return ref to existing schema
+			return base.CreateSchemaProxyRef("#/components/schemas/" + key), nil
+		} else {
+			// mismatch: append suffix to avoid conflict
+			key = key + openapidocument.HashSchema(schema)
+		}
+	}
+
 	// add schema to components
 	s, err := schema.BuildSchema()
 	if err != nil {
