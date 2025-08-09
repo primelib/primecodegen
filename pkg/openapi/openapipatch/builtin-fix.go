@@ -85,10 +85,27 @@ var FixMissingSchemaTitlePatch = BuiltInPatcher{
 
 // FixMissingSchemaTitle fills in missing schema titles with the schema key
 func FixMissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
+	// component schemas
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
 		if schema.Value.Schema().Title == "" {
 			schema.Value.Schema().Title = schema.Key
 			log.Trace().Str("schema", schema.Key).Msg("missing schema title, setting to schema key")
+		}
+	}
+
+	// request bodies
+	for rb := doc.Model.Components.RequestBodies.Oldest(); rb != nil; rb = rb.Next() {
+		rbValue := rb.Value
+		if rbValue == nil {
+			continue
+		}
+
+		for mt := rbValue.Content.Oldest(); mt != nil; mt = mt.Next() {
+			schemaRef := mt.Value.Schema
+			if schemaRef != nil && schemaRef.Schema().Title == "" {
+				schemaRef.Schema().Title = rb.Key
+				log.Trace().Str("requestBody", rb.Key).Str("mediaType", mt.Key).Msg("missing schema title in requestBody, setting to requestBody key")
+			}
 		}
 	}
 
