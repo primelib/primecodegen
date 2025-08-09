@@ -50,7 +50,7 @@ public class {{ .Metadata.Name }}ConsumerApi {
     * @param spec a consumer that creates the payload for this operation. Supports the following properties:
     * <ul>
     {{- range $param := $op.MutableParameters }}
-    *   <li>{{ $param.Name }}: {{ $param.Description | commentSingleLine }}</li>
+    *   <li>{{ $param.Name }}: {{ $param.Description | commentSingleLine | escapeJavadoc }}</li>
     {{- end }}
     * </ul>
     {{- end }}

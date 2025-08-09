@@ -46,7 +46,7 @@ public interface {{ .Service.Type }}Api {
     {{- end }}
     *
     {{- range $param := $op.MutableParameters }}
-    * @param {{ $param.Name }} {{ $param.Description }}
+    * @param {{ $param.Name }} {{ $param.Description | commentMultiLine "    * " | escapeJavadoc }}
     {{- end }}
     {{- if $op.Documentation }}
     {{- range $doc := $op.Documentation }}
