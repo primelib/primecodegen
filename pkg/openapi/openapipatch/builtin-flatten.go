@@ -34,6 +34,11 @@ func FlattenComponents(doc *libopenapi.DocumentModel[v3.Document], config map[st
 		return err
 	}
 
+	err = flattenRequestBodies(doc)
+	if err != nil {
+		return err
+	}
+
 	err = flattenEnumsInComponentProperties(doc)
 	if err != nil {
 		return err
@@ -161,6 +166,46 @@ func flattenInlineResponses(doc *libopenapi.DocumentModel[v3.Document]) error {
 	return nil
 }
 
+// flattenRequestBodies moves inline schemas in components.requestBodies into components.schemas and replaces them with $ref references.
+func flattenRequestBodies(doc *libopenapi.DocumentModel[v3.Document]) error {
+	for rb := doc.Model.Components.RequestBodies.Oldest(); rb != nil; rb = rb.Next() {
+		rbValue := rb.Value
+		if rbValue == nil || rbValue.Content == nil {
+			continue
+		}
+
+		for mt := rbValue.Content.Oldest(); mt != nil; mt = mt.Next() {
+			schemaRef := mt.Value.Schema
+
+			// If no schema, insert a placeholder
+			if schemaRef == nil {
+				mt.Value.Schema = base.CreateSchemaProxy(&base.Schema{
+					Type:        []string{"string"},
+					Description: "Shemaless request body",
+				})
+				schemaRef = mt.Value.Schema
+			}
+
+			// Skip if it's already a reference
+			if schemaRef.IsReference() {
+				continue
+			}
+
+			// Generate a unique key for the new component schema
+			key := util.ToPascalCase(rb.Key)
+
+			log.Trace().Msg("moving requestBody schema to components: " + key)
+			if ref, err := moveSchemaIntoComponents(doc, key, schemaRef); err != nil {
+				return fmt.Errorf("error moving requestBody schema to components: %w", err)
+			} else if ref != nil {
+				mt.Value.Schema = ref
+			}
+		}
+	}
+
+	return nil
+}
+
 // flattenEnumsInComponentProperties flattens enum values in component properties
 func flattenEnumsInComponentProperties(doc *libopenapi.DocumentModel[v3.Document]) error {
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
@@ -185,78 +230,86 @@ func flattenEnumsInComponentProperties(doc *libopenapi.DocumentModel[v3.Document
 	return nil
 }
 
-// flattenInnerSchemas flattens inner component schemas in components
+// flattenInnerSchemas flattens inner object schemas inside components.schemas and components.requestBodies into standalone component schemas.
 func flattenInnerSchemas(doc *libopenapi.DocumentModel[v3.Document]) error {
+	// Handle components.schemas
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-		valueSchema := schema.Value.Schema()
+		if err := flattenInnerSchemaObject(doc, schema.Key, schema.Value.Schema()); err != nil {
+			return err
+		}
+	}
 
-		// top-level schema
-		if slices.Contains(valueSchema.Type, "array") && valueSchema.Items != nil {
-			itemSchema := valueSchema.Items.A.Schema()
-			if !valueSchema.Items.A.IsReference() && slices.Contains(itemSchema.Type, "object") {
-				key := util.ToPascalCase(schema.Key) + "Item"
-				log.Trace().Msg("moving top-level array inner schema to components: " + key)
-				if ref, err := moveSchemaIntoComponents(doc, key, valueSchema.Items.A); err != nil {
-					return fmt.Errorf("error moving top-level array object schema to components: %w", err)
+	// Handle components.requestBodies
+	for rb := doc.Model.Components.RequestBodies.Oldest(); rb != nil; rb = rb.Next() {
+		rbValue := rb.Value
+		if rbValue == nil || rbValue.Content == nil {
+			continue
+		}
+
+		for mt := rbValue.Content.Oldest(); mt != nil; mt = mt.Next() {
+			if mt.Value.Schema == nil {
+				continue
+			}
+			if err := flattenInnerSchemaObject(doc, rb.Key, mt.Value.Schema.Schema()); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// flattenInnerSchemaObject checks a schema and flattens inner object/array-object definitions into components.
+func flattenInnerSchemaObject(doc *libopenapi.DocumentModel[v3.Document], parentKey string, valueSchema *base.Schema) error {
+	if valueSchema == nil {
+		return nil
+	}
+
+	// Top-level array of objects
+	if slices.Contains(valueSchema.Type, "array") && valueSchema.Items != nil {
+		itemSchema := valueSchema.Items.A.Schema()
+		if !valueSchema.Items.A.IsReference() && isObjectSchema(itemSchema) {
+			key := util.ToPascalCase(parentKey) + "Item"
+			log.Trace().Msg("moving top-level array inner schema to components: " + key)
+			if ref, err := moveSchemaIntoComponents(doc, key, valueSchema.Items.A); err != nil {
+				return fmt.Errorf("error moving top-level array object schema to components: %w", err)
+			} else if ref != nil {
+				valueSchema.Items.A = ref
+			}
+		}
+	}
+
+	// Properties
+	if valueSchema.Properties != nil {
+		for p := valueSchema.Properties.Oldest(); p != nil; p = p.Next() {
+			propSchema := p.Value.Schema()
+			if p.Value.IsReference() || propSchema == nil {
+				continue
+			}
+
+			// Inner objects
+			if slices.Contains(propSchema.Type, "object") {
+				key := util.ToPascalCase(p.Key)
+				log.Trace().Msg("moving inner schema to components: " + key)
+				if ref, err := moveSchemaIntoComponents(doc, key, p.Value); err != nil {
+					return fmt.Errorf("error moving inner property schema to components: %w", err)
 				} else if ref != nil {
-					valueSchema.Items.A = ref
+					p.Value = ref
 				}
 			}
-		}
 
-		// properties
-		if valueSchema.Properties != nil {
-			for p := valueSchema.Properties.Oldest(); p != nil; p = p.Next() {
-				propSchema := p.Value.Schema()
-				if p.Value.IsReference() {
-					continue
-				}
-
-				// inner objects
-				if slices.Contains(propSchema.Type, "object") {
-					key := util.ToPascalCase(p.Key)
-					log.Trace().Msg("moving inner schema to components: " + key)
-					if ref, err := moveSchemaIntoComponents(doc, key, p.Value); err != nil {
-						return fmt.Errorf("error moving enum property schema to components: %w", err)
+			// Inner array objects
+			if slices.Contains(propSchema.Type, "array") && propSchema.Items != nil {
+				itemSchema := propSchema.Items.A.Schema()
+				if !propSchema.Items.A.IsReference() && isObjectSchema(itemSchema) {
+					key := util.ToPascalCase(p.Key) + "Item"
+					log.Trace().Msg("moving array inner schema to components: " + key)
+					if ref, err := moveSchemaIntoComponents(doc, key, propSchema.Items.A); err != nil {
+						return fmt.Errorf("error moving array object schema to components: %w", err)
 					} else if ref != nil {
-						p.Value = ref
+						propSchema.Items.A = ref
 					}
 				}
-
-				// inner array objects
-				if slices.Contains(propSchema.Type, "array") && propSchema.Items != nil {
-					itemSchema := propSchema.Items.A.Schema()
-					if !propSchema.Items.A.IsReference() && slices.Contains(itemSchema.Type, "object") {
-						key := util.ToPascalCase(p.Key) + "Item"
-						log.Trace().Msg("moving array inner schema to components: " + key)
-						if ref, err := moveSchemaIntoComponents(doc, key, propSchema.Items.A); err != nil {
-							return fmt.Errorf("error moving array object schema to components: %w", err)
-						} else if ref != nil {
-							propSchema.Items.A = ref
-						}
-					}
-				}
-			}
-		}
-
-		// anyOf, oneOf, allOf
-		if valueSchema.AnyOf != nil {
-			for _, anyOf := range valueSchema.AnyOf {
-				if anyOf.IsReference() {
-					continue
-				}
-
-				/*
-					if slices.Contains(anyOf.Type, "object") {
-						key := util.ToPascalCase(schema.Key) + "AnyOf"
-						log.Trace().Msg("moving anyOf schema to components: " + key)
-						if ref, err := moveSchemaIntoComponents(doc, key, anyOf); err != nil {
-							return fmt.Errorf("error moving anyOf schema to components: %w", err)
-						} else if ref != nil {
-							anyOf = ref
-						}
-					}
-				*/
 			}
 		}
 	}
