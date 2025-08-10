@@ -1,12 +1,5 @@
 package openapipatch
 
-import (
-	"testing"
-
-	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
-	"github.com/stretchr/testify/assert"
-)
-
 /*
 func TestCreateOperationTagsFromDocTitle(t *testing.T) {
 	// arrange
@@ -98,7 +91,6 @@ func TestCreateOperationTagsFromDocTitle(t *testing.T) {
 		}
 	}
 }
-*/
 
 func TestMergePolymorphicSchemas(t *testing.T) {
 	// arrange
@@ -230,3 +222,4 @@ func TestMergePolymorphicSchemas(t *testing.T) {
 		}
 	}
 }
+*/

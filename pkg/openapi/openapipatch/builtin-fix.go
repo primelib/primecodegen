@@ -8,9 +8,62 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 )
+
+var FixCommonPatch = BuiltInPatcher{
+	Type:                "builtin",
+	ID:                  "fix-common",
+	Description:         "Fixes various common issues.",
+	PatchV3DocumentFunc: FixCommon,
+}
+
+// FixCommon fixes various common issues
+func FixCommon(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
+	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
+		s := schema.Value.Schema()
+		if s == nil {
+			continue
+		}
+		if s.Properties == nil {
+			s.Properties = orderedmap.New[string, *base.SchemaProxy]()
+		}
+
+		// move additionalProperties.properties to properties
+		if s.AdditionalProperties != nil && s.AdditionalProperties.IsA() {
+			a := s.AdditionalProperties.A.Schema()
+			if a == nil {
+				continue
+			}
+
+			if a.Properties != nil {
+				for p := a.Properties.Oldest(); p != nil; p = p.Next() {
+					if _, exists := s.Properties.Get(p.Key); !exists {
+						log.Trace().Str("schema", schema.Key).Str("property", p.Key).Msg("moving property from additionalProperties to properties")
+						s.Properties.Set(p.Key, p.Value)
+					} else {
+						log.Warn().Str("schema", schema.Key).Str("property", p.Key).Msg("property already exists in properties, skipping")
+					}
+				}
+				s.AdditionalProperties = nil
+			}
+		}
+	}
+
+	err := FixInvalidMaxValue(doc, config)
+	if err != nil {
+		return err
+	}
+
+	err = PruneInvalidPaths(doc, config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 var FixInvalidMaxValuePatch = BuiltInPatcher{
 	Type:                "builtin",
