@@ -57,7 +57,11 @@ var GenerateOperationIdsPatch = BuiltInPatcher{
 }
 
 func GenerateOperationIds(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
-	return generateOperationIds(doc, true)
+	// validate config
+	trimPrefix, _ := getOptionalStringConfig(config, "trim-prefix")
+
+	// call
+	return generateOperationIds(doc, true, trimPrefix)
 }
 
 var GenerateMissingOperationIdsPatch = BuiltInPatcher{
@@ -68,10 +72,14 @@ var GenerateMissingOperationIdsPatch = BuiltInPatcher{
 }
 
 func GenerateMissingOperationIds(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
-	return generateOperationIds(doc, false)
+	// validate config
+	trimPrefix, _ := getOptionalStringConfig(config, "trim-prefix")
+
+	// call
+	return generateOperationIds(doc, false, trimPrefix)
 }
 
-func generateOperationIds(doc *libopenapi.DocumentModel[v3.Document], replaceExisting bool) error {
+func generateOperationIds(doc *libopenapi.DocumentModel[v3.Document], replaceExisting bool, trimPrefix string) error {
 	var usedOperationIds []string
 
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
@@ -82,7 +90,8 @@ func generateOperationIds(doc *libopenapi.DocumentModel[v3.Document], replaceExi
 				continue
 			}
 
-			generatedOperationId := util.ToOperationId(op.Key, url)
+			input := strings.TrimPrefix(url, trimPrefix)
+			generatedOperationId := util.ToOperationId(op.Key, input)
 
 			if slices.Contains(usedOperationIds, generatedOperationId) {
 				log.Warn().Str("path", url).Str("operation", strings.ToUpper(op.Key)).Msg("Duplicated operation id for method")

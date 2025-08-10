@@ -27,6 +27,7 @@ var EmbeddedPatchers = []BuiltInPatcher{
 	FixOAS310VersionPatch,
 	FixOAS311VersionPatch,
 	// - fix invalid configurations / values
+	FixCommonPatch,
 	FixInvalidMaxValuePatch,
 	FixOperationTagsPatch,
 	FixMissingSchemaTitlePatch,
@@ -73,4 +74,16 @@ func getStringConfig(config map[string]interface{}, key string) (string, error) 
 		return "", fmt.Errorf("config key %q must be a string", key)
 	}
 	return s, nil
+}
+
+func getOptionalStringConfig(config map[string]interface{}, key string) (string, bool) {
+	val, ok := config[key]
+	if !ok {
+		return "", false
+	}
+	s, ok := val.(string)
+	if !ok {
+		return "", false
+	}
+	return s, true
 }
