@@ -1,9 +1,10 @@
 package openapigenerator
 
 import (
+	"strings"
+
 	"github.com/pb33f/libopenapi/orderedmap"
 	"gopkg.in/yaml.v3"
-	"strings"
 
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 )
@@ -84,9 +85,9 @@ func (a Auth) HasAuthMethod(name string) bool {
 	return false
 }
 
-func (a Auth) HasAuthScheme(scheme string) bool {
+func (a Auth) HasAuthType(typeName string) bool {
 	for _, m := range a.Methods {
-		if m.Scheme == scheme {
+		if m.Type == typeName {
 			return true
 		}
 	}
@@ -96,6 +97,15 @@ func (a Auth) HasAuthScheme(scheme string) bool {
 func (a Auth) HasAuthVariant(variant string) bool {
 	for _, m := range a.Methods {
 		if m.Variant == variant {
+			return true
+		}
+	}
+	return false
+}
+
+func (a Auth) HasAuthScheme(scheme string) bool {
+	for _, m := range a.Methods {
+		if m.Scheme == scheme {
 			return true
 		}
 	}

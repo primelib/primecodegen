@@ -131,7 +131,7 @@ public final class {{ .Metadata.Name }}FactorySpec<T> extends FeignModuleSpec<{{
     }
 
 {{- end }}
-{{- if .Common.Auth.HasAuthScheme "bearer" }}
+{{- if or (.Common.Auth.HasAuthScheme "bearer") (.Common.Auth.HasAuthType "oauth2") }}
     public BearerAuthSpec bearerAuth(Consumer<BearerAuthSpec> spec) {
         BearerAuthSpec method = new BearerAuthSpec(spec);
         auth.add(method);
