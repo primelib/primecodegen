@@ -201,6 +201,7 @@
             "enum": [
               "flatten-components",
               "simplify-polymorphic-schemas",
+              "fix-common",
               "fix-operation-tags",
               "fix-missing-schema-title",
               "fix-remove-common-operation-id-prefix",
@@ -213,6 +214,7 @@
               "add-idempotency-key",
               "set-operation-tag",
               "add-path-prefix",
+              "prune-path-prefix",
               "add-component-schema-prefix",
               "add-component-operation-prefix"
             ]
