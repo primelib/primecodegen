@@ -1,6 +1,8 @@
 package openapipatch
 
 import (
+	"strings"
+
 	"github.com/cidverse/go-ptr"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
@@ -87,6 +89,31 @@ func AddPathPrefix(doc *libopenapi.DocumentModel[v3.Document], config map[string
 		doc.Model.Paths.PathItems,
 		func(oldKey string) string {
 			return prefix + oldKey
+		},
+	)
+
+	return nil
+}
+
+var PrunePathPrefixPatch = BuiltInPatcher{
+	Type:                "builtin",
+	ID:                  "prune-path-prefix",
+	Description:         "Prunes a prefix from all paths in the OpenAPI document",
+	PatchV3DocumentFunc: PrunePathPrefix,
+}
+
+func PrunePathPrefix(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
+	// validate config
+	prefix, err := getStringConfig(config, "prefix")
+	if err != nil {
+		return err
+	}
+
+	// rename path keys
+	_ = util.RenameOrderedMapKeys(
+		doc.Model.Paths.PathItems,
+		func(oldKey string) string {
+			return strings.TrimPrefix(oldKey, prefix)
 		},
 	)
 
