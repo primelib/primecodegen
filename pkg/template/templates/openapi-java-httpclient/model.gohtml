@@ -101,18 +101,26 @@ public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Pa
 
 {{ range $p := $.Model.Properties }}
     /**
-     * Fluent getter for {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}{{$p.Name}}{{ end }}.
+     * Fluent getter for {{$p.Name}}.
+    {{- if $p.Description }}
+     * <p>
+     * {{ $p.Description | escapeJavadoc | commentMultiLine "     * " }}
+    {{- end }}
      *
-     * @return {{$p.Type.Declaration}} {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}{{$p.Name}}{{ end }}
+     * @return {{$p.Name}}
      */
     public {{$p.Type.Declaration}} {{$p.Name}}() {
         return this.{{$p.Name}};
     }
 
     /**
-     * Fluent setter for {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}{{$p.Name}}{{ end }}.
+     * Fluent setter for {{$p.Name}}.
+    {{- if $p.Description }}
+     * <p>
+     * {{ $p.Description | escapeJavadoc | commentMultiLine "     * " }}
+    {{- end }}
      *
-     * @param {{$p.Name}} {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}{{$p.Name}}{{ end }}
+     * @param {{$p.Name}} {{$p.Name}}
      * @return this
      */
     public {{ $.Model.Name }} {{$p.Name}}({{$p.Type.Declaration}} {{$p.Name}}) {
@@ -121,9 +129,13 @@ public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Pa
     }
 
     /**
-     * Gets {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}the value of {{$p.Name}}{{ end }}.
+     * Gets the value of {{$p.Name}}.
+    {{- if $p.Description }}
+     * <p>
+     * {{ $p.Description | escapeJavadoc | commentMultiLine "     * " }}
+    {{- end }}
      *
-     * @return {{$p.Type.Declaration}} {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}{{$p.Name}}{{ end }}
+     * @return {{$p.Name}}
      */
     @JsonProperty("{{$p.FieldName}}")
     public {{$p.Type.Declaration}} get{{ $p.Name | upperCaseFirstLetter }}() {
@@ -131,9 +143,13 @@ public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Pa
     }
 
     /**
-     * Sets {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}the value of {{$p.Name}}{{ end }}.
+     * Sets the value of {{$p.Name}}.
+    {{- if $p.Description }}
+     * <p>
+     * {{ $p.Description | escapeJavadoc | commentMultiLine "     * " }}
+    {{- end }}
      *
-     * @param {{$p.Name}} {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}{{$p.Name}}{{ end }}
+     * @param {{$p.Name}} {{$p.Name}}
      */
     public void set{{ $p.Name | upperCaseFirstLetter }}({{$p.Type.Declaration}} {{$p.Name}}) {
         this.{{$p.Name}} = {{$p.Name}};
