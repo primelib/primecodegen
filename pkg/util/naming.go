@@ -65,6 +65,10 @@ func ToCamelCase(input string) string {
 	return strcase.ToLowerCamel(input)
 }
 
+func ToUpperCamelCase(input string) string {
+	return strcase.ToCamel(input)
+}
+
 func ToSlug(input string) string {
 	return slug.MakeLang(input, "en")
 }

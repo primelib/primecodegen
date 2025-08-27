@@ -25,6 +25,8 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -38,18 +40,6 @@ import java.util.function.Consumer;
 * @deprecated{{ if .Model.DeprecatedReason }} {{ .Model.DeprecatedReason | escapeJavadoc }}{{ end }}
 {{- end }}
  */
-@Getter
-@Setter
-{{- if .Model.Parent.Declaration }}
-@EqualsAndHashCode(callSuper = true)
-{{- else }}
-@EqualsAndHashCode
-{{- end }}
-@ToString
-@Accessors(fluent = true, chain = true)
-{{- if .Model.Properties }}
-@NoArgsConstructor(access = AccessLevel.PROTECTED, force = true)
-{{- end }}
 {{- if not .Model.Parent }}
 @Builder
 {{- end }}
@@ -88,6 +78,13 @@ public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Pa
     }
 
     /**
+     * Protected no-args constructor for use by serialization frameworks.
+     */
+    @ApiStatus.Internal
+    protected {{.Model.Name}}() {
+    }
+
+    /**
      * Constructs a validated instance of {@link {{.Model.Name}}}.
      * <p>
      * NOTE: This constructor is not considered stable and may change if the model is updated. Consider using {@link #{{.Model.Name}}(Consumer)} instead.
@@ -100,5 +97,85 @@ public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Pa
         {{- range $p := .Model.Properties }}
         this.{{$p.Name}} = {{$p.Name}};
         {{- end }}
+    }
+
+{{ range $p := $.Model.Properties }}
+    /**
+     * Fluent getter for {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}{{$p.Name}}{{ end }}.
+     *
+     * @return {{$p.Type.Declaration}} {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}{{$p.Name}}{{ end }}
+     */
+    public {{$p.Type.Declaration}} {{$p.Name}}() {
+        return this.{{$p.Name}};
+    }
+
+    /**
+     * Fluent setter for {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}{{$p.Name}}{{ end }}.
+     *
+     * @param {{$p.Name}} {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}{{$p.Name}}{{ end }}
+     * @return this
+     */
+    public {{ $.Model.Name }} {{$p.Name}}({{$p.Type.Declaration}} {{$p.Name}}) {
+        this.{{$p.Name}} = {{$p.Name}};
+        return this;
+    }
+
+    /**
+     * Gets {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}the value of {{$p.Name}}{{ end }}.
+     *
+     * @return {{$p.Type.Declaration}} {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}{{$p.Name}}{{ end }}
+     */
+    @JsonProperty("{{$p.FieldName}}")
+    public {{$p.Type.Declaration}} get{{ $p.Name | upperCaseFirstLetter }}() {
+        return this.{{$p.Name}};
+    }
+
+    /**
+     * Sets {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}the value of {{$p.Name}}{{ end }}.
+     *
+     * @param {{$p.Name}} {{ if $p.Description }}{{ $p.Description | escapeJavadoc }}{{ else }}{{$p.Name}}{{ end }}
+     */
+    public void set{{ $p.Name | upperCaseFirstLetter }}({{$p.Type.Declaration}} {{$p.Name}}) {
+        this.{{$p.Name}} = {{$p.Name}};
+    }
+{{- end }}
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        {{ .Model.Name }} that = ({{ .Model.Name }}) o;
+        return
+            {{- if .Model.Parent.Declaration }}
+            super.equals(o) &&
+            {{- end }}
+            {{- range $i, $p := .Model.Properties }}
+            Objects.equals(this.{{$p.Name}}, that.{{$p.Name}}){{ if notLast $.Model.Properties $i }} &&
+            {{- end }}
+            {{- end }};
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+            {{- if .Model.Parent.Declaration }}
+            super.hashCode(),
+            {{- end }}
+            {{- range $i, $p := .Model.Properties }}
+            this.{{$p.Name}}{{ if notLast $.Model.Properties $i }}, {{ end }}
+            {{- end }}
+        );
+    }
+
+    @Override
+    public String toString() {
+        return "{{ .Model.Name }}{" +
+            {{- if .Model.Parent.Declaration }}
+            "super=" + super.toString() + ", " +
+            {{- end }}
+            {{- range $i, $p := .Model.Properties }}
+            "{{ $p.Name }}=" + {{if $p.Type.IsArray}}Arrays.deepToString(this.{{$p.Name}}){{else}}{{$p.Name}}{{end}}{{ if notLast $.Model.Properties $i }} + ", " + {{ end }}
+            {{- end }} +
+            "}";
     }
 }
