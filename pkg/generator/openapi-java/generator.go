@@ -153,7 +153,11 @@ func (g *JavaGenerator) ToFunctionName(name string) string {
 }
 
 func (g *JavaGenerator) ToPropertyName(name string) string {
-	name = util.ToCamelCase(name)
+	if strings.HasPrefix(name, "_") {
+		name = "additional" + util.ToUpperCamelCase(name)
+	} else {
+		name = util.ToCamelCase(name)
+	}
 
 	if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
 		name = "p" + name
@@ -167,7 +171,11 @@ func (g *JavaGenerator) ToPropertyName(name string) string {
 }
 
 func (g *JavaGenerator) ToParameterName(name string) string {
-	name = util.ToCamelCase(name)
+	if strings.HasPrefix(name, "_") {
+		name = "additional" + util.ToUpperCamelCase(name)
+	} else {
+		name = util.ToCamelCase(name)
+	}
 
 	if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
 		name = "p" + name
