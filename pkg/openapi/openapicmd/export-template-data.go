@@ -49,9 +49,9 @@ func GenerateTemplateCmd() *cobra.Command {
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to open document")
 			}
-			v3doc, errs := doc.BuildV3Model()
-			if len(errs) > 0 {
-				log.Fatal().Errs("spec", errs).Msgf("failed to build v3 high level model")
+			v3doc, err := doc.BuildV3Model()
+			if err != nil {
+				log.Fatal().Err(err).Msg("failed to build v3 high level model")
 			}
 
 			// run generator

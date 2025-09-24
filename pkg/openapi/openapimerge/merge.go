@@ -47,9 +47,9 @@ func MergeOpenAPI3(specs [][]byte) (*libopenapi.DocumentModel[v3.Document], erro
 		}
 
 		// build v3 model
-		v3Model, errs := doc.BuildV3Model()
-		if len(errs) > 0 {
-			return mergedSpec, errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
+		v3Model, err := doc.BuildV3Model()
+		if err != nil {
+			return mergedSpec, errors.Join(util.ErrGenerateOpenAPIV3Model, err)
 		}
 
 		mergedSpec = v3Model
@@ -68,9 +68,9 @@ func MergeOpenAPI3(specs [][]byte) (*libopenapi.DocumentModel[v3.Document], erro
 			}
 
 			// build v3 model
-			v3Model, errs := doc.BuildV3Model()
-			if len(errs) > 0 {
-				return mergedSpec, errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
+			v3Model, err := doc.BuildV3Model()
+			if err != nil {
+				return mergedSpec, errors.Join(util.ErrGenerateOpenAPIV3Model, err)
 			}
 
 			// merge elements
@@ -81,13 +81,13 @@ func MergeOpenAPI3(specs [][]byte) (*libopenapi.DocumentModel[v3.Document], erro
 			mergeComponents(&mergedSpec.Model, &v3Model.Model)
 
 			// reload document
-			_, doc, _, errs = doc.RenderAndReload()
-			if len(errs) > 0 {
-				return mergedSpec, errors.Join(util.ErrRenderDocument, errors.Join(errs...))
+			_, doc, _, err = doc.RenderAndReload()
+			if err != nil {
+				return mergedSpec, errors.Join(util.ErrRenderDocument, err)
 			}
-			v3Model, errs = doc.BuildV3Model()
-			if len(errs) > 0 {
-				return mergedSpec, errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
+			v3Model, err = doc.BuildV3Model()
+			if err != nil {
+				return mergedSpec, errors.Join(util.ErrGenerateOpenAPIV3Model, err)
 			}
 		}
 	}

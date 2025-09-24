@@ -64,9 +64,9 @@ func OpenV3DocumentForTest(bytes []byte) *libopenapi.DocumentModel[v3.Document] 
 	if err != nil {
 		panic(err)
 	}
-	v3doc, errs := document.BuildV3Model()
-	if len(errs) > 0 {
-		panic(errs)
+	v3doc, err := document.BuildV3Model()
+	if err != nil {
+		panic(err)
 	}
 
 	return v3doc
@@ -105,9 +105,9 @@ func EmptyDocument() libopenapi.DocumentModel[v3.Document] {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to create empty document")
 	}
-	v3doc, errs := doc.BuildV3Model()
-	if len(errs) > 0 {
-		log.Fatal().Errs("spec", errs).Msgf("failed to create empty v3 document")
+	v3doc, err := doc.BuildV3Model()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to create empty v3 document")
 	}
 	return *v3doc
 }
