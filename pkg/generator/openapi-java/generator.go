@@ -20,9 +20,11 @@ import (
 
 type JavaGenerator struct {
 	reservedWords  []string
+	reservedRunes  []rune
 	primitiveTypes []string
 	boxedTypes     map[string]string
 	typeToImport   map[string]string
+	symbolMappings map[string]string
 }
 
 func (g *JavaGenerator) Id() string {
@@ -135,69 +137,83 @@ func (g *JavaGenerator) TemplateData(opts openapigenerator.TemplateDataOpts) (op
 }
 
 func (g *JavaGenerator) ToClassName(name string) string {
-	name = util.ToPascalCase(name)
-
+	name = g.sanitizeName(name)
 	if slices.Contains(g.reservedWords, name) {
-		return name + "Model"
+		name = name + "Model"
 	}
-	return name
+
+	return util.ToPascalCase(name)
 }
 
 func (g *JavaGenerator) ToFunctionName(name string) string {
-	name = util.ToCamelCase(name)
-
+	name = g.sanitizeName(name)
 	if slices.Contains(g.reservedWords, name) {
-		return name + "Func"
+		name = name + "Func"
 	}
-	return name
+
+	return util.ToCamelCase(name)
 }
 
 func (g *JavaGenerator) ToPropertyName(name string) string {
 	if strings.HasPrefix(name, "_") {
 		name = "additional" + util.ToUpperCamelCase(name)
-	} else {
-		name = util.ToCamelCase(name)
 	}
 
-	if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
-		name = "p" + name
-	}
-
+	name = g.sanitizeName(name)
 	if slices.Contains(g.reservedWords, name) {
-		return name + "Prop"
+		name = name + "Prop"
 	}
 
-	return name
+	return util.ToCamelCase(name)
 }
 
 func (g *JavaGenerator) ToParameterName(name string) string {
 	if strings.HasPrefix(name, "_") {
 		name = "additional" + util.ToUpperCamelCase(name)
-	} else {
-		name = util.ToCamelCase(name)
 	}
 
-	if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
-		name = "p" + name
-	}
-
+	name = g.sanitizeName(name)
 	if slices.Contains(g.reservedWords, name) {
-		return name + "Prop"
+		name = name + "Prop"
 	}
 
-	return name
+	return util.ToCamelCase(name)
 }
 
 func (g *JavaGenerator) ToConstantName(name string) string {
-	name = util.ToUpperSnakeCase(name)
-
 	if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
 		name = "p" + name
 	}
 
+	name = g.sanitizeName(name)
 	if slices.Contains(g.reservedWords, name) {
-		return name
+		name = name + "_CONST"
 	}
+
+	return util.ToUpperSnakeCase(name)
+}
+
+func (g *JavaGenerator) sanitizeName(name string) string {
+	// special case: starts with a digit
+	if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
+		name = "p" + name
+	}
+
+	// symbol/operator mappings (e.g. "=" → "EQUALS")
+	if rep, ok := g.symbolMappings[name]; ok {
+		name = rep
+	}
+
+	// reserved runes
+	name = strings.Map(func(r rune) rune {
+		for _, rr := range g.reservedRunes {
+			if r == rr {
+				return '_'
+			}
+		}
+		return r
+	}, name)
+
 	return name
 }
 
@@ -281,6 +297,7 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 			additionalPropertyType, err := g.ToCodeType(schema.AdditionalProperties.A.Schema(), schemaType, true)
 			if err != nil {
 				return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled additional properties type. schema: %s, format: %s", schema.Type, schema.Format), err)
+				//return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), openapigenerator.NewSimpleCodeType("Object", schema), schema), nil
 			}
 
 			return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), additionalPropertyType, schema), nil
@@ -440,7 +457,6 @@ func (g *JavaGenerator) BoxType(codeType string, box bool) string {
 }
 
 func NewGenerator() *JavaGenerator {
-	// references: https://openapi-generator.tech/docs/generators/go
 	return &JavaGenerator{
 		reservedWords: []string{
 			"abstract",
@@ -499,15 +515,36 @@ func NewGenerator() *JavaGenerator {
 			"volatile",
 			"while",
 		},
-		primitiveTypes: []string{
-			"boolean",
-			"int",
-			"long",
-			"short",
-			"float",
-			"double",
-			"byte",
-			"char",
+		reservedRunes: []rune{
+			'$',  // dollar sign
+			'#',  // hash
+			'%',  // percent
+			'^',  // caret
+			'&',  // ampersand
+			'*',  // asterisk
+			'(',  // open parenthesis
+			')',  // close parenthesis
+			'+',  // plus
+			'=',  // equals
+			'/',  // forward slash
+			'\\', // backslash
+			'|',  // pipe
+			'~',  // tilde
+			'`',  // backtick
+			'!',  // exclamation mark
+			'<',  // less than
+			'>',  // greater than
+			',',  // comma
+			':',  // colon
+			';',  // semicolon
+			' ',  // space
+			'?',  // question mark
+			'"',  // double quote
+			'\'', // single quote
+			'{',  // open curly brace
+			'}',  // close curly brace
+			'[',  // open square bracket
+			']',  // close square bracket
 		},
 		boxedTypes: map[string]string{
 			"boolean": "Boolean",
@@ -521,6 +558,16 @@ func NewGenerator() *JavaGenerator {
 		},
 		typeToImport: map[string]string{
 			"OffsetDateTime": "java.time.OffsetDateTime",
+		},
+		symbolMappings: map[string]string{
+			"=":  "EQUALS",
+			"!=": "NOT_EQUALS",
+			">":  "GREATER_THAN",
+			"<":  "LESS_THAN",
+			">=": "GREATER_OR_EQUALS",
+			"<=": "LESS_OR_EQUALS",
+			"~":  "TILDE",
+			"~=": "MATCHES",
 		},
 	}
 }
