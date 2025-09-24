@@ -78,6 +78,10 @@ var TemplateFunctions = template.FuncMap{
 		input = strings.ReplaceAll(input, "<", "&lt;")
 		input = strings.ReplaceAll(input, ">", "&gt;")
 
+		// comments
+		input = strings.ReplaceAll(input, "/*", "/&#42;")
+		input = strings.ReplaceAll(input, "*/", "&#42;/")
+
 		// restore
 		for entity, placeholder := range javadocPlaceholders {
 			input = strings.ReplaceAll(input, placeholder, entity)
