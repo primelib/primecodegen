@@ -70,8 +70,8 @@ public class {{ .Metadata.Name }}ConsumerApi {
     @Deprecated
     {{- end }}
     {{- if $op.Parameters }}
-    public {{ $op.ReturnType.QualifiedType }} {{ $op.Name | toFunctionName }}(Consumer<{{ $op.Name }}OperationSpec> spec) {
-        {{$op.Name }}OperationSpec r = new {{ $op.Name }}OperationSpec(spec);
+    public {{ $op.ReturnType.QualifiedType }} {{ $op.Name | toFunctionName }}(Consumer<{{ $op.Name | toClassName }}OperationSpec> spec) {
+        {{$op.Name | toClassName}}OperationSpec r = new {{ $op.Name | toClassName }}OperationSpec(spec);
         {{ if ne $op.ReturnType.QualifiedType "void" }}return {{ end }}api.{{ $op.Name | toFunctionName }}({{ range $i, $param := $op.MutableParameters }}r.{{ $param.Name }}(){{ if notLast $op.MutableParameters $i }}, {{ end }}{{ end }});
     }
     {{- else }}

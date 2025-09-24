@@ -75,7 +75,7 @@ public interface {{ .Service.Type }}Api {
     {{- if $op.Deprecated }}
     @Deprecated
     {{- end }}
-    {{ $op.ReturnType.QualifiedType }} {{ $op.Name }}{{- if gt (len $op.MutableParameters) 0 }}(
+    {{ $op.ReturnType.QualifiedType }} {{ $op.Name | toFunctionName }}{{- if gt (len $op.MutableParameters) 0 }}(
         {{- range $i, $param := $op.MutableParameters }}
             {{if $param.Required}}@NotNull{{else}}@Nullable{{end}} {{if ne $param.In "body"}}@Param("{{ $param.Name }}") {{end}}{{$param.Type.QualifiedType}} {{$param.Name}}{{if notLast $op.MutableParameters $i}},{{end}}
         {{- end }}
