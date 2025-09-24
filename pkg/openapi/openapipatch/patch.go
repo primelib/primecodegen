@@ -26,9 +26,9 @@ func ApplyPatches(input []byte, patches []sharedpatch.SpecPatch) ([]byte, error)
 					return input, err
 				}
 
-				v3doc, errs := doc.BuildV3Model()
-				if len(errs) > 0 {
-					return input, fmt.Errorf("failed to build v3 high level model: %w", errors.Join(errs...))
+				v3doc, err := doc.BuildV3Model()
+				if err != nil {
+					return input, fmt.Errorf("failed to build v3 high level model: %w", err)
 				}
 
 				patchErr := patcher.PatchV3DocumentFunc(v3doc, p.Config)

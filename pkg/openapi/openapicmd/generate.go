@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	"github.com/primelib/primecodegen/pkg/generator/krakend"
 	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 
 	openapi_go "github.com/primelib/primecodegen/pkg/generator/openapi-go"
@@ -19,6 +21,7 @@ import (
 var generators = []openapigenerator.CodeGenerator{
 	openapi_go.NewGenerator(),
 	openapi_java.NewGenerator(),
+	krakend.NewGenerator(),
 }
 
 func GenerateCmd() *cobra.Command {
@@ -95,9 +98,9 @@ func Generate(inputSpec string, patches []string, generatorId string, templateId
 	if err != nil {
 		return err
 	}
-	v3doc, errs := doc.BuildV3Model()
-	if len(errs) > 0 {
-		return errors.Join(util.ErrGenerateOpenAPIV3Model, errors.Join(errs...))
+	v3doc, err := doc.BuildV3Model()
+	if err != nil {
+		return errors.Join(util.ErrGenerateOpenAPIV3Model, err)
 	}
 
 	// print final spec
