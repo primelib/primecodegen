@@ -68,10 +68,17 @@ func ParsePatchSpecsFromStrings(patches []string) []SpecPatch {
 		}
 		log.Debug().Str("patchType", patchType).Str("patchFile", patchFile).Msg("adding patch to spec")
 
-		specs = append(specs, SpecPatch{
-			Type: patchType,
-			File: patchFile,
-		})
+		if patchType == "builtin" {
+			specs = append(specs, SpecPatch{
+				Type: patchType,
+				ID:   patchFile,
+			})
+		} else {
+			specs = append(specs, SpecPatch{
+				Type: patchType,
+				File: patchFile,
+			})
+		}
 	}
 	return specs
 }
