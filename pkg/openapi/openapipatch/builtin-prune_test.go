@@ -27,8 +27,8 @@ func TestPruneOperationTags(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating document: %v", err)
 	}
-	v3doc, errors := document.BuildV3Model()
-	assert.Equal(t, 0, len(errors))
+	v3doc, err := document.BuildV3Model()
+	assert.NoError(t, err)
 
 	// prune operation tags
 	_ = PruneOperationTags(v3doc, nil)

@@ -215,13 +215,30 @@ func flattenEnumsInComponentProperties(doc *libopenapi.DocumentModel[v3.Document
 
 		// TODO: check of a schema with that name already exists, skip if equal - change name if not equal
 		for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
-			if p.Value.Schema().Enum != nil {
+			ps := p.Value.Schema()
+			if ps == nil {
+				continue
+			}
+
+			// property itself is an enum
+			if ps.Enum != nil {
 				key := util.ToPascalCase(p.Key) + "Enum"
 				log.Trace().Msg("moving property enum to components: " + key)
 				if ref, err := moveSchemaIntoComponents(doc, key, p.Value); err != nil {
 					return fmt.Errorf("error moving enum property schema to components: %w", err)
 				} else if ref != nil {
 					p.Value = ref
+				}
+			}
+
+			// property is an array and items has an enum
+			if ps.Items != nil && ps.Items.IsA() && ps.Items.A != nil && ps.Items.A.Schema().Enum != nil {
+				key := util.ToPascalCase(p.Key) + "ItemEnum"
+				log.Trace().Msg("moving array item enum to components: " + key)
+				if ref, err := moveSchemaIntoComponents(doc, key, ps.Items.A); err != nil {
+					return fmt.Errorf("error moving enum items schema to components: %w", err)
+				} else if ref != nil {
+					ps.Items.A = ref
 				}
 			}
 		}
