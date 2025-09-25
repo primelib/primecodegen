@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/primelib/primecodegen/pkg/generator/krakend"
 	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 
 	openapi_go "github.com/primelib/primecodegen/pkg/generator/openapi-go"
@@ -21,7 +20,6 @@ import (
 var generators = []openapigenerator.CodeGenerator{
 	openapi_go.NewGenerator(),
 	openapi_java.NewGenerator(),
-	krakend.NewGenerator(),
 }
 
 func GenerateCmd() *cobra.Command {

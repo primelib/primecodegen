@@ -457,6 +457,7 @@ func (g *JavaGenerator) BoxType(codeType string, box bool) string {
 }
 
 func NewGenerator() *JavaGenerator {
+	// references: https://openapi-generator.tech/docs/generators/java/
 	return &JavaGenerator{
 		reservedWords: []string{
 			"abstract",
