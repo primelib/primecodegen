@@ -9,7 +9,7 @@ require (
 	github.com/cidverse/cidverseutils/filesystem v0.1.2-0.20250627221305-78405635788a
 	github.com/cidverse/cidverseutils/zerologconfig v0.1.1
 	github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf
-	github.com/cidverse/go-vcsapp v0.0.0-20250924180705-49028022cdcd
+	github.com/cidverse/go-vcsapp v0.0.0-20250924182812-5da2f6af2627
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/gosimple/slug v1.15.0
 	github.com/iancoleman/strcase v0.3.0
@@ -35,7 +35,7 @@ require (
 	github.com/charlievieth/fastwalk v1.0.14 // indirect
 	github.com/cidverse/go-vcs v0.0.0-20250827180914-98ba84f67766 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
-	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
+	github.com/cyphar/filepath-securejoin v0.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dprotaso/go-yit v0.0.0-20250513224043-18a80f8f6df4 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
@@ -45,7 +45,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/go-github/v72 v72.0.0 // indirect
-	github.com/google/go-github/v74 v74.0.0 // indirect
+	github.com/google/go-github/v75 v75.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
