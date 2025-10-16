@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cidverse/cidverseutils/filesystem"
-	"github.com/primelib/primecodegen/pkg/loader"
+	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/openapi/openapimerge"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
@@ -23,6 +23,7 @@ func MergeCmd() *cobra.Command {
 			if len(inputFiles) == 0 {
 				log.Fatal().Msg("input specification is required")
 			}
+			format, _ := cmd.Flags().GetString("format")
 			output, _ := cmd.Flags().GetString("output")
 			output = util.ResolvePath(output)
 			log.Info().Strs("input", inputFiles).Str("output", output).Msg("Merging Specifications")
@@ -34,7 +35,7 @@ func MergeCmd() *cobra.Command {
 			}
 
 			// render
-			rendered, err := loader.InterfaceToYaml(mergedSpec.Model)
+			rendered, err := openapidocument.RenderV3ModelFormat(mergedSpec, format)
 			if err != nil {
 				log.Fatal().Err(err).Msg("failed to render document")
 			}
@@ -53,6 +54,7 @@ func MergeCmd() *cobra.Command {
 	}
 	cmd.Flags().StringSliceP("input", "i", []string{}, "Input Specification(s) (YAML or JSON)")
 	cmd.Flags().StringP("empty", "e", "", "Empty OpenAPI 3.0 Specification (YAML or JSON for building up a clean info block)")
+	cmd.Flags().StringP("format", "f", "yaml", "Output Format (yaml|json)")
 	cmd.Flags().StringP("output", "o", "", "Output File (Merged Specifications)")
 
 	return cmd

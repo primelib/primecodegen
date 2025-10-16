@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/cidverse/cidverseutils/core/clioutputwriter"
-	"github.com/primelib/primecodegen/pkg/loader"
+	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/openapi/openapimerge"
 	"github.com/primelib/primecodegen/pkg/openapi/openapipatch"
 	"github.com/primelib/primecodegen/pkg/patch"
@@ -197,7 +197,7 @@ func Patch(inputFiles []string, output string, inputPatches []sharedpatch.SpecPa
 	if err != nil {
 		return nil, errors.Join(util.ErrDocumentMerge, err)
 	}
-	bytes, err := loader.InterfaceToYaml(mergedSpec.Model)
+	bytes, err := openapidocument.RenderV3ModelFormat(mergedSpec, "yaml")
 	if err != nil {
 		return nil, errors.Join(util.ErrRenderDocument, err)
 	}
@@ -210,6 +210,20 @@ func Patch(inputFiles []string, output string, inputPatches []sharedpatch.SpecPa
 
 	// write document
 	if output != "" {
+		// convert
+		if strings.HasSuffix(output, ".json") || strings.HasSuffix(output, ".jsonc") {
+			bytes, err = openapidocument.ConvertDocument(bytes, "json")
+			if err != nil {
+				return nil, errors.Join(util.ErrRenderDocument, err)
+			}
+		} else if strings.HasSuffix(output, ".yaml") || strings.HasSuffix(output, ".yml") {
+			bytes, err = openapidocument.ConvertDocument(bytes, "yaml")
+			if err != nil {
+				return nil, errors.Join(util.ErrRenderDocument, err)
+			}
+		}
+
+		// write
 		err = os.WriteFile(output, bytes, 0644)
 		if err != nil {
 			return nil, errors.Join(util.ErrWriteDocumentToFile, err)
