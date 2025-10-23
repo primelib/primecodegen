@@ -32,7 +32,7 @@ func MergePolymorphicSchemas(v3Model *libopenapi.DocumentModel[v3.Document], con
 	// TODO: Handle polymorphic responses, request bodies, parameter definitions
 
 	// Delete empty schemas
-	deleteEmptySchemas(v3Model, derivedSchemaReplacementMap)
+	// deleteEmptySchemas(v3Model, derivedSchemaReplacementMap)
 
 	return nil
 }
