@@ -82,7 +82,7 @@ public class {{ .Service.Type }}ConsumerApi {
     {{- if $op.Parameters }}
     public {{ $op.ReturnType.QualifiedType }} {{ $op.Name | toFunctionName }}(Consumer<{{ $op.Name | toClassName }}OperationSpec> spec) {
         {{$op.Name | toClassName}}OperationSpec r = new {{$op.Name | toClassName}}OperationSpec(spec);
-        {{ if ne $op.ReturnType.QualifiedType "void" }}return {{ end }}api.{{ $op.Name }}({{ range $i, $param := $op.MutableParameters }}r.{{ $param.Name }}(){{ if notLast $op.MutableParameters $i }}, {{ end }}{{ end }});
+        {{ if ne $op.ReturnType.QualifiedType "void" }}return {{ end }}api.{{ $op.Name | toFunctionName }}({{ range $i, $param := $op.MutableParameters }}r.{{ $param.Name }}(){{ if notLast $op.MutableParameters $i }}, {{ end }}{{ end }});
     }
     {{- else }}
     public {{ $op.ReturnType.QualifiedType }} {{ $op.Name | toFunctionName }}() {
