@@ -1,0 +1,159 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Root }}.spring;
+
+import {{ .Common.Packages.Root }}.{{ .Metadata.Name }}Factory;
+
+import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}Api;
+import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}ConsumerApi;
+{{- range $service := .Common.Services }}
+import {{ $.Common.Packages.Client }}.{{ $service.Type }}Api;
+import {{ $.Common.Packages.Client }}.{{ $service.Type }}ConsumerApi;
+{{- end }}
+
+import io.github.primelib.primecodegenlib.java.feign.common.api.AuthMethod;
+import io.github.primelib.primecodegenlib.java.feign.common.auth.BearerAuthSpec;
+import io.github.primelib.primecodegenlib.java.feign.common.auth.OAuth2ClientCredentialsAuthSpec;
+import io.github.primelib.primecodegenlib.java.feign.common.auth.OAuth2UserCredentialsAuthSpec;
+import io.micrometer.core.instrument.MeterRegistry;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+
+import java.util.List;
+
+import javax.annotation.processing.Generated;
+
+@AutoConfiguration
+@EnableConfigurationProperties({{ .Metadata.Name }}SpringAutoConfiguration.Properties.class)
+@ConditionalOnProperty(name = "{{ .Metadata.Name | kebabCase }}.url", matchIfMissing = false)
+@Slf4j
+@Generated(value = "io.github.primelib.primecodegen")
+public class {{ .Metadata.Name }}SpringAutoConfiguration {
+    private final Properties properties;
+    private final MeterRegistry meterRegistry;
+
+    public {{ .Metadata.Name }}SpringAutoConfiguration(Properties properties, MeterRegistry meterRegistry) {
+        this.properties = properties;
+        this.meterRegistry = meterRegistry;
+    }
+
+    {{ range $service := .Common.Services }}
+    @Bean
+    @Primary
+    public {{ $service.Type }}Api {{ $service.Type }}Api() {
+        return {{ $.Metadata.Name }}Factory.create(spec -> {
+            spec.api({{ $service.Type }}Api.class);
+            spec.baseUrl(properties.getUrl());
+            spec.auth(buildAuthSpecs(properties));
+            if (properties.getInsecure() != null) {
+                spec.insecure(properties.getInsecure());
+            }
+            if (properties.getBackendName() != null && !properties.getBackendName().isEmpty()) {
+                spec.backendName(properties.getBackendName());
+            }
+            if (properties.getLogLevel() != null && !properties.getLogLevel().isEmpty()) {
+                spec.logLevel(properties.getLogLevel());
+            }
+            spec.meterRegistry(meterRegistry);
+        });
+    }
+
+    @Bean
+    @Primary
+    public {{ $service.Type }}ConsumerApi {{ $service.Type }}ConsumerApi() {
+        return {{ $.Metadata.Name }}Factory.create(spec -> {
+            spec.api({{ $service.Type }}ConsumerApi.class);
+            spec.baseUrl(properties.getUrl());
+            spec.auth(buildAuthSpecs(properties));
+            if (properties.getInsecure() != null) {
+                spec.insecure(properties.getInsecure());
+            }
+            if (properties.getBackendName() != null && !properties.getBackendName().isEmpty()) {
+                spec.backendName(properties.getBackendName());
+            }
+            if (properties.getLogLevel() != null && !properties.getLogLevel().isEmpty()) {
+                spec.logLevel(properties.getLogLevel());
+            }
+            spec.meterRegistry(meterRegistry);
+        });
+    }
+    {{ end }}
+
+    private List<AuthMethod> buildAuthSpecs(Properties props) {
+        if (props.getAuth() == null || props.getAuth().getType() == null) {
+            return null;
+        }
+
+        switch (props.getAuth().getType()) {
+            case "oauth2-user":
+                return List.of(new OAuth2UserCredentialsAuthSpec(auth -> {
+                    auth.tokenEndpoint(props.getAuth().getTokenEndpoint());
+                    auth.clientId(props.getAuth().getClientId());
+                    auth.clientSecret(props.getAuth().getClientSecret());
+                    auth.username(props.getAuth().getUsername());
+                    auth.password(props.getAuth().getPassword());
+                }));
+            case "oauth2-client":
+                return List.of(new OAuth2ClientCredentialsAuthSpec(auth -> {
+                    auth.tokenEndpoint(props.getAuth().getTokenEndpoint());
+                    auth.clientId(props.getAuth().getClientId());
+                    auth.clientSecret(props.getAuth().getClientSecret());
+                }));
+            case "bearer":
+                return List.of(new BearerAuthSpec(auth -> {
+                    if (props.getAuth().getTokenPropertyKey() != null && !props.getAuth().getTokenPropertyKey().isEmpty()) {
+                        auth.propertyKey(props.getAuth().getTokenPropertyKey());
+                    }
+                    if (props.getAuth().getTokenValueTemplate() != null && !props.getAuth().getTokenValueTemplate().isEmpty()) {
+                        auth.propertyKey(props.getAuth().getTokenValueTemplate());
+                    }
+                    auth.propertyKey(props.getAuth().getToken());
+                }));
+            default:
+                return null;
+        }
+    }
+
+    @Data
+    @ConfigurationProperties(prefix = "{{ .Metadata.Name | kebabCase }}")
+    public static class Properties {
+        private String url = "";
+        private String backendName = "";
+        private String logLevel = "";
+        private Boolean insecure = false;
+        private Auth auth;
+
+        @Data
+        public static class Auth {
+            /**
+             * Type of authentication.
+             * Supported values: "oauth2-user", "oauth2-client", "bearer".
+             */
+            private String type;
+            /**
+             * Full token endpoint URL
+             */
+            private String tokenEndpoint;
+            private String clientId;
+            private String clientSecret;
+            private String username;
+            private String password;
+            private String token;
+            /**
+             * Header key to pass the token in (used by BearerAuthSpec).
+             */
+            private String tokenPropertyKey;
+            /**
+             * Template to generate token value (used by BearerAuthSpec).
+             */
+            private String tokenValueTemplate;
+        }
+    }
+}

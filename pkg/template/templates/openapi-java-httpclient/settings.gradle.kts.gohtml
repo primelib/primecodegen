@@ -7,3 +7,10 @@ pluginManagement {
         mavenCentral()
     }
 }
+
+rootProject.name = "{{ .Metadata.ArtifactId }}"
+
+include(
+    "core",
+    "spring"
+)

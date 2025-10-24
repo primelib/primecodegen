@@ -3,13 +3,13 @@
 
 A java http client library for {{ .Metadata.DisplayName }}.
 
-## Installation
+## Core Library
+
+**Coordinates**
 
 ```
 implementation("{{ .Metadata.ArtifactGroupId }}:{{ .Metadata.ArtifactId }}:<version>")
 ```
-
-## Usage
 
 **Create client instances using the factory, you can choose different interfaces by changing the `api` parameter.**
 
@@ -40,7 +40,6 @@ implementation("{{ .Metadata.ArtifactGroupId }}:{{ .Metadata.ArtifactId }}:<vers
         auth.tokenEndpoint("<tokenEndpoint>");
         auth.clientId("<clientId>");
         auth.clientSecret("<clientSecret>");
-        // auth.idp(...) - instead of endpoint, client ID and client secret you can also pass a custom IDP implementation
     });
 {{- end }}
 {{- if .Common.Auth.HasAuthVariant "oauth2PasswordAuth" }}
@@ -50,13 +49,38 @@ implementation("{{ .Metadata.ArtifactGroupId }}:{{ .Metadata.ArtifactId }}:<vers
         auth.clientSecret("<clientSecret>");
         auth.username("<username>");
         auth.password("<password>");
-        // auth.idp(...) - instead of endpoint, client ID and client secret you can also pass a custom IDP implementation
     });
 {{- end }}
     //spec.meterRegistry(meterRegistry);
     //spec.logLevel("FULL");
 });
 ```
+
+## Spring Boot Starter
+
+**Coordinates**
+
+```
+implementation("{{ .Metadata.ArtifactGroupId }}:{{ .Metadata.ArtifactId }}-spring-boot-starter:<version>")
+```
+
+**Auto Configuration**
+
+| Property                                                   | Description                      | Default Value    | Allowed Values                     |
+|------------------------------------------------------------|----------------------------------|------------------|------------------------------------|
+| {{ .Metadata.Name | kebabCase }}.url                       | Base URL of the API              | ""               |                                    |
+| {{ .Metadata.Name | kebabCase }}.backend-name              | Backend name for metrics tagging | ""               |                                    |
+| {{ .Metadata.Name | kebabCase }}.log-level                 | Log level for HTTP client        | ""               | none, full                         |
+| {{ .Metadata.Name | kebabCase }}.insecure                  | Disable SSL verification         | false            | false, true                        |
+| {{ .Metadata.Name | kebabCase }}.auth.type                 | Type of authentication           | ""               | oauth2-client, oauth2-user, bearer |
+| {{ .Metadata.Name | kebabCase }}.auth.token-endpoint       | Full token endpoint URL          | ""               | oauth2 token endpoint              |
+| {{ .Metadata.Name | kebabCase }}.auth.client-id            | Client ID for authentication     | ""               | oauth2 client id                   |
+| {{ .Metadata.Name | kebabCase }}.auth.client-secret        | Client secret for authentication | ""               | oauth2 client secret               |
+| {{ .Metadata.Name | kebabCase }}.auth.username             | Username for authentication      | ""               | oauth2 username (oauth2-user)      |
+| {{ .Metadata.Name | kebabCase }}.auth.password             | Password for authentication      | ""               | oauth2 password (oauth2-password)  |
+| {{ .Metadata.Name | kebabCase }}.auth.token                | Token / API Key                  | ""               |                                    |
+| {{ .Metadata.Name | kebabCase }}.auth.token-property-key   | Header key to pass the token in  | "Authorization"  |                                    |
+| {{ .Metadata.Name | kebabCase }}.auth.token-value-template | Template to generate token value | "Bearer {token}" |                                    |
 
 {{ if .Metadata.LicenseName }}
 ## License

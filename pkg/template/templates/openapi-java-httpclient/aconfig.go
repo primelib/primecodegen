@@ -8,11 +8,20 @@ var Template = templateapi.Config{
 	ID:          "openapi-java-httpclient",
 	Description: "OpenAPI Client for Java",
 	Files: []templateapi.File{
-		// factory
+		// core - main
+		{
+			SourceTemplate:  "build.gradle.kts.core.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "core",
+			TargetFileName:  "build.gradle.kts",
+			Type:            templateapi.TypeSupportOnce,
+			Kind:            templateapi.KindBuildSystem,
+		},
+		// core - factory
 		{
 			SourceTemplate:  "api_factory.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
-			TargetDirectory: "src/main/java/{{ .Common.Packages.Root | toFilePath }}",
+			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Root | toFilePath }}",
 			TargetFileName:  "{{ .Metadata.Name }}Factory.java",
 			Type:            templateapi.TypeAPIOnce,
 			Kind:            templateapi.KindAPI,
@@ -20,16 +29,16 @@ var Template = templateapi.Config{
 		{
 			SourceTemplate:  "api_factoryspec.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
-			TargetDirectory: "src/main/java/{{ .Common.Packages.Root | toFilePath }}",
+			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Root | toFilePath }}",
 			TargetFileName:  "{{ .Metadata.Name }}FactorySpec.java",
 			Type:            templateapi.TypeAPIOnce,
 			Kind:            templateapi.KindAPI,
 		},
-		// api
+		// core - api
 		{
 			SourceTemplate:  "api_main_default.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
-			TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Client | toFilePath }}",
 			TargetFileName:  "{{ .Metadata.Name }}Api.java",
 			Type:            templateapi.TypeAPIOnce,
 			Kind:            templateapi.KindAPI,
@@ -37,16 +46,16 @@ var Template = templateapi.Config{
 		{
 			SourceTemplate:  "api_main_consumer.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
-			TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Client | toFilePath }}",
 			TargetFileName:  "{{ .Metadata.Name }}ConsumerApi.java",
 			Type:            templateapi.TypeAPIOnce,
 			Kind:            templateapi.KindAPI,
 		},
-		// services
+		// core - services
 		{
 			SourceTemplate:  "api_service_default.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
-			TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Client | toFilePath }}",
 			TargetFileName:  "{{ .Service.Type }}Api.java",
 			Type:            templateapi.TypeAPIEach,
 			Kind:            templateapi.KindAPI,
@@ -54,25 +63,25 @@ var Template = templateapi.Config{
 		{
 			SourceTemplate:  "api_service_consumer.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
-			TargetDirectory: "src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Client | toFilePath }}",
 			TargetFileName:  "{{ .Service.Type }}ConsumerApi.java",
 			Type:            templateapi.TypeAPIEach,
 			Kind:            templateapi.KindAPI,
 		},
-		// operations
+		// core - operations
 		{
 			SourceTemplate:  "operation.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
-			TargetDirectory: "src/main/java/{{ .Common.Packages.Operations | toFilePath }}",
+			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Operations | toFilePath }}",
 			TargetFileName:  "{{ .Operation.Name }}OperationSpec.java",
 			Type:            templateapi.TypeOperationEach,
 			Kind:            templateapi.KindAPI,
 		},
-		// model
+		// core - model
 		{
 			SourceTemplate:  "model.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
-			TargetDirectory: "src/main/java/{{ .Common.Packages.Models | toFilePath }}",
+			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Models | toFilePath }}",
 			TargetFileName:  "{{ .Name }}.java",
 			Type:            templateapi.TypeModelEach,
 			Kind:            templateapi.KindModel,
@@ -80,10 +89,27 @@ var Template = templateapi.Config{
 		{
 			SourceTemplate:  "enum.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
-			TargetDirectory: "src/main/java/{{ .Common.Packages.Enums | toFilePath }}",
+			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Enums | toFilePath }}",
 			TargetFileName:  "{{ .Name }}.java",
 			Type:            templateapi.TypeEnumEach,
 			Kind:            templateapi.KindModel,
+		},
+		// spring - main
+		{
+			SourceTemplate:  "build.gradle.kts.spring.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "spring",
+			TargetFileName:  "build.gradle.kts",
+			Type:            templateapi.TypeSupportOnce,
+			Kind:            templateapi.KindBuildSystem,
+		},
+		{
+			SourceTemplate:  "spring_auto_configuration.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "spring/src/main/java/{{ .Common.Packages.Root | toFilePath }}/spring",
+			TargetFileName:  "{{ .Metadata.Name }}SpringAutoConfiguration.java",
+			Type:            templateapi.TypeAPIOnce,
+			Kind:            templateapi.KindAPI,
 		},
 		// support files - docs
 		{
@@ -96,7 +122,7 @@ var Template = templateapi.Config{
 		},
 		// support files - gradle
 		{
-			SourceTemplate: "build.gradle.kts.gohtml",
+			SourceTemplate: "build.gradle.kts.root.gohtml",
 			Snippets:       templateapi.DefaultSnippets,
 			TargetFileName: "build.gradle.kts",
 			Type:           templateapi.TypeSupportOnce,
