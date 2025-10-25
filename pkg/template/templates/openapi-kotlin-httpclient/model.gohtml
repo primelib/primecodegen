@@ -1,0 +1,38 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.ModelEachTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Package }};
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+import org.jetbrains.annotations.ApiStatus
+
+/**
+ * {{ .Model.Name }}
+{{- if .Model.Description }}
+ * <p>
+ * {{ .Model.Description | escapeJavadoc | commentMultiLine " * " }}
+{{- end }}
+ *
+{{- if .Model.Deprecated }}
+ * @deprecated{{ if .Model.DeprecatedReason }} {{ .Model.DeprecatedReason | escapeJavadoc }}{{ end }}
+{{- end }}
+ */
+{{- if .Model.Deprecated }}
+@Deprecated
+{{- end }}
+@Serializable
+data class {{ .Model.Name }}(
+    {{- range $i, $p := .Model.Properties }}
+    {{- if $p.Description }}
+    /**
+     * {{ $p.Description | escapeJavadoc | commentMultiLine "     * " }}
+     */
+    {{- end }}
+    @SerialName("{{ $p.FieldName }}")
+    val {{ $p.Name }}: {{ if not $p.Nullable }}{{ $p.Type.Declaration }}? = null{{ else }}{{ $p.Type.Declaration }}{{ end }},
+    {{- end }}
+){{ if .Model.Parent.Declaration }} : {{ .Model.Parent.Declaration }}(){{ end }} {
+
+}

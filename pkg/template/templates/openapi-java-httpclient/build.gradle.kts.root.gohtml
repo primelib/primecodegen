@@ -5,56 +5,56 @@ plugins {
     alias(libs.plugins.configuration)
 }
 
-allprojects {
+subprojects {
     apply(plugin = "me.philippheuer.configuration")
 
-  projectConfiguration {
-    type.set(me.philippheuer.projectcfg.domain.ProjectType.LIBRARY)
-    javaVersion.set(JavaVersion.VERSION_17)
+    projectConfiguration {
+        type.set(me.philippheuer.projectcfg.domain.ProjectType.LIBRARY)
+        javaVersion.set(JavaVersion.VERSION_17)
 {{- if .Metadata.ArtifactGroupId }}
-    artifactGroupId.set("{{ .Metadata.ArtifactGroupId }}")
+        artifactGroupId.set("{{ .Metadata.ArtifactGroupId }}")
 {{- end }}
 {{- if .Metadata.DisplayName }}
-    artifactDisplayName.set("{{ .Metadata.DisplayName }}")
+        artifactDisplayName.set("{{ .Metadata.DisplayName }}")
 {{- end }}
 {{- if .Metadata.Description }}
-    artifactDescription.set("{{ .Metadata.Description | commentSingleLine }}")
+        artifactDescription.set("{{ .Metadata.Description | commentSingleLine }}")
 {{- end }}
-    javadocLint.set(listOf("none"))
+        javadocLint.set(listOf("none"))
 
-    pom = { pom ->
+        pom = { pom ->
 {{- if .Metadata.RepositoryUrl }}
-      pom.url.set("https://{{ .Metadata.RepositoryUrl }}")
-      pom.issueManagement {
-        system.set("GitHub")
-        url.set("https://{{ .Metadata.RepositoryUrl }}/issues")
-      }
+            pom.url.set("https://{{ .Metadata.RepositoryUrl }}")
+            pom.issueManagement {
+                system.set("GitHub")
+                url.set("https://{{ .Metadata.RepositoryUrl }}/issues")
+            }
 {{- end }}
-      pom.developers {
-        developer {
-          id.set("PrimeCodeGen")
-          name.set("PrimeLib PrimeCodeGen")
-          roles.addAll("maintainer")
-        }
-      }
-      pom.licenses {
-        license {
+            pom.developers {
+                developer {
+                  id.set("PrimeCodeGen")
+                  name.set("PrimeLib PrimeCodeGen")
+                  roles.addAll("maintainer")
+                }
+            }
+            pom.licenses {
+                license {
 {{- if .Metadata.LicenseName }}
-          name.set("{{ .Metadata.LicenseName }}")
+                    name.set("{{ .Metadata.LicenseName }}")
 {{- end }}
-          distribution.set("repo")
+                    distribution.set("repo")
 {{- if .Metadata.LicenseUrl }}
-          url.set("{{ .Metadata.LicenseUrl }}")
+                    url.set("{{ .Metadata.LicenseUrl }}")
+{{- end }}
+                }
+            }
+{{- if .Metadata.RepositoryUrl }}
+            pom.scm {
+                connection.set("scm:git:git://{{ .Metadata.RepositoryUrl }}.git")
+                developerConnection.set("scm:git:git://{{ .Metadata.RepositoryUrl }}.git")
+                url.set("https://{{ .Metadata.RepositoryUrl }}")
+            }
 {{- end }}
         }
-      }
-{{- if .Metadata.RepositoryUrl }}
-      pom.scm {
-        connection.set("scm:git:git://{{ .Metadata.RepositoryUrl }}.git")
-        developerConnection.set("scm:git:git://{{ .Metadata.RepositoryUrl }}.git")
-        url.set("https://{{ .Metadata.RepositoryUrl }}")
-      }
-{{- end }}
     }
-  }
 }

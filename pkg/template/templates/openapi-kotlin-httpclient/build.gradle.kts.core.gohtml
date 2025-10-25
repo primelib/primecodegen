@@ -1,0 +1,61 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.SupportOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+plugins {
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.configuration)
+}
+
+projectConfiguration {
+{{- if .Metadata.ArtifactId }}
+    artifactId.set("{{ .Metadata.ArtifactId }}")
+{{- end }}
+}
+
+kotlin {
+    jvm()
+
+    sourceSets {
+        commonMain.dependencies {
+            // ktor
+            implementation(libs.ktor.client.core)
+
+            // serialization
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+
+            // logging and tracing
+            implementation(libs.ktor.client.logging)
+
+            // kotlin
+            implementation(libs.kotlinx.coroutines.core)
+
+            // annotations
+            implementation(libs.jetbrains.annotations)
+        }
+
+        commonTest.dependencies {
+            //implementation(libs.kotlin.test)
+        }
+
+        jvmMain.dependencies {
+            // ktor jvm engine
+            implementation(libs.ktor.client.cio)
+
+            // logging and tracing
+            implementation(libs.opentelemetry.ktor)
+
+            // metrics and instrumentation
+            implementation(project.dependencies.platform(libs.micrometer.bom))
+            implementation(libs.ktor.metrics.micrometer)
+            implementation(libs.micrometer.core)
+            implementation(libs.opentelemetry.api)
+
+            // serialization
+            implementation(libs.ktor.serialization.kotlinx.json)
+
+            // kotlin
+            implementation(libs.kotlin.reflect)
+        }
+    }
+}

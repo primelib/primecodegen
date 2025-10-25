@@ -19,7 +19,7 @@ var Template = templateapi.Config{
 		},
 		// core - factory
 		{
-			SourceTemplate:  "api_factory.gohtml",
+			SourceTemplate:  "api_factory.common.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
 			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Root | toFilePath }}",
 			TargetFileName:  "{{ .Metadata.Name }}Factory.java",
@@ -27,7 +27,7 @@ var Template = templateapi.Config{
 			Kind:            templateapi.KindAPI,
 		},
 		{
-			SourceTemplate:  "api_factoryspec.gohtml",
+			SourceTemplate:  "api_factoryspec.common.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
 			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Root | toFilePath }}",
 			TargetFileName:  "{{ .Metadata.Name }}FactorySpec.java",

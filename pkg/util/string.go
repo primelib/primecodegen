@@ -24,6 +24,15 @@ func UpperCaseFirstLetter(input string) string {
 	return strings.ToUpper(input[0:1]) + input[1:]
 }
 
+// UpperCaseFirstLetterOnly capitalizes the first letter and lowercases the rest of the input string
+func UpperCaseFirstLetterOnly(input string) string {
+	if input == "" {
+		return input
+	}
+
+	return strings.ToUpper(input[0:1]) + strings.ToLower(input[1:])
+}
+
 // LowerCaseFirstLetter lowercases the first letter of the input string
 func LowerCaseFirstLetter(input string) string {
 	if input == "" {

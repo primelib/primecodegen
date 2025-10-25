@@ -16,6 +16,12 @@ func Generators(specFile string, conf appconf.Configuration) []generator.Generat
 		Maintainers: conf.Maintainers,
 		Opts:        conf.Presets.Java,
 	})
+	generators = addGeneratorIfEnabled(generators, conf.Presets.Kotlin.Enabled, &KotlinLibraryGenerator{
+		APISpec:     specFile,
+		Repository:  conf.Repository,
+		Maintainers: conf.Maintainers,
+		Opts:        conf.Presets.Kotlin,
+	})
 	generators = addGeneratorIfEnabled(generators, conf.Presets.Go.Enabled, &GoLibraryGenerator{
 		APISpec:     specFile,
 		Repository:  conf.Repository,

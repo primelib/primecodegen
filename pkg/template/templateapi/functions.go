@@ -42,6 +42,9 @@ var TemplateFunctions = template.FuncMap{
 	"upperCaseFirstLetter": func(input string) string {
 		return util.UpperCaseFirstLetter(input)
 	},
+	"upperCaseFirstLetterOnly": func(input string) string {
+		return util.UpperCaseFirstLetterOnly(input)
+	},
 	"trimNonASCII": func(input string) string {
 		return util.TrimNonASCII(input)
 	},

@@ -9,6 +9,7 @@ import (
 
 	openapi_go "github.com/primelib/primecodegen/pkg/generator/openapi-go"
 	openapi_java "github.com/primelib/primecodegen/pkg/generator/openapi-java"
+	openapi_kotlin "github.com/primelib/primecodegen/pkg/generator/openapi-kotlin"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
 	"github.com/primelib/primecodegen/pkg/openapi/openapipatch"
@@ -20,6 +21,7 @@ import (
 var generators = []openapigenerator.CodeGenerator{
 	openapi_go.NewGenerator(),
 	openapi_java.NewGenerator(),
+	openapi_kotlin.NewGenerator(),
 }
 
 func GenerateCmd() *cobra.Command {
