@@ -140,6 +140,7 @@ type Service struct {
 type Operation struct {
 	Name                     string                              `yaml:"name,omitempty"`
 	Path                     string                              `yaml:"path"`
+	PathSegments             []string                            `yaml:"pathSegments,omitempty"`
 	Method                   string                              `yaml:"method"`
 	Summary                  string                              `yaml:"summary,omitempty"`     // Short description
 	Description              string                              `yaml:"description,omitempty"` // Long description

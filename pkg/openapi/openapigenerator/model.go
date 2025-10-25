@@ -192,6 +192,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 			operation := Operation{
 				Name:             gen.ToClassName(op.Value.OperationId),
 				Path:             path.Key,
+				PathSegments:     strings.Split(strings.Trim(path.Key, "/"), "/"),
 				Method:           op.Key,
 				Summary:          op.Value.Summary,
 				Description:      op.Value.Description,

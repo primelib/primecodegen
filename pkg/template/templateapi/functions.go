@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -91,6 +92,10 @@ var TemplateFunctions = template.FuncMap{
 		}
 
 		return input
+	},
+	"escapeStringValue": func(input string) string {
+		escaped := strconv.Quote(input)
+		return escaped[1 : len(escaped)-1]
 	},
 	"wrapIn": func(left string, right string, input string) string {
 		return left + input + right

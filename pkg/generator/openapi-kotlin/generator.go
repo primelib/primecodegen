@@ -349,10 +349,10 @@ func (g *KotlinGenerator) PostProcessType(codeType openapigenerator.CodeType) op
 
 	// VoidType
 	if codeType.IsVoid {
-		codeType.Declaration = "void"
-		codeType.QualifiedDeclaration = "void"
-		codeType.Type = "void"
-		codeType.QualifiedType = "void"
+		codeType.Declaration = "Unit"
+		codeType.QualifiedDeclaration = "Unit"
+		codeType.Type = "Unit"
+		codeType.QualifiedType = "Unit"
 		codeType.IsPostProcessed = true
 		return codeType
 	}
@@ -401,10 +401,10 @@ func (g *KotlinGenerator) PostProcessType(codeType openapigenerator.CodeType) op
 		codeType.Type = "Map<" + codeType.TypeArgs[0].Type + ", " + codeType.TypeArgs[1].Type + ">"
 		codeType.QualifiedType = "Map<" + codeType.TypeArgs[0].Type + ", " + qualifier + codeType.TypeArgs[1].QualifiedType + ">"
 	default:
-		codeType.Declaration = g.BoxType(codeType.Name, codeType.IsNullable)
-		codeType.QualifiedDeclaration = qualifier + g.BoxType(codeType.Name, codeType.IsNullable)
-		codeType.Type = g.BoxType(codeType.Name, codeType.IsNullable)
-		codeType.QualifiedType = qualifier + g.BoxType(codeType.Name, codeType.IsNullable)
+		codeType.Declaration = codeType.Name
+		codeType.QualifiedDeclaration = qualifier + codeType.Name
+		codeType.Type = codeType.Name
+		codeType.QualifiedType = qualifier + codeType.Name
 	}
 
 	codeType.IsPostProcessed = true
@@ -425,8 +425,6 @@ func (g *KotlinGenerator) TypeToImport(iType openapigenerator.CodeType) string {
 	return g.typeToImport[typeName]
 }
 
-const googleJavaFormatBinary = "google-java-format"
-
 func (g *KotlinGenerator) PostProcessing(files map[string]templateapi.RenderedFile) error {
 	if os.Getenv("PRIMECODEGEN_SKIP_POST_PROCESSING") == "true" {
 		slog.Debug("Skipping post processing kotlin files")
@@ -436,18 +434,6 @@ func (g *KotlinGenerator) PostProcessing(files map[string]templateapi.RenderedFi
 	// TODO: cli tool for kotlin formatting
 
 	return nil
-}
-
-func (g *KotlinGenerator) BoxType(codeType string, box bool) string {
-	if !box {
-		return codeType
-	}
-
-	if boxedType, ok := g.boxedTypes[codeType]; ok {
-		return boxedType
-	}
-
-	return codeType
 }
 
 func NewGenerator() *KotlinGenerator {
@@ -540,16 +526,6 @@ func NewGenerator() *KotlinGenerator {
 			'}',  // close curly brace
 			'[',  // open square bracket
 			']',  // close square bracket
-		},
-		boxedTypes: map[string]string{
-			"boolean": "Boolean",
-			"int":     "Integer",
-			"long":    "Long",
-			"short":   "Short",
-			"float":   "Float",
-			"double":  "Double",
-			"byte":    "Byte",
-			"char":    "Character",
 		},
 		typeToImport: map[string]string{
 			"OffsetDateTime": "java.time.OffsetDateTime",

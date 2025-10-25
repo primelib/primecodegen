@@ -7,6 +7,7 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import io.ktor.util.url
 import kotlinx.coroutines.*
 
 import {{ $.Common.Packages.Root }}.{{ .Metadata.Name }}FactorySpec
@@ -55,18 +56,22 @@ class {{ .Metadata.Name }}Api(
         {{ $param.Name }}: {{ if not $param.Required }}{{ $param.Type.Type }}? = null{{ else }}{{ $param.Type.Type }}{{ end }}{{ if notLast $op.MutableParameters $i }},{{ end }}
     {{- end }}
     ): {{ $op.ReturnType.QualifiedType }} {
-        val url = buildString {
-            append(spec.baseUrl)
-            append("{{ $op.Path }}")
-        {{- if $op.PathParameters }}
-        {{- range $p := $op.PathParameters }}
-            replace("{{ "{" }}{{ $p.Name }}{{ "}" }}", {{ $p.Name }}.toString())
-        {{- end }}
-        {{- end }}
+        val url = url {
+            takeFrom(spec.baseUrl)
+            {{- if $op.PathSegments }}
+            path({{- range $seg := $op.PathSegments }}"{{ $seg | escapeStringValue }}",{{- end }})
+            {{- end }}
+            {{- range $qp := $op.QueryParameters }}
+            {{ $qp.Name }}.let { parameters.append("{{ $qp.Name }}", it.toString()) }
+            {{- end }}
         }
 
         return httpClient.request(url) {
             method = HttpMethod.{{ $op.Method | upperCaseFirstLetterOnly }}
+            /*
+            contentType(ContentType.Application.Json)
+            setBody("Body content")
+            */
         }.body()
     }
 
