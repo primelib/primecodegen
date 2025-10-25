@@ -1,0 +1,28 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Root }};
+
+import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}Api;
+
+import kotlin.reflect.KClass
+
+import io.opentelemetry.api.OpenTelemetry
+
+@DslMarker
+annotation class {{ .Metadata.Name }}FactoryDsl
+
+/**
+* A specification to construct a client instance.
+*/
+@{{ .Metadata.Name }}FactoryDsl
+open class Jvm{{ .Metadata.Name }}FactorySpec<T : Any>(api: KClass<T>) : {{ .Metadata.Name }}FactorySpec<T>(api) {
+    /**
+     * OpenTelemetry instance for tracing.
+     */
+    var openTelemetry: OpenTelemetry? = null
+
+    override fun validate() {
+        super.validate()
+    }
+}

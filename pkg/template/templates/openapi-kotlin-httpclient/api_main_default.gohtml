@@ -1,0 +1,74 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Package }};
+
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import kotlinx.coroutines.*
+
+import {{ $.Common.Packages.Root }}.{{ .Metadata.Name }}FactorySpec
+
+{{- range .Common.Models }}
+import {{ $.Common.Packages.Models }}.{{ .Name }}
+{{- end }}
+
+import org.jetbrains.annotations.ApiStatus;
+
+/**
+* {{ .Metadata.Name }} API client implemented using Ktor HTTP client.
+*/
+class {{ .Metadata.Name }}Api(
+    private val spec: {{ .Metadata.Name }}FactorySpec<{{ .Metadata.Name }}Api>,
+    private val httpClient: HttpClient,
+) {
+
+{{ range $op := .Common.Operations }}
+    /**
+     * {{ $op.Name }}
+     * {{ $op.Summary }}
+    {{- if $op.Description }}
+     * {{ $op.Description | escapeJavadoc | commentMultiLine "     * " }}
+    {{- end }}
+     *
+    {{- range $param := $op.MutableParameters }}
+     * @param {{ $param.Name }} {{ $param.Description | commentMultiLine "     * " | escapeJavadoc }}
+    {{- end }}
+    {{- if $op.Documentation }}
+    {{- range $doc := $op.Documentation }}
+     * @see <a href="{{ $doc.URL }}">{{ $doc.Title }}</a>
+    {{- end }}
+    {{- end }}
+    {{- if $op.Deprecated }}
+     * @deprecated{{ if $op.DeprecatedReason }} {{ $op.DeprecatedReason }}{{ end }}
+    {{- end }}
+     */
+    {{- if eq $op.Stability "experimental" }}
+    {{- end }}
+    {{- if $op.Deprecated }}
+    @Deprecated("{{ if $op.DeprecatedReason }}{{ $op.DeprecatedReason }}{{ else }}Deprecated operation{{ end }}")
+    {{- end }}
+    suspend fun {{ $op.Name | toFunctionName }}(
+    {{- range $i, $param := $op.MutableParameters }}
+        {{ $param.Name }}: {{ if not $param.Required }}{{ $param.Type.Type }}? = null{{ else }}{{ $param.Type.Type }}{{ end }}{{ if notLast $op.MutableParameters $i }},{{ end }}
+    {{- end }}
+    ): {{ $op.ReturnType.QualifiedType }} {
+        val url = buildString {
+            append(spec.baseUrl)
+            append("{{ $op.Path }}")
+        {{- if $op.PathParameters }}
+        {{- range $p := $op.PathParameters }}
+            replace("{{ "{" }}{{ $p.Name }}{{ "}" }}", {{ $p.Name }}.toString())
+        {{- end }}
+        {{- end }}
+        }
+
+        return httpClient.request(url) {
+            method = HttpMethod.{{ $op.Method | upperCaseFirstLetterOnly }}
+        }.body()
+    }
+
+{{ end }}
+}

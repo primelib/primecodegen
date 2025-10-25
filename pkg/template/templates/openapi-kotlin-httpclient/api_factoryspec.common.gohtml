@@ -1,0 +1,41 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Root }};
+
+import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}Api;
+
+import kotlin.reflect.KClass
+
+/**
+* A specification to construct a client instance.
+*/
+open class {{ .Metadata.Name }}FactorySpec<T : Any>(
+    /** The API interface to create */
+    val api: KClass<T>,
+) {
+    /**
+     * The name of the backend service.
+     */
+    var backendName: String = "{{ .Metadata.Name }}"
+
+    /**
+     * The base URL of the service.
+     */
+    var baseUrl: String = "{{ .Common.Endpoints.DefaultEndpoint }}"
+
+    /**
+     * The logging level.
+     */
+    var logLevel: String = "none"
+
+    /**
+     * Set to true to allow insecure connections.
+     */
+    var insecure: Boolean = false
+
+    open fun validate() {
+        require(baseUrl.isNotBlank()) { "baseUrl must not be blank" }
+        require(logLevel.isNotBlank()) { "logLevel must not be blank" }
+    }
+}

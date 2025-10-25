@@ -1,0 +1,92 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Root }}
+
+import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}Api
+import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}ConsumerApi
+
+{{- range $service := .Common.Services }}
+import {{ $.Common.Packages.Client }}.{{ $service.Type }}Api
+import {{ $.Common.Packages.Client }}.{{ $service.Type }}ConsumerApi
+{{- end }}
+
+import kotlin.reflect.KClass
+import kotlin.reflect.full.isSuperclassOf
+
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.logging.DEFAULT
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.http.HttpHeaders
+import io.opentelemetry.instrumentation.ktor.v3_0.KtorClientTelemetry
+
+inline fun <T : Any> create{{ .Metadata.Name }}(api: KClass<T>, block: Jvm{{ .Metadata.Name }}FactorySpec<T>.() -> Unit ): T {
+    val spec = Jvm{{ .Metadata.Name }}FactorySpec(api).apply(block)
+    spec.validate()
+    return buildClient(api, spec)
+}
+
+object {{ .Metadata.Name }}Factory {
+    fun <T : Any> create(api: KClass<T>, block: Jvm{{ .Metadata.Name }}FactorySpec<T>.() -> Unit): T = create{{ .Metadata.Name }}(api, block)
+}
+
+@Suppress("UNCHECKED_CAST")
+fun <T : Any> buildClient(api: KClass<T>, spec: JvmKeycloakClientFactorySpec<T>): T {
+    // create ktor http client
+    val httpClient = HttpClient {
+        // logging
+        install(Logging) {
+            logger = Logger.DEFAULT
+        }
+
+        // open-telemetry
+        spec.openTelemetry?.let { otlp ->
+            install(KtorClientTelemetry) {
+                setOpenTelemetry(otlp)
+                capturedRequestHeaders(HttpHeaders.UserAgent)
+                capturedResponseHeaders(HttpHeaders.ContentType)
+            }
+        }
+
+        /*
+        // content negotiation
+        install(ContentNegotiation) {
+        json(json)
+        }
+
+        // Default headers
+        install(DefaultRequest) {
+        url(spec.baseUrl)
+        header("User-Agent", "${spec.backendName}/ktor-client")
+        }
+
+        // Retry policy, timeouts, etc.
+        install(HttpTimeout) {
+        requestTimeoutMillis = 30_000
+        connectTimeoutMillis = 10_000
+        }
+
+        // tracing
+        install(Tracing) {
+        // Works with OpenTelemetry if properly configured in your app
+        traceConfig {
+        sampleRate = 1.0 // sample all requests (adjust for prod)
+        }
+        }
+        */
+    }
+
+    // find matching constructor
+    val kClass = spec.api
+    val ctor = kClass.constructors.find { constructor ->
+        val params = constructor.parameters
+        params.size == 2 &&
+                {{ .Metadata.Name }}FactorySpec::class.isSuperclassOf(params[0].type.classifier as KClass<*>) &&
+                params[1].type.classifier == HttpClient::class
+    } ?: throw IllegalArgumentException("No matching constructor found for ${kClass.simpleName}. Expected ({{ .Metadata.Name }}FactorySpec, HttpClient)")
+
+    // construct the client
+    return ctor.call(spec, httpClient)
+}

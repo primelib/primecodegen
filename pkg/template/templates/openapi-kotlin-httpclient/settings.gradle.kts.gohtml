@@ -1,0 +1,16 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.SupportOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+pluginManagement {
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "{{ .Metadata.ArtifactId }}"
+
+include(
+    "core"
+)

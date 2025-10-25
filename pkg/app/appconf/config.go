@@ -57,6 +57,7 @@ type GeneratorConf struct {
 type PresetConf struct {
 	Go         GoLanguageOptions         `yaml:"go"`
 	Java       JavaLanguageOptions       `yaml:"java"`
+	Kotlin     KotlinLanguageOptions     `yaml:"kotlin"`
 	Python     PythonLanguageOptions     `yaml:"python"`
 	CSharp     CSharpLanguageOptions     `yaml:"csharp"`
 	Typescript TypescriptLanguageOptions `yaml:"typescript"`
@@ -69,6 +70,9 @@ func (c PresetConf) EnabledCount() int {
 		enabledCount++
 	}
 	if c.Java.Enabled {
+		enabledCount++
+	}
+	if c.Kotlin.Enabled {
 		enabledCount++
 	}
 	if c.Python.Enabled {
@@ -99,6 +103,14 @@ type GoLanguageOptions struct {
 }
 
 type JavaLanguageOptions struct {
+	Enabled     bool     `yaml:"enabled"`
+	IgnoreFiles []string `yaml:"ignoreFiles"`
+
+	GroupId    string `yaml:"groupId"`
+	ArtifactId string `yaml:"artifactId"`
+}
+
+type KotlinLanguageOptions struct {
 	Enabled     bool     `yaml:"enabled"`
 	IgnoreFiles []string `yaml:"ignoreFiles"`
 

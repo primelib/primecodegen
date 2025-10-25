@@ -1,0 +1,40 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.EnumEachTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Package }};
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+import org.jetbrains.annotations.ApiStatus;
+
+/**
+ * {{ .Enum.Name }}
+{{- if .Enum.Description }}
+ *
+ * {{ .Enum.Description | commentMultiLine " * " | escapeJavadoc }}
+{{- end }}
+ */
+@Serializable
+{{- if .Enum.Deprecated }}
+@Deprecated(message = "{{ if .Enum.DeprecatedReason }}{{ .Enum.DeprecatedReason }}{{ else }}This enum is deprecated{{ end }}")
+{{- end }}
+enum class {{ .Enum.Name }}(
+    val value: {{ .Enum.ValueType }}
+){{ if .Enum.Parent.Declaration }} : {{ .Enum.Parent.Declaration }}{{ end }} {
+    {{- range $i, $p := .Enum.AllowedValues }}
+    {{- if $p.Description }}
+    /**
+     * {{ $p.Description | commentSingleLine }}
+     */
+    {{- end }}
+    @SerialName("{{ $p.Value }}")
+    {{ $p.Name }}("{{ $p.Value }}"),
+    {{- end }}
+    ;
+
+    companion object {
+        fun fromValue(value: {{ $.Enum.ValueType }}): {{ $.Enum.Name }} = entries.find { it.value == value }
+            ?: throw IllegalArgumentException("Unknown {{ $.Enum.Name }} value: $value")
+    }
+}
