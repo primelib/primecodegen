@@ -217,7 +217,8 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 
 			// operation parameters
 			var addedParameters []string
-			for _, param := range op.Value.Parameters {
+			allParams := append(path.Value.Parameters, op.Value.Parameters...)
+			for _, param := range allParams {
 				if slices.Contains(addedParameters, gen.ToParameterName(param.Name)) {
 					continue
 				}
