@@ -15,6 +15,7 @@ var commonPackages = openapigenerator.CommonPackages{
 	Root:       "",
 	Client:     "",
 	Models:     "",
+	Responses:  "",
 	Enums:      "",
 	Operations: "",
 	Auth:       "",

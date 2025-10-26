@@ -48,6 +48,7 @@ func (g *GoGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		Root:       "client",
 		Client:     "client",
 		Models:     "models",
+		Responses:  "responses",
 		Enums:      "enums",
 		Operations: "operations",
 		Auth:       "auth",

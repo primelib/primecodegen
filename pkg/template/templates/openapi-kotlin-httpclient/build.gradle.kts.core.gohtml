@@ -23,6 +23,7 @@ kotlin {
             // serialization
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.ktor.serialization.kotlinx.xml)
 
             // logging and tracing
             implementation(libs.ktor.client.logging)
@@ -50,9 +51,6 @@ kotlin {
             implementation(libs.ktor.metrics.micrometer)
             implementation(libs.micrometer.core)
             implementation(libs.opentelemetry.api)
-
-            // serialization
-            implementation(libs.ktor.serialization.kotlinx.json)
 
             // kotlin
             implementation(libs.kotlin.reflect)

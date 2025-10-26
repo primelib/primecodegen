@@ -59,6 +59,7 @@ func (g *KotlinGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		Root:       rootPackagePath,
 		Client:     rootPackagePath + ".client",
 		Models:     rootPackagePath + ".models",
+		Responses:  rootPackagePath + ".responses",
 		Enums:      rootPackagePath + ".enums",
 		Operations: rootPackagePath + ".operations",
 		Auth:       rootPackagePath + ".auth",

@@ -28,6 +28,7 @@ type CommonPackages struct {
 	Root       string
 	Client     string
 	Models     string
+	Responses  string
 	Enums      string
 	Operations string
 	Auth       string
@@ -140,7 +141,7 @@ type Service struct {
 type Operation struct {
 	Name                     string                              `yaml:"name,omitempty"`
 	Path                     string                              `yaml:"path"`
-	PathSegments             []string                            `yaml:"pathSegments,omitempty"`
+	PathSegments             []PathSegment                       `yaml:"pathSegments,omitempty"`
 	Method                   string                              `yaml:"method"`
 	Summary                  string                              `yaml:"summary,omitempty"`     // Short description
 	Description              string                              `yaml:"description,omitempty"` // Long description
@@ -226,6 +227,12 @@ func (o *Operation) AddParameter(parameter Parameter) {
 
 	// replace original FieldName in method path with parameter name
 	o.Path = strings.Replace(o.Path, "{"+parameter.FieldName+"}", "{"+parameter.Name+"}", -1)
+}
+
+type PathSegment struct {
+	Value         string
+	IsParameter   bool
+	ParameterName string
 }
 
 type Parameter struct {
