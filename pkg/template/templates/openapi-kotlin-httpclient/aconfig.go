@@ -69,6 +69,15 @@ var Template = templateapi.Config{
 			Type:            templateapi.TypeEnumEach,
 			Kind:            templateapi.KindModel,
 		},
+		// core - operation response models
+		{
+			SourceTemplate:  "response.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "core/src/commonMain/kotlin/{{ .Common.Packages.Responses | toFilePath }}",
+			TargetFileName:  "{{ .Operation.Name }}Response.kt",
+			Type:            templateapi.TypeOperationEach,
+			Kind:            templateapi.KindAPI,
+		},
 		// support files - docs
 		{
 			Description:    "README.md",

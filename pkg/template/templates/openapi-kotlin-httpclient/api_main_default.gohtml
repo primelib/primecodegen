@@ -1,20 +1,21 @@
 {{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
 {{- template "header-singleline" }}
 
-package {{ .Package }};
+package {{ .Package }}
 
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
 import io.ktor.util.url
 import kotlinx.coroutines.*
 
 import {{ $.Common.Packages.Root }}.{{ .Metadata.Name }}FactorySpec
 
-{{- range .Common.Models }}
-import {{ $.Common.Packages.Models }}.{{ .Name }}
-{{- end }}
+import {{ $.Common.Packages.Models }}.*
+import {{ $.Common.Packages.Responses }}.*
 
 import org.jetbrains.annotations.ApiStatus;
 
@@ -33,6 +34,7 @@ class {{ .Metadata.Name }}Api(
     {{- if $op.Description }}
      * {{ $op.Description | escapeJavadoc | commentMultiLine "     * " }}
     {{- end }}
+     * API Method: {{ $op.Method | upperCase }} {{ $op.Path }}
      *
     {{- range $param := $op.MutableParameters }}
      * @param {{ $param.Name }} {{ $param.Description | commentMultiLine "     * " | escapeJavadoc }}
@@ -42,38 +44,62 @@ class {{ .Metadata.Name }}Api(
      * @see <a href="{{ $doc.URL }}">{{ $doc.Title }}</a>
     {{- end }}
     {{- end }}
-    {{- if $op.Deprecated }}
-     * @deprecated{{ if $op.DeprecatedReason }} {{ $op.DeprecatedReason }}{{ end }}
-    {{- end }}
      */
     {{- if eq $op.Stability "experimental" }}
     {{- end }}
     {{- if $op.Deprecated }}
-    @Deprecated("{{ if $op.DeprecatedReason }}{{ $op.DeprecatedReason }}{{ else }}Deprecated operation{{ end }}")
+    @Deprecated(message = "{{ if $op.DeprecatedReason }}{{ $op.DeprecatedReason }}{{ else }}Deprecated operation{{ end }}")
     {{- end }}
     suspend fun {{ $op.Name | toFunctionName }}(
     {{- range $i, $param := $op.MutableParameters }}
         {{ $param.Name }}: {{ if not $param.Required }}{{ $param.Type.Type }}? = null{{ else }}{{ $param.Type.Type }}{{ end }}{{ if notLast $op.MutableParameters $i }},{{ end }}
     {{- end }}
-    ): {{ $op.ReturnType.QualifiedType }} {
-        val url = url {
-            takeFrom(spec.baseUrl)
+    ): {{ $op.Name }}Response {
+        val url = URLBuilder(spec.baseUrl).apply {
             {{- if $op.PathSegments }}
-            path({{- range $seg := $op.PathSegments }}"{{ $seg | escapeStringValue }}",{{- end }})
+            path({{- range $i, $seg := $op.PathSegments }}{{ if $seg.IsParameter }}{{ $seg.ParameterName }}{{ else }}"{{ $seg.Value | escapeStringValue }}"{{ end }}{{ if notLast $op.PathSegments $i }}, {{ end }}{{- end }})
+            {{- end }}
+            {{- if $op.HeaderParameters }}
+            headers {
+                {{- range $qp := $op.HeaderParameters }}
+                {{- if $qp.StaticValue }}
+                append("{{ $qp.FieldName }}", "{{ $qp.StaticValue }}")
+                {{- else }}
+                {{ $qp.Name }}?.let { append("{{ $qp.FieldName }}", it.toString()) }}
+                {{- end }}
+                {{- end }}
+            }
             {{- end }}
             {{- range $qp := $op.QueryParameters }}
-            {{ $qp.Name }}.let { parameters.append("{{ $qp.Name }}", it.toString()) }
+            {{ $qp.Name }}?.let { parameters.append("{{ $qp.FieldName }}", it.toString()) }
             {{- end }}
+        }.build()
+
+        return try {
+            val response: HttpResponse = httpClient.put(url) {
+                {{- range $hp := $op.HeaderParameters }}
+                {{- if not $hp.StaticValue }}
+                {{ $hp.Name }}?.let { headers.append("{{ $hp.FieldName }}", it.toString()) }
+                {{- end }}
+                {{- end }}
+                {{- if $op.BodyParameter }}
+                setBody({{ $op.BodyParameter.Name }})
+                {{- end }}
+            }
+
+            when (response.status) {
+                HttpStatusCode.OK -> {{ $op.Name }}Response.Ok(response.body())
+                else -> {{ $op.Name }}Response.Unknown(
+                    status = response.status.value,
+                    rawBody = response.bodyAsText()
+                )
+            }
+        } catch (e: Exception) {
+            {{ $op.Name }}Response.Unknown(
+                status = HttpStatusCode.InternalServerError.value,
+                rawBody = e.message
+            )
         }
-
-        return httpClient.request(url) {
-            method = HttpMethod.{{ $op.Method | upperCaseFirstLetterOnly }}
-            /*
-            contentType(ContentType.Application.Json)
-            setBody("Body content")
-            */
-        }.body()
     }
-
 {{ end }}
 }

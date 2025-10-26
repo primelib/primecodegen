@@ -1,0 +1,37 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.OperationEachTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ $.Common.Packages.Responses }}
+
+{{- range .Common.Models }}
+import {{ $.Common.Packages.Models }}.{{ .Name }}
+{{- end }}
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+import org.jetbrains.annotations.ApiStatus
+
+/**
+* {{.Operation.Name}}
+{{- if .Operation.Description }}
+* <p>
+* {{ .Operation.Description | escapeJavadoc | commentMultiLine " * " }}
+{{- end }}
+*/
+{{- if .Operation.Deprecated }}
+@Deprecated(message = "{{ if .Operation.DeprecatedReason }}{{ .Operation.DeprecatedReason | escapeJavadoc }}{{ else }}Deprecated operation{{ end }}")
+{{- end }}
+@Serializable
+sealed class {{ .Operation.Name }}Response {
+
+    @Serializable
+    data class Ok(val data: {{ .Operation.ReturnType.QualifiedType }}) : {{ .Operation.Name }}Response()
+
+    // default fallback for untyped or unexpected responses
+    @Serializable
+    data class Unknown(
+        val status: Int,
+        val rawBody: String? = null
+    ) : {{ .Operation.Name }}Response()
+}

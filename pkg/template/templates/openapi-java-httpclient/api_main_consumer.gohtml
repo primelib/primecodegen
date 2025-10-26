@@ -45,6 +45,7 @@ public class {{ .Metadata.Name }}ConsumerApi {
     {{- if $op.Description }}
     * {{ $op.Description | escapeJavadoc | commentMultiLine "    * " }}
     {{- end }}
+    * API Method: {{ $op.Method | upperCase }} {{ $op.Path }}
     *
     {{- if $op.MutableParameters }}
     * @param spec a consumer that creates the payload for this operation. Supports the following properties:

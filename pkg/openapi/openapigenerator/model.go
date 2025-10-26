@@ -192,7 +192,6 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 			operation := Operation{
 				Name:             gen.ToClassName(op.Value.OperationId),
 				Path:             path.Key,
-				PathSegments:     strings.Split(strings.Trim(path.Key, "/"), "/"),
 				Method:           op.Key,
 				Summary:          op.Value.Summary,
 				Description:      op.Value.Description,
@@ -346,6 +345,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				}
 			}
 
+			operation.PathSegments = BuildPathSegments(path.Key, operation.PathParameters)
 			operation.Imports = uniqueSortImports(operation.Imports)
 			operation.Extensions = op.Value.Extensions
 			operations = append(operations, operation)
@@ -353,6 +353,38 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 	}
 
 	return operations, nil
+}
+
+func BuildPathSegments(path string, pathParameters []Parameter) []PathSegment {
+	segments := strings.Split(strings.Trim(path, "/"), "/")
+	var pathSegments []PathSegment
+
+	for _, segment := range segments {
+		if strings.HasPrefix(segment, "{") && strings.HasSuffix(segment, "}") {
+			name := strings.TrimSuffix(strings.TrimPrefix(segment, "{"), "}")
+			parameterName := ""
+
+			for _, p := range pathParameters {
+				if p.FieldName == name {
+					parameterName = p.Name
+					break
+				}
+			}
+
+			pathSegments = append(pathSegments, PathSegment{
+				Value:         segment,
+				IsParameter:   true,
+				ParameterName: parameterName,
+			})
+		} else {
+			pathSegments = append(pathSegments, PathSegment{
+				Value:       segment,
+				IsParameter: false,
+			})
+		}
+	}
+
+	return pathSegments
 }
 
 type ModelOpts struct {
