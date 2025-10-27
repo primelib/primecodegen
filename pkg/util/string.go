@@ -87,3 +87,18 @@ var stripRegex = regexp.MustCompile(ansi)
 func StripANSI(str string) string {
 	return stripRegex.ReplaceAllString(str, "")
 }
+
+// Ellipsize truncates a string to the specified maximum length and appends "..." if it was truncated.
+func Ellipsize(s string, maxLength int) string {
+	runes := []rune(s)
+	if len(runes) <= maxLength {
+		return s
+	}
+	if maxLength <= 0 {
+		return ""
+	}
+	if maxLength <= 3 {
+		return string(runes[:maxLength])
+	}
+	return string(runes[:maxLength-3]) + "..."
+}

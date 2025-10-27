@@ -88,3 +88,15 @@ func getOptionalStringConfig(config map[string]interface{}, key string) (string,
 	}
 	return s, true
 }
+
+func getOptionalBoolConfig(config map[string]interface{}, key string) (bool, bool) {
+	val, ok := config[key]
+	if !ok {
+		return false, false
+	}
+	b, ok := val.(bool)
+	if !ok {
+		return false, false
+	}
+	return b, true
+}

@@ -62,6 +62,7 @@ func PatchCmd() *cobra.Command {
 
 	cmd.AddCommand(PatchListCmd())
 	cmd.AddCommand(PatchValidateCmd())
+	cmd.AddCommand(PatchGenerateCmd())
 
 	return cmd
 }
@@ -233,4 +234,53 @@ func Patch(inputFiles []string, output string, inputPatches []sharedpatch.SpecPa
 	}
 
 	return nil, nil
+}
+
+func PatchGenerateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "generate",
+		Aliases: []string{},
+		Short:   "Generates a requested patch",
+		Run: func(cmd *cobra.Command, args []string) {
+			// inputs
+			inputFile, _ := cmd.Flags().GetString("input")
+			if inputFile == "" {
+				log.Fatal().Msg("input specification is required")
+			}
+			outputFile, _ := cmd.Flags().GetString("output")
+			if outputFile == "" {
+				log.Fatal().Msg("output file is required")
+			}
+			if len(args) == 0 {
+				log.Fatal().Msg("patch id argument is required")
+			}
+
+			// open document
+			document, err := openapidocument.OpenDocumentFile(inputFile)
+			if err != nil {
+				log.Fatal().Err(err).Msg("failed to open document")
+			}
+			v3Model, err := document.BuildV3Model()
+			if err != nil {
+				log.Fatal().Err(err).Msg("failed to build v3 model")
+			}
+
+			// generate openapi overlay
+			bytes, err := openapipatch.GenerateOpenAPIOverlay(v3Model, args[0])
+			if err != nil {
+				log.Fatal().Err(err).Msg("failed to generate patch")
+			}
+
+			// write patch file
+			err = os.WriteFile(outputFile, bytes, 0644)
+			if err != nil {
+				log.Fatal().Err(err).Msg("failed to write patch to file")
+			}
+		},
+	}
+
+	cmd.Flags().StringP("input", "i", "", "Input Specification(s) (YAML or JSON)")
+	cmd.Flags().StringP("output", "o", "", "Output File")
+
+	return cmd
 }
