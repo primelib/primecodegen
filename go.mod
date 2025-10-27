@@ -17,6 +17,7 @@ require (
 	github.com/pb33f/doctor v0.0.40
 	github.com/pb33f/libopenapi v0.28.1
 	github.com/rs/zerolog v1.34.0
+	github.com/sashabaranov/go-openai v1.41.2
 	github.com/shomali11/parallelizer v0.0.0-20220717173222-a6776fbf40a9
 	github.com/speakeasy-api/openapi-overlay v0.10.3
 	github.com/spf13/cobra v1.10.1
