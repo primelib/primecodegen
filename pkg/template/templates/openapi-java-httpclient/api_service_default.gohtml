@@ -39,24 +39,26 @@ import javax.annotation.processing.Generated;
 public interface {{ .Service.Type }}Api {
 {{ range $op := .Service.Operations }}
     /**
-    * {{ $op.Name }}
-    * {{ $op.Summary }}
+     * {{ $op.Name }}
+     * {{ $op.Summary }}
     {{- if $op.Description }}
-    * {{ $op.Description | commentMultiLine "    * " | escapeJavadoc }}
+     * {{ $op.Description | commentMultiLine "    * " | escapeJavadoc }}
     {{- end }}
-    *
+     *
+     * API Method: {{ $op.Method | upperCase }} {{ $op.Path }}
+     *
     {{- range $param := $op.MutableParameters }}
-    * @param {{ $param.Name }} {{ $param.Description | commentMultiLine "    * " | escapeJavadoc }}
+     * @param {{ $param.Name }} {{ $param.Description | commentMultiLine "    * " | escapeJavadoc }}
     {{- end }}
     {{- if $op.Documentation }}
     {{- range $doc := $op.Documentation }}
-    * @see <a href="{{ $doc.URL }}">{{ $doc.Title }}</a>
+     * @see <a href="{{ $doc.URL }}">{{ $doc.Title }}</a>
     {{- end }}
     {{- end }}
     {{- if $op.Deprecated }}
-    * @deprecated{{ if $op.DeprecatedReason }} {{ $op.DeprecatedReason }}{{ end }}
+     * @deprecated{{ if $op.DeprecatedReason }} {{ $op.DeprecatedReason }}{{ end }}
     {{- end }}
-    */
+     */
     @RequestLine("{{ $op.Method | upperCase }} {{ $op.Path }}{{ if $op.QueryParameters }}?{{ range $i, $p := $op.QueryParameters }}{{ $p.Name }}={{$p.Name | wrapIn "{" "}" }}{{ if notLast $op.QueryParameters $i }}&{{ end }}{{ end }}{{ end }}")
     {{- if $op.HeaderParameters }}
     @Headers({
