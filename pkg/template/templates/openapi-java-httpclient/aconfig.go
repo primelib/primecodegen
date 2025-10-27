@@ -19,7 +19,7 @@ var Template = templateapi.Config{
 		},
 		// core - factory
 		{
-			SourceTemplate:  "api_factory.common.gohtml",
+			SourceTemplate:  "api_factory.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
 			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Root | toFilePath }}",
 			TargetFileName:  "{{ .Metadata.Name }}Factory.java",
@@ -27,7 +27,7 @@ var Template = templateapi.Config{
 			Kind:            templateapi.KindAPI,
 		},
 		{
-			SourceTemplate:  "api_factoryspec.common.gohtml",
+			SourceTemplate:  "api_factoryspec.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
 			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Root | toFilePath }}",
 			TargetFileName:  "{{ .Metadata.Name }}FactorySpec.java",
@@ -109,6 +109,14 @@ var Template = templateapi.Config{
 			TargetDirectory: "spring/src/main/java/{{ .Common.Packages.Root | toFilePath }}/spring",
 			TargetFileName:  "{{ .Metadata.Name }}SpringAutoConfiguration.java",
 			Type:            templateapi.TypeAPIOnce,
+			Kind:            templateapi.KindAPI,
+		},
+		{
+			SourceTemplate:  "spring_factories.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "spring/src/main/resources/META-INF",
+			TargetFileName:  "spring.factories",
+			Type:            templateapi.TypeSupportOnce,
 			Kind:            templateapi.KindAPI,
 		},
 		// support files - docs
