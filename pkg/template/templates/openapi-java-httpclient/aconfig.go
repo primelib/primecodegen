@@ -112,10 +112,10 @@ var Template = templateapi.Config{
 			Kind:            templateapi.KindAPI,
 		},
 		{
-			SourceTemplate:  "spring_factories.gohtml",
+			SourceTemplate:  "spring_auto_configuration_imports.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
-			TargetDirectory: "spring/src/main/resources/META-INF",
-			TargetFileName:  "spring.factories",
+			TargetDirectory: "spring/src/main/resources/META-INF/spring",
+			TargetFileName:  "org.springframework.boot.autoconfigure.AutoConfiguration.imports",
 			Type:            templateapi.TypeSupportOnce,
 			Kind:            templateapi.KindAPI,
 		},
