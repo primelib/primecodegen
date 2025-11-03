@@ -306,7 +306,7 @@ func flattenInnerSchemaObject(doc *libopenapi.DocumentModel[v3.Document], parent
 
 			// Inner objects
 			if slices.Contains(propSchema.Type, "object") {
-				key := util.ToPascalCase(p.Key)
+				key := parentKey + util.ToPascalCase(p.Key)
 				log.Trace().Msg("moving inner schema to components: " + key)
 				if ref, err := moveSchemaIntoComponents(doc, key, p.Value); err != nil {
 					return fmt.Errorf("error moving inner property schema to components: %w", err)
