@@ -1,6 +1,9 @@
 {{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.SupportOnceTemplate*/ -}}
 {{- template "header-hash" }}
 
+[versions]
+spring-boot-version = "3.5.7"
+
 [libraries]
 openfeign-bom = { module = "io.github.openfeign:feign-bom", version = "13.6" }
 resilience4j-bom = { module = "io.github.resilience4j:resilience4j-bom", version = "2.3.0" }
@@ -8,8 +11,10 @@ jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version = "2.20.0"
 micrometer-bom = { module = "io.micrometer:micrometer-bom", version = "1.15.5" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
 slf4j-bom = { module = "org.slf4j:slf4j-bom", version = "2.0.17" }
-spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version = "3.5.7" }
+spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot-version" }
 spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter" }
+spring-boot-autoconfiguration-processor = { module = "org.springframework.boot:spring-boot-autoconfigure-processor", version.ref = "spring-boot-version" }
+spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor", version.ref = "spring-boot-version" }
 primecodegenlib-java-bom = { module = "io.github.primelib.primecodegenlib.java:bom", version = "0.0.6" }
 jspecify = { module = "org.jspecify:jspecify", version = "1.0.0" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version = "26.0.2" }

@@ -44,6 +44,46 @@ public class {{ .Metadata.Name }}SpringAutoConfiguration {
         this.meterRegistry = meterRegistry;
     }
 
+    @Bean
+    @Primary
+    public {{ .Metadata.Name }}Api {{ .Metadata.Name }}Api() {
+        return {{ $.Metadata.Name }}Factory.create(spec -> {
+            spec.api({{ .Metadata.Name }}Api.class);
+            spec.baseUrl(properties.getUrl());
+            spec.auth(buildAuthSpecs(properties));
+            if (properties.getInsecure() != null) {
+                spec.insecure(properties.getInsecure());
+            }
+            if (properties.getBackendName() != null && !properties.getBackendName().isEmpty()) {
+                spec.backendName(properties.getBackendName());
+            }
+            if (properties.getLogLevel() != null && !properties.getLogLevel().isEmpty()) {
+                spec.logLevel(properties.getLogLevel());
+            }
+            spec.meterRegistry(meterRegistry);
+        });
+    }
+
+    @Bean
+    @Primary
+    public {{ .Metadata.Name }}ConsumerApi {{ .Metadata.Name }}ConsumerApi() {
+        return {{ $.Metadata.Name }}Factory.create(spec -> {
+            spec.api({{ .Metadata.Name }}ConsumerApi.class);
+            spec.baseUrl(properties.getUrl());
+            spec.auth(buildAuthSpecs(properties));
+            if (properties.getInsecure() != null) {
+                spec.insecure(properties.getInsecure());
+            }
+            if (properties.getBackendName() != null && !properties.getBackendName().isEmpty()) {
+                spec.backendName(properties.getBackendName());
+            }
+            if (properties.getLogLevel() != null && !properties.getLogLevel().isEmpty()) {
+                spec.logLevel(properties.getLogLevel());
+            }
+            spec.meterRegistry(meterRegistry);
+        });
+    }
+
     {{ range $service := .Common.Services }}
     @Bean
     @Primary
