@@ -1,6 +1,7 @@
 package preset
 
 import (
+	"log/slog"
 	"net/url"
 	"os"
 	"slices"
@@ -8,13 +9,13 @@ import (
 
 	"github.com/primelib/primecodegen/pkg/app/appconf"
 	"github.com/primelib/primecodegen/pkg/app/generator"
-	"github.com/rs/zerolog/log"
 )
 
 type JavaLibraryGenerator struct {
 	APISpec     string                      `json:"-" yaml:"-"`
 	Repository  appconf.RepositoryConf      `json:"-" yaml:"-"`
 	Maintainers []appconf.MaintainerConf    `json:"-" yaml:"-"`
+	Provider    appconf.ProviderConf        `json:"-" yaml:"-"`
 	Opts        appconf.JavaLanguageOptions `json:"-" yaml:"-"`
 }
 
@@ -29,7 +30,7 @@ func (n *JavaLibraryGenerator) GetOutputName() string {
 func (n *JavaLibraryGenerator) Generate(opts generator.GenerateOptions) error {
 	groupId, artifactId := suggestGroupAndArtifactId(n.Opts.GroupId, n.Opts.ArtifactId, n.Repository)
 
-	log.Info().Str("dir", opts.OutputDirectory).Str("spec", n.APISpec).Msg("generating java library")
+	slog.With("dir", opts.OutputDirectory, "spec", n.APISpec).With("coordinates", groupId+":"+artifactId).Info("generating java library")
 	gen := generator.PrimeCodeGenGenerator{
 		OutputName: n.GetOutputName(),
 		APISpec:    n.APISpec,
@@ -42,6 +43,7 @@ func (n *JavaLibraryGenerator) Generate(opts generator.GenerateOptions) error {
 			ArtifactId:       artifactId,
 			Repository:       n.Repository,
 			Maintainers:      n.Maintainers,
+			Provider:         n.Provider,
 		},
 	}
 
@@ -49,39 +51,47 @@ func (n *JavaLibraryGenerator) Generate(opts generator.GenerateOptions) error {
 }
 
 func suggestGroupAndArtifactId(groupId string, artifactId string, repository appconf.RepositoryConf) (string, string) {
-	if groupId != "" || artifactId != "" {
+	if groupId != "" && artifactId != "" {
 		return groupId, artifactId
 	}
 
-	// split into segments
 	parsedURL, err := url.Parse(repository.URL)
 	if err != nil {
-		return "com.example", "unknown-artifact"
+		if groupId == "" {
+			groupId = "com.example"
+		}
+		if artifactId == "" {
+			artifactId = "unknown-artifact"
+		}
+		return groupId, artifactId
 	}
+
 	segments := strings.Split(strings.Trim(parsedURL.Path, "/"), "/")
 	hostSegments := strings.Split(parsedURL.Host, ".")
 	slices.Reverse(hostSegments)
-	if len(segments) == 0 {
-		return "com.example", "unknown-artifact"
+
+	// generate groupId if missing
+	if groupId == "" {
+		groupId = strings.Join(hostSegments, ".")
+		if len(segments) > 1 {
+			groupId += "." + strings.Join(segments[:len(segments)-1], ".")
+		}
+		switch {
+		case strings.HasPrefix(groupId, "com.github"):
+			groupId = strings.Replace(groupId, "com.github", "io.github", 1)
+		case strings.HasPrefix(groupId, "com.gitlab"):
+			groupId = strings.Replace(groupId, "com.gitlab", "io.gitlab", 1)
+		}
+		if envGroup := os.Getenv("PRIMELIB_APP_JAVA_GROUP_ID"); envGroup != "" {
+			groupId = envGroup
+		}
 	}
 
-	// group id
-	groupId = strings.Join(hostSegments, ".")
-	if len(segments) > 1 {
-		groupId += "." + strings.Join(segments[:len(segments)-1], ".") // Include all but last segment
-	}
-	if strings.HasPrefix(groupId, "com.github") {
-		groupId = strings.Replace(groupId, "com.github", "io.github", 1)
-	} else if strings.HasPrefix(groupId, "com.gitlab") {
-		groupId = strings.Replace(groupId, "com.gitlab", "io.gitlab", 1)
-	}
-
-	// artifact id
-	artifactId = segments[len(segments)-1]
-
-	// override with env vars
-	if os.Getenv("PRIMELIB_APP_JAVA_GROUP_ID") != "" {
-		groupId = os.Getenv("PRIMELIB_APP_JAVA_GROUP_ID")
+	// generate artifactId if missing
+	if artifactId == "" && len(segments) > 0 {
+		artifactId = segments[len(segments)-1]
+	} else if artifactId == "" {
+		artifactId = "unknown-artifact"
 	}
 
 	return groupId, artifactId

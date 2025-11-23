@@ -3,6 +3,7 @@ package appcommon
 import (
 	_ "embed"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -92,10 +93,7 @@ func ProcessRepository(platform api.Platform, repo api.Repository, dryRun bool, 
 	// diff spec files
 	diff, err := specutil.DiffSpec("openapi", originalSpecFile.Name(), specFile)
 	if err != nil {
-		log.Warn().Err(err).Msg("failed to diff spec file")
-	}
-	if len(diff.OpenAPI) > 15 {
-		diff.OpenAPI = diff.OpenAPI[:15] // limit to the first n changes, sorted by level
+		slog.With("err", err).Warn("failed to diff spec files")
 	}
 
 	// code generation

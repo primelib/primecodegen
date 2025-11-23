@@ -47,14 +47,16 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 		Enums:               templateData.Enums,
 	}
 	metadata := Metadata{
-		ArtifactGroupId: generatorOpts.ArtifactGroupId,
-		ArtifactId:      generatorOpts.ArtifactId,
-		Name:            strings.TrimSpace(templateData.Name),
-		DisplayName:     strings.TrimSpace(templateData.DisplayName),
-		Description:     templateData.Description,
-		RepositoryUrl:   generatorOpts.RepositoryUrl,
-		LicenseName:     generatorOpts.LicenseName,
-		LicenseUrl:      generatorOpts.LicenseUrl,
+		ArtifactGroupId:  generatorOpts.ArtifactGroupId,
+		ArtifactId:       generatorOpts.ArtifactId,
+		Name:             strings.TrimSpace(templateData.Name),
+		DisplayName:      strings.TrimSpace(templateData.DisplayName),
+		Description:      templateData.Description,
+		RepositoryUrl:    generatorOpts.RepositoryUrl,
+		LicenseName:      generatorOpts.LicenseName,
+		LicenseUrl:       generatorOpts.LicenseUrl,
+		GeneratorNames:   generatorOpts.GeneratorNames,
+		GeneratorOutputs: generatorOpts.GeneratorOutputs,
 	}
 	if metadata.ArtifactId == "" {
 		metadata.ArtifactId = util.ToSlug(metadata.Name)
@@ -63,6 +65,7 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 	var data []interface{}
 	data = append(data, SupportOnceTemplate{
 		Metadata: metadata,
+		Provider: generatorOpts.Provider,
 		Common:   common,
 	})
 	data = append(data, APIOnceTemplate{

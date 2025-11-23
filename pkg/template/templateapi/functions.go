@@ -31,6 +31,9 @@ var TemplateFunctions = template.FuncMap{
 	"firstNonEmpty": func(values ...string) string {
 		return util.FirstNonEmptyString(values...)
 	},
+	"join": func(values []string, sep string) string {
+		return strings.Join(values, sep)
+	},
 	"lowerCase": func(input string) string {
 		return strings.ToLower(input)
 	},

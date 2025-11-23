@@ -23,6 +23,9 @@ type PrimeCodeGenGeneratorConfig struct {
 	ArtifactId       string                   `json:"artifactId" yaml:"artifactId"`
 	Repository       appconf.RepositoryConf   `json:"repository" yaml:"repository"`
 	Maintainers      []appconf.MaintainerConf `json:"maintainers" yaml:"maintainers"`
+	Provider         appconf.ProviderConf     `json:"provider" yaml:"provider"`
+	GeneratorNames   []string                 `json:"generatorNames" yaml:"generatorNames"`
+	GeneratorOutputs []string                 `json:"generatorOutputs" yaml:"generatorOutputs"`
 }
 
 // Name returns the name of the task
@@ -50,10 +53,13 @@ func (n *PrimeCodeGenGenerator) Generate(opts GenerateOptions) error {
 func (n *PrimeCodeGenGenerator) generateCode(opts GenerateOptions) error {
 	// generate
 	return openapicmd.Generate(n.APISpec, n.Config.Patches, n.Config.TemplateLanguage, n.Config.TemplateType, opts.OutputDirectory, openapigenerator.GenerateOpts{
-		ArtifactGroupId: n.Config.GroupId,
-		ArtifactId:      n.Config.ArtifactId,
-		RepositoryUrl:   n.Config.Repository.URL,
-		LicenseName:     n.Config.Repository.LicenseName,
-		LicenseUrl:      n.Config.Repository.LicenseURL,
+		ArtifactGroupId:  n.Config.GroupId,
+		ArtifactId:       n.Config.ArtifactId,
+		RepositoryUrl:    n.Config.Repository.URL,
+		LicenseName:      n.Config.Repository.LicenseName,
+		LicenseUrl:       n.Config.Repository.LicenseURL,
+		Provider:         n.Config.Provider,
+		GeneratorNames:   n.Config.GeneratorNames,
+		GeneratorOutputs: n.Config.GeneratorOutputs,
 	})
 }

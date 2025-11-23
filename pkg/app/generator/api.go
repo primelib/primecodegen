@@ -13,6 +13,8 @@ type Config struct {
 type GenerateOptions struct {
 	ProjectDirectory string
 	OutputDirectory  string
+	GeneratorNames   []string
+	GeneratorOutputs []string
 }
 
 // Generator provides a common interface for all generators

@@ -14,6 +14,7 @@ type GoLibraryGenerator struct {
 	APISpec     string                    `json:"-" yaml:"-"`
 	Repository  appconf.RepositoryConf    `json:"-" yaml:"-"`
 	Maintainers []appconf.MaintainerConf  `json:"-" yaml:"-"`
+	Provider    appconf.ProviderConf      `json:"-" yaml:"-"`
 	Opts        appconf.GoLanguageOptions `json:"-" yaml:"-"`
 }
 
@@ -40,6 +41,7 @@ func (n *GoLibraryGenerator) Generate(opts generator.GenerateOptions) error {
 			ArtifactId:       moduleName,
 			Repository:       n.Repository,
 			Maintainers:      n.Maintainers,
+			Provider:         n.Provider,
 		},
 	}
 

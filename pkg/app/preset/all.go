@@ -10,40 +10,54 @@ func Generators(specFile string, conf appconf.Configuration) []generator.Generat
 	var generators []generator.Generator
 
 	// presets
+	generators = addGeneratorIfEnabled(generators, conf.Presets.Scaffolding.Enabled, &ScaffoldingGenerator{
+		APISpec:     specFile,
+		Repository:  conf.Repository,
+		Maintainers: conf.Maintainers,
+		Provider:    conf.Provider,
+		Opts:        conf.Presets.Scaffolding,
+	})
+
 	generators = addGeneratorIfEnabled(generators, conf.Presets.Java.Enabled, &JavaLibraryGenerator{
 		APISpec:     specFile,
 		Repository:  conf.Repository,
 		Maintainers: conf.Maintainers,
+		Provider:    conf.Provider,
 		Opts:        conf.Presets.Java,
 	})
 	generators = addGeneratorIfEnabled(generators, conf.Presets.Kotlin.Enabled, &KotlinLibraryGenerator{
 		APISpec:     specFile,
 		Repository:  conf.Repository,
 		Maintainers: conf.Maintainers,
+		Provider:    conf.Provider,
 		Opts:        conf.Presets.Kotlin,
 	})
 	generators = addGeneratorIfEnabled(generators, conf.Presets.Go.Enabled, &GoLibraryGenerator{
 		APISpec:     specFile,
 		Repository:  conf.Repository,
 		Maintainers: conf.Maintainers,
+		Provider:    conf.Provider,
 		Opts:        conf.Presets.Go,
 	})
 	generators = addGeneratorIfEnabled(generators, conf.Presets.Python.Enabled, &PythonLibraryGenerator{
 		APISpec:     specFile,
 		Repository:  conf.Repository,
 		Maintainers: conf.Maintainers,
+		Provider:    conf.Provider,
 		Opts:        conf.Presets.Python,
 	})
 	generators = addGeneratorIfEnabled(generators, conf.Presets.CSharp.Enabled, &CSharpLibraryGenerator{
 		APISpec:     specFile,
 		Repository:  conf.Repository,
 		Maintainers: conf.Maintainers,
+		Provider:    conf.Provider,
 		Opts:        conf.Presets.CSharp,
 	})
 	generators = addGeneratorIfEnabled(generators, conf.Presets.Typescript.Enabled, &TypeScriptLibraryGenerator{
 		APISpec:     specFile,
 		Repository:  conf.Repository,
 		Maintainers: conf.Maintainers,
+		Provider:    conf.Provider,
 		Opts:        conf.Presets.Typescript,
 	})
 
