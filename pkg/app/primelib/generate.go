@@ -2,6 +2,7 @@ package primelib
 
 import (
 	"fmt"
+	"log/slog"
 	"path/filepath"
 
 	"github.com/cidverse/go-vcsapp/pkg/platform/api"
@@ -22,10 +23,23 @@ func Generate(dir string, conf appconf.Configuration, repository api.Repository)
 		return nil
 	}
 
+	// generator names
+	var generatorNames []string
+	var generatorOutputs []string
+	for _, gen := range generators {
+		generatorNames = append(generatorNames, gen.Name())
+		if gen.GetOutputName() != "" && gen.GetOutputName() != "root" {
+			generatorOutputs = append(generatorOutputs, gen.GetOutputName())
+		}
+	}
+
 	// execute generators
+	slog.With("generators", generatorNames).Info("starting code generation")
 	for _, gen := range generators {
 		outputDir := filepath.Join(dir, conf.Output)
-		if conf.MultiLanguage() {
+		if gen.GetOutputName() == "root" {
+			outputDir = dir
+		} else if conf.MultiLanguage() {
 			outputDir = filepath.Join(outputDir, gen.GetOutputName())
 		}
 
@@ -33,6 +47,8 @@ func Generate(dir string, conf appconf.Configuration, repository api.Repository)
 		err := gen.Generate(generator.GenerateOptions{
 			ProjectDirectory: dir,
 			OutputDirectory:  outputDir,
+			GeneratorNames:   generatorNames,
+			GeneratorOutputs: generatorOutputs,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to generate code: %w", err)

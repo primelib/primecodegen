@@ -10,6 +10,7 @@ type PythonLibraryGenerator struct {
 	APISpec     string                        `json:"-" yaml:"-"`
 	Repository  appconf.RepositoryConf        `json:"-" yaml:"-"`
 	Maintainers []appconf.MaintainerConf      `json:"-" yaml:"-"`
+	Provider    appconf.ProviderConf          `json:"-" yaml:"-"`
 	Opts        appconf.PythonLanguageOptions `json:"-" yaml:"-"`
 }
 

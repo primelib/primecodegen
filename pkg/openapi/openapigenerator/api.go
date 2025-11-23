@@ -5,6 +5,7 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/primelib/primecodegen/pkg/app/appconf"
 	"github.com/primelib/primecodegen/pkg/openapi/openapiutil"
 )
 
@@ -63,16 +64,19 @@ const (
 )
 
 type GenerateOpts struct {
-	DryRun          bool
-	Doc             *libopenapi.DocumentModel[v3.Document]
-	OutputDir       string
-	TemplateId      string
-	PackageConfig   CommonPackages
-	ArtifactGroupId string
-	ArtifactId      string
-	RepositoryUrl   string
-	LicenseName     string
-	LicenseUrl      string
+	DryRun           bool
+	Doc              *libopenapi.DocumentModel[v3.Document]
+	OutputDir        string
+	TemplateId       string
+	PackageConfig    CommonPackages
+	ArtifactGroupId  string
+	ArtifactId       string
+	RepositoryUrl    string
+	LicenseName      string
+	LicenseUrl       string
+	Provider         appconf.ProviderConf
+	GeneratorNames   []string
+	GeneratorOutputs []string
 }
 
 type TemplateDataOpts struct {

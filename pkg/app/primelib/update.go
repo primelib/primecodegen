@@ -122,8 +122,18 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 			return fmt.Errorf("failed to process patches: %w", err)
 		}
 
+		// api metadata
+		apiTitle := repository.Name
+		if conf.Repository.Name != "" {
+			apiTitle = conf.Repository.Name
+		}
+		apiDescription := repository.Description
+		if conf.Repository.Description != "" {
+			apiDescription = conf.Repository.Description
+		}
+
 		// apply default overlay
-		ov := openapioverlay.CreateInfoOverlay(repository.Name, repository.Description, repository.LicenseName, repository.LicenseURL)
+		ov := openapioverlay.CreateInfoOverlay(apiTitle, apiDescription, repository.LicenseName, repository.LicenseURL)
 		specPatch, err := patch.NewContentPatch("openapi-overlay", ov)
 		if err != nil {
 			return fmt.Errorf("failed to create overlay info patch: %w", err)

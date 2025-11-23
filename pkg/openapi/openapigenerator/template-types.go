@@ -1,5 +1,7 @@
 package openapigenerator
 
+import "github.com/primelib/primecodegen/pkg/app/appconf"
+
 type GlobalTemplate struct {
 	GeneratorProperties map[string]string
 	Endpoints           Endpoints
@@ -22,8 +24,9 @@ func (g GlobalTemplate) HasParametersWithType(paramType string) bool {
 }
 
 type SupportOnceTemplate struct {
-	Metadata Metadata       // Metadata for the template, e.g. artifact group, ID, etc.
-	Common   GlobalTemplate // Common template data, e.g. API name, project name, etc.
+	Metadata Metadata             // Metadata for the template, e.g. artifact group, ID, etc.
+	Provider appconf.ProviderConf // Provider contains information about the product or company providing the API
+	Common   GlobalTemplate       // Common template data, e.g. API name, project name, etc.
 }
 
 type APIOnceTemplate struct {

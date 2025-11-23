@@ -3,6 +3,7 @@ package appconf
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 
 	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 	"gopkg.in/yaml.v3"
@@ -14,6 +15,7 @@ type Configuration struct {
 
 	Repository  RepositoryConf   `yaml:"repository"`
 	Maintainers []MaintainerConf `yaml:"maintainers"`
+	Provider    ProviderConf     `yaml:"provider"`
 
 	Generators []GeneratorConf `yaml:"generators"` // Generators can be used to fully customize the generation process
 	Presets    PresetConf      `yaml:"presets"`    // Presets are pre-configured generators for specific languages
@@ -45,6 +47,18 @@ type MaintainerConf struct {
 	URL   string `yaml:"url"`
 }
 
+type ProviderConf struct {
+	ProductDescription string   `yaml:"productDescription"`
+	Organizations      []string `yaml:"organizations"`
+	Documentation      []Link   `yaml:"documentation"`
+	Specifications     []Link   `yaml:"specifications"`
+}
+
+type Link struct {
+	Name string `yaml:"name"`
+	URL  string `yaml:"url"`
+}
+
 type GeneratorConf struct {
 	Enabled   bool                   `yaml:"enabled"`   // Enable the generator
 	Name      string                 `yaml:"name"`      // Name of the generator
@@ -55,12 +69,13 @@ type GeneratorConf struct {
 
 // PresetConf are pre-configured generators for specific languages
 type PresetConf struct {
-	Go         GoLanguageOptions         `yaml:"go"`
-	Java       JavaLanguageOptions       `yaml:"java"`
-	Kotlin     KotlinLanguageOptions     `yaml:"kotlin"`
-	Python     PythonLanguageOptions     `yaml:"python"`
-	CSharp     CSharpLanguageOptions     `yaml:"csharp"`
-	Typescript TypescriptLanguageOptions `yaml:"typescript"`
+	Scaffolding ScaffoldingOptions        `yaml:"scaffolding"`
+	Go          GoLanguageOptions         `yaml:"go"`
+	Java        JavaLanguageOptions       `yaml:"java"`
+	Kotlin      KotlinLanguageOptions     `yaml:"kotlin"`
+	Python      PythonLanguageOptions     `yaml:"python"`
+	CSharp      CSharpLanguageOptions     `yaml:"csharp"`
+	Typescript  TypescriptLanguageOptions `yaml:"typescript"`
 }
 
 func (c PresetConf) EnabledCount() int {
@@ -91,6 +106,11 @@ type OpenApiGeneratorOptions struct {
 }
 
 type PrimeCodeGenOptions struct {
+	Enabled     bool     `yaml:"enabled"`
+	IgnoreFiles []string `yaml:"ignoreFiles"`
+}
+
+type ScaffoldingOptions struct {
 	Enabled     bool     `yaml:"enabled"`
 	IgnoreFiles []string `yaml:"ignoreFiles"`
 }
@@ -223,6 +243,23 @@ func LoadConfig(content string) (Configuration, error) {
 		for j := range config.Spec.Sources[i].Patches {
 			defaultPatchType(&config.Spec.Sources[i].Patches[j])
 		}
+	}
+
+	// auto-add specification links
+	var specLinks []string
+	for _, s := range config.Spec.Sources {
+		if s.URL != "" {
+			if slices.Contains(specLinks, s.URL) {
+				continue
+			}
+			specLinks = append(specLinks, s.URL)
+		}
+	}
+	for _, l := range specLinks {
+		config.Provider.Specifications = append(config.Provider.Specifications, Link{
+			Name: l,
+			URL:  l,
+		})
 	}
 
 	return config, nil

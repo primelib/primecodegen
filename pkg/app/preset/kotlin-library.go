@@ -10,6 +10,7 @@ type KotlinLibraryGenerator struct {
 	APISpec     string                        `json:"-" yaml:"-"`
 	Repository  appconf.RepositoryConf        `json:"-" yaml:"-"`
 	Maintainers []appconf.MaintainerConf      `json:"-" yaml:"-"`
+	Provider    appconf.ProviderConf          `json:"-" yaml:"-"`
 	Opts        appconf.KotlinLanguageOptions `json:"-" yaml:"-"`
 }
 
@@ -37,6 +38,7 @@ func (n *KotlinLibraryGenerator) Generate(opts generator.GenerateOptions) error 
 			ArtifactId:       artifactId,
 			Repository:       n.Repository,
 			Maintainers:      n.Maintainers,
+			Provider:         n.Provider,
 		},
 	}
 

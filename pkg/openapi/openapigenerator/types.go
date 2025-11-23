@@ -35,14 +35,26 @@ type CommonPackages struct {
 }
 
 type Metadata struct {
-	ArtifactGroupId string
-	ArtifactId      string
-	Name            string
-	DisplayName     string
-	Description     string
-	RepositoryUrl   string // RepositoryUrl is the URL to the repository (without protocol or .git suffix)
-	LicenseName     string // LicenseName is the name of the license (MIT, Apache-2.0, etc.)
-	LicenseUrl      string // LicenseUrl is the URL to the license
+	ArtifactGroupId  string
+	ArtifactId       string
+	Name             string
+	DisplayName      string
+	Description      string
+	RepositoryUrl    string   // RepositoryUrl is the URL to the repository (without protocol or .git suffix)
+	LicenseName      string   // LicenseName is the name of the license (MIT, Apache-2.0, etc.)
+	LicenseUrl       string   // LicenseUrl is the URL to the license
+	GeneratorNames   []string // GeneratorNames is a list of all active generators
+	GeneratorOutputs []string // GeneratorOutputs is a list of all output directories for the active generators
+}
+
+// IsPublicLibrary returns true if the repository URL indicates a public version control hosting service
+func (m Metadata) IsPublicLibrary() bool {
+	host := strings.ToLower(m.RepositoryUrl)
+
+	return strings.HasPrefix(host, "github.com") ||
+		strings.HasPrefix(host, "gitlab.com") ||
+		strings.HasPrefix(host, "bitbucket.org") ||
+		strings.HasPrefix(host, "codeberg.org")
 }
 
 type Endpoints []Endpoint

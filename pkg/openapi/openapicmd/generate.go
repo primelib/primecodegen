@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	openapi_default "github.com/primelib/primecodegen/pkg/generator/openapi-default"
 	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 
 	openapi_go "github.com/primelib/primecodegen/pkg/generator/openapi-go"
@@ -19,6 +20,7 @@ import (
 )
 
 var generators = []openapigenerator.CodeGenerator{
+	openapi_default.NewGenerator(),
 	openapi_go.NewGenerator(),
 	openapi_java.NewGenerator(),
 	openapi_kotlin.NewGenerator(),
@@ -115,15 +117,18 @@ func Generate(inputSpec string, patches []string, generatorId string, templateId
 		return errors.Join(util.ErrNoGeneratorWithId, err)
 	}
 	generatorOpts := openapigenerator.GenerateOpts{
-		DryRun:          false,
-		Doc:             v3doc,
-		OutputDir:       outputDir,
-		TemplateId:      templateId,
-		ArtifactGroupId: opts.ArtifactGroupId,
-		ArtifactId:      opts.ArtifactId,
-		RepositoryUrl:   opts.RepositoryUrl,
-		LicenseName:     opts.LicenseName,
-		LicenseUrl:      opts.LicenseUrl,
+		DryRun:           false,
+		Doc:              v3doc,
+		OutputDir:        outputDir,
+		TemplateId:       templateId,
+		ArtifactGroupId:  opts.ArtifactGroupId,
+		ArtifactId:       opts.ArtifactId,
+		RepositoryUrl:    opts.RepositoryUrl,
+		LicenseName:      opts.LicenseName,
+		LicenseUrl:       opts.LicenseUrl,
+		Provider:         opts.Provider,
+		GeneratorNames:   opts.GeneratorNames,
+		GeneratorOutputs: opts.GeneratorOutputs,
 	}
 	log.Info().Str("generator-id", gen.Id()).Str("template", templateId).Bool("dry-run", generatorOpts.DryRun).Str("output-dir", generatorOpts.OutputDir).Msg("running generator")
 	err = gen.Generate(generatorOpts)

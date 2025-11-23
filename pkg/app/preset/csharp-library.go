@@ -10,6 +10,7 @@ type CSharpLibraryGenerator struct {
 	APISpec     string                        `json:"-" yaml:"-"`
 	Repository  appconf.RepositoryConf        `json:"-" yaml:"-"`
 	Maintainers []appconf.MaintainerConf      `json:"-" yaml:"-"`
+	Provider    appconf.ProviderConf          `json:"-" yaml:"-"`
 	Opts        appconf.CSharpLanguageOptions `json:"-" yaml:"-"`
 }
 

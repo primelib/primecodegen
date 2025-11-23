@@ -1,0 +1,8 @@
+_default:
+  @just -l
+
+update args="":
+  primecodegen app-update --log-level=trace --dir . {{"{{args}}"}}
+
+generate args="":
+  primecodegen app-generate --log-level=trace --dir . {{"{{args}}"}}

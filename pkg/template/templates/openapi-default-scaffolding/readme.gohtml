@@ -1,0 +1,52 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.SupportOnceTemplate*/ -}}
+# *{{ .Metadata.DisplayName }}*
+
+{{ if .Provider.ProductDescription }}
+{{ .Provider.ProductDescription}}
+{{- else }}
+This repository contains generated client libraries for the *{{ .Metadata.DisplayName }}* API.
+{{- end }}
+
+{{ if .Provider.Documentation }}
+**Links**:
+{{- range $link := .Provider.Documentation }}
+- [{{ $link.Name }}]({{ $link.URL }})
+{{- end }}
+{{- end }}
+
+{{ if .Provider.Specifications }}
+## API Specification
+
+This repository includes API specifications from the following sources:
+
+{{- range $link := .Provider.Specifications }}
+- [{{ $link.Name }}]({{ $link.URL }})
+{{- end }}
+{{- end }}
+
+## Libraries
+
+{{- if .Provider.Organizations }}
+> **⚠️ Unofficial**
+>
+> This repository and the generated SDKs are unofficial and are not maintained, endorsed, or sponsored by {{ join .Provider.Organizations "," }}, or any other original API providers.
+> Use at your own risk. Consult the official API documentation and terms of service of each provider before integrating.
+{{- end }}
+
+{{ range $sdk := .Metadata.GeneratorOutputs }}
+- [{{ $sdk | lowerCase }}](sdk/{{ $sdk }}/README.md)
+{{- end }}
+
+## License
+
+### API Specification License
+
+API specifications are included for development and code generation purposes only.
+
+- Copyright and ownership of each API specification remain with the respective original rights holders.
+- Inclusion of these specifications in this repository does **not** imply any affiliation, endorsement, or sponsorship by the respective companies.
+- Please consult the terms of service or license provided by each API owner before using these specifications or integrating with their APIs.
+
+### Code License
+
+The generated code in this repository (`/sdk`) is licensed under the [MIT License](./LICENSE).
