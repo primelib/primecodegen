@@ -149,6 +149,8 @@ type Spec struct {
 	Type SpecType `yaml:"type" required:"true"`
 	// InputPatches are applied to the source specifications before merging
 	InputPatches []sharedpatch.SpecPatch `yaml:"inputPatches"`
+	// PatchSets are the named patch sets that are applied to the specification
+	PatchSets []string `yaml:"patchSets"`
 	// Patches are the patches that are applied to the specification
 	Patches []sharedpatch.SpecPatch `yaml:"patches"`
 }

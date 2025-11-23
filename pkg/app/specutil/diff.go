@@ -12,6 +12,39 @@ type Diff struct {
 	OpenAPI []OpenAPIDiff
 }
 
+func (d *Diff) BreakingChangeCount() int {
+	count := 0
+	for _, r := range d.OpenAPI {
+		if r.IsBreakingChange() {
+			count++
+		}
+	}
+
+	return count
+}
+
+func (d *Diff) MinorChangeCount() int {
+	count := 0
+	for _, r := range d.OpenAPI {
+		if r.IsMinorChange() {
+			count++
+		}
+	}
+
+	return count
+}
+
+func (d *Diff) PatchChangeCount() int {
+	count := 0
+	for _, r := range d.OpenAPI {
+		if r.IsPatchChange() {
+			count++
+		}
+	}
+
+	return count
+}
+
 func DiffSpec(format string, file1 string, file2 string) (Diff, error) {
 	var diff = Diff{
 		OpenAPI: []OpenAPIDiff{},
@@ -51,12 +84,12 @@ func BumpVersion(format string, file1 string, file2 string, currentVersion strin
 	}
 
 	// set initial version to 0.1.0 if no old spec is available
-	if _, err := os.Stat(file1); os.IsNotExist(err) {
+	if _, err = os.Stat(file1); os.IsNotExist(err) {
 		return "0.1.0", nil
 	}
 
 	// require spec
-	if _, err := os.Stat(file2); os.IsNotExist(err) {
+	if _, err = os.Stat(file2); os.IsNotExist(err) {
 		return "", fmt.Errorf("file %s does not exist", file2)
 	}
 

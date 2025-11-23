@@ -41,6 +41,7 @@ func rootCmd() *cobra.Command {
 
 	// app
 	cmd.AddGroup(&cobra.Group{ID: "vcsapp", Title: "VCS App"})
+	cmd.AddCommand(appcmd.RunCmd())
 	cmd.AddCommand(appcmd.UpdateCmd())
 	cmd.AddCommand(appcmd.GenerateCmd())
 	cmd.AddCommand(appcmd.ReleaseCmd())

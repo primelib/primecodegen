@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/cidverse/cidverseutils/core/clioutputwriter"
 	"github.com/cidverse/go-vcsapp/pkg/platform/api"
@@ -35,7 +36,7 @@ func ListCmd() *cobra.Command {
 
 			// data
 			data := clioutputwriter.TabularData{
-				Headers: []string{"ID", "PATH", "REMOTE"},
+				Headers: []string{"ID", "PATH", "REMOTE", "TOPICS"},
 				Rows:    [][]interface{}{},
 			}
 			for _, repo := range repos {
@@ -43,6 +44,7 @@ func ListCmd() *cobra.Command {
 					repo.Id,
 					fmt.Sprintf("%s/%s", repo.Namespace, repo.Name),
 					repo.CloneSSH,
+					strings.Join(repo.Topics, ", "),
 				})
 			}
 

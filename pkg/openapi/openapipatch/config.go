@@ -5,6 +5,7 @@ import (
 
 	"github.com/pb33f/libopenapi"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 	"github.com/primelib/primecodegen/pkg/util"
 )
 
@@ -14,6 +15,13 @@ type BuiltInPatcher struct {
 	Description         string `yaml:"description,omitempty"`
 	PatchV3DocumentFunc func(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error
 	PatchFileFunc       func(inputFile string, config map[string]interface{}) ([]byte, error)
+}
+
+func (bip BuiltInPatcher) ToSpecPatch() sharedpatch.SpecPatch {
+	return sharedpatch.SpecPatch{
+		Type: bip.Type,
+		ID:   bip.ID,
+	}
 }
 
 var EmbeddedPatchers = []BuiltInPatcher{
@@ -49,6 +57,7 @@ var EmbeddedPatchers = []BuiltInPatcher{
 	GenerateOperationIdsPatch,
 	GenerateMissingOperationIdsPatch,
 	// - refactoring / modifications
+	SetEndpointPatch,
 	AddIdempotencyKeyPatch,
 	SetOperationTagPatch,
 	AddPathPrefixPatch,
