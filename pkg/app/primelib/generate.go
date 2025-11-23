@@ -18,6 +18,9 @@ func Generate(dir string, conf appconf.Configuration, repository api.Repository)
 
 	// prepare generators
 	generators := preset.Generators(specFile, conf)
+	if len(generators) == 0 {
+		return nil
+	}
 
 	// execute generators
 	for _, gen := range generators {

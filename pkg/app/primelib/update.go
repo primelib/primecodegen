@@ -10,6 +10,7 @@ import (
 	"github.com/primelib/primecodegen/pkg/openapi/openapicmd"
 	"github.com/primelib/primecodegen/pkg/openapi/openapiconvert"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
+	"github.com/primelib/primecodegen/pkg/openapi/openapipatch"
 	"github.com/primelib/primecodegen/pkg/patch"
 	"github.com/primelib/primecodegen/pkg/patch/openapioverlay"
 	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
@@ -128,7 +129,11 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 			return fmt.Errorf("failed to create overlay info patch: %w", err)
 		}
 
-		spec.Patches = append([]sharedpatch.SpecPatch{specPatch}, spec.Patches...)
+		// combine patches from overlay, sets and spec patches
+		combined := append([]sharedpatch.SpecPatch{specPatch},
+			openapipatch.ResolvePatchSets(spec.PatchSets)...,
+		)
+		spec.Patches = append(combined, spec.Patches...)
 
 		// patches - TODO: rework patch pre-processing?
 		_, patchTempFiles, err := processPatches(spec.Patches)

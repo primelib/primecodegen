@@ -1,4 +1,4 @@
-package codegeneration
+package appcommon
 
 import (
 	_ "embed"
@@ -6,10 +6,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 
+	"github.com/cidverse/go-vcsapp/pkg/platform/api"
 	"github.com/cidverse/go-vcsapp/pkg/task/simpletask"
 	"github.com/cidverse/go-vcsapp/pkg/task/taskcommon"
 	"github.com/cidverse/go-vcsapp/pkg/vcsapp"
+	"github.com/gosimple/slug"
 	"github.com/primelib/primecodegen/pkg/app/appconf"
 	"github.com/primelib/primecodegen/pkg/app/primelib"
 	"github.com/primelib/primecodegen/pkg/app/specutil"
@@ -17,21 +20,29 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const branchName = "feat/primelib-spec"
-
 //go:embed templates/description.gohtml
 var descriptionTemplate []byte
 
-type SpecUpdateTask struct{}
+func ProcessRepository(platform api.Platform, repo api.Repository, dryRun bool, tasks []string) error {
+	// create temp directory
+	tempDir, err := os.MkdirTemp("", "primecodegen-app-*")
+	if err != nil {
+		return fmt.Errorf("failed to prepare temp directory: %w", err)
+	}
+	defer os.RemoveAll(tempDir)
 
-// Name returns the name of the task
-func (n SpecUpdateTask) Name() string {
-	return "generate"
-}
+	// run task task
+	taskContext := taskcommon.TaskContext{
+		Directory:  filepath.Join(tempDir, slug.Make(repo.Name)),
+		Platform:   platform,
+		Repository: repo,
+	}
+	err = os.MkdirAll(taskContext.Directory, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
 
-// Execute runs the task
-func (n SpecUpdateTask) Execute(ctx taskcommon.TaskContext) error {
-	content, err := ctx.Platform.FileContent(ctx.Repository, ctx.Repository.DefaultBranch, appconf.ConfigFileName)
+	content, err := taskContext.Platform.FileContent(taskContext.Repository, taskContext.Repository.DefaultBranch, appconf.ConfigFileName)
 	if err != nil {
 		return fmt.Errorf("failed to get %s content: %w", appconf.ConfigFileName, err)
 	}
@@ -43,7 +54,7 @@ func (n SpecUpdateTask) Execute(ctx taskcommon.TaskContext) error {
 	}
 
 	// create helper
-	helper := simpletask.New(ctx)
+	helper := simpletask.New(taskContext)
 
 	// clone repository
 	err = helper.Clone()
@@ -59,7 +70,7 @@ func (n SpecUpdateTask) Execute(ctx taskcommon.TaskContext) error {
 	}
 
 	// store original spec file
-	specFile := path.Join(ctx.Directory, conf.Spec.File)
+	specFile := path.Join(taskContext.Directory, conf.Spec.File)
 	originalSpecFile, err := os.CreateTemp("", "primelib-openapi-*"+filepath.Ext(conf.Spec.File))
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
@@ -71,12 +82,14 @@ func (n SpecUpdateTask) Execute(ctx taskcommon.TaskContext) error {
 	defer os.Remove(originalSpecFile.Name())
 
 	// update spec
-	err = primelib.Update(ctx.Directory, conf, ctx.Repository)
-	if err != nil {
-		return fmt.Errorf("failed to generate: %w", err)
+	if slices.Contains(tasks, UpdateTaskName) {
+		err = primelib.Update(taskContext.Directory, conf, taskContext.Repository)
+		if err != nil {
+			return fmt.Errorf("failed to update spec: %w", err)
+		}
 	}
 
-	// store updated spec file
+	// diff spec files
 	diff, err := specutil.DiffSpec("openapi", originalSpecFile.Name(), specFile)
 	if err != nil {
 		log.Warn().Err(err).Msg("failed to diff spec file")
@@ -85,25 +98,35 @@ func (n SpecUpdateTask) Execute(ctx taskcommon.TaskContext) error {
 		diff.OpenAPI = diff.OpenAPI[:15] // limit to the first n changes, sorted by level
 	}
 
-	// commit message and description
-	changes, err := helper.VCSClient.UncommittedChanges()
-	if err != nil {
-		return fmt.Errorf("failed to get uncommitted changes: %w", err)
+	// code generation
+	if slices.Contains(tasks, GenerateTaskName) {
+		err = primelib.Generate(taskContext.Directory, conf, taskContext.Repository)
+		if err != nil {
+			return fmt.Errorf("failed to generate code: %w", err)
+		}
 	}
-	commitMessage := "feat: update openapi spec"
-	description, err := vcsapp.Render(string(descriptionTemplate), map[string]interface{}{
-		"PlatformName": ctx.Platform.Name(),
-		"PlatformSlug": ctx.Platform.Slug(),
-		"Name":         conf.Repository.Name,
-		"SpecDiff":     diff,
-		"Footer":       os.Getenv("PRIMEAPP_FOOTER_HIDE") != "true",
-		"FooterCustom": os.Getenv("PRIMEAPP_FOOTER_CUSTOM"),
+
+	// commit message and description
+	commitMessage := "feat: update spec"
+	if conf.HasGenerator() {
+		commitMessage = "feat: update spec and generated code"
+	}
+	description, err := vcsapp.Render(string(descriptionTemplate), MergeRequestTemplateData{
+		PlatformName: taskContext.Platform.Name(),
+		PlatformSlug: taskContext.Platform.Slug(),
+		Name:         conf.Repository.Name,
+		SpecDiff:     &diff,
+		Footer:       os.Getenv("PRIMEAPP_FOOTER_HIDE") != "true",
+		FooterCustom: os.Getenv("PRIMEAPP_FOOTER_CUSTOM"),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to render description template: %w", err)
 	}
 
-	// do not commit if only .openapi-generator/FILES changed
+	changes, err := helper.VCSClient.UncommittedChanges()
+	if err != nil {
+		return fmt.Errorf("failed to get uncommitted changes: %w", err)
+	}
 	if len(changes) == 0 {
 		log.Info().Int("total-changes", len(changes)).Msg("no changes detected, skipping commit and merge request")
 		return nil
@@ -116,8 +139,4 @@ func (n SpecUpdateTask) Execute(ctx taskcommon.TaskContext) error {
 	}
 
 	return nil
-}
-
-func NewTask() SpecUpdateTask {
-	return SpecUpdateTask{}
 }

@@ -1,0 +1,37 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/app/appcommon.MergeRequestTemplateData*/ -}}
+
+### API Changes
+
+{{- if .SpecDiff.OpenAPI }}
+Summary:
+{{ if gt .SpecDiff.BreakingChangeCount 0 }}
+- Breaking Changes: {{ .SpecDiff.BreakingChangeCount }}
+{{- end }}
+{{ if gt .SpecDiff.MinorChangeCount 0 }}
+- Minor Changes: {{ .SpecDiff.MinorChangeCount }}
+{{- end }}
+{{ if gt .SpecDiff.PatchChangeCount 0 }}
+- Patch Changes: {{ .SpecDiff.PatchChangeCount }}
+{{- end }}
+
+| Level | Path | Operation | Change |
+|-------|-----------|-------|--------|
+{{- range $c := .SpecDiff.OpenAPI }}
+| {{ $c.LevelAsString }} | `{{ $c.Path }}` | `{{ $c.Operation }}` | {{ $c.Text }} |
+{{- end }}
+
+{{- else }}
+No API changes detected.
+{{- end }}
+
+{{ if .Footer }}
+---
+
+{{- if .FooterCustom }}
+{{ .FooterCustom }}
+{{- else if eq .PlatformSlug "github" }}
+This PR has been generated automatically by the [PrimeCodeGen GitHub App](https://github.com/apps/primelib-generator).
+{{- else if eq .PlatformSlug "gitlab" }}
+This MR has been generated automatically by the PrimeCodeGen GitLab App.
+{{- end }}
+{{- end }}

@@ -157,6 +157,16 @@
             "swagger2"
           ]
         },
+        "patchSets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "code-generation"
+            ]
+          },
+          "description": "A list of patch set IDs to apply to this source."
+        },
         "patches": {
           "type": "array",
           "items": {
@@ -211,6 +221,7 @@
               "generate-tag-from-doc-title",
               "generate-operation-id",
               "generate-missing-operation-id",
+              "set-endpoint",
               "add-idempotency-key",
               "set-operation-tag",
               "add-path-prefix",

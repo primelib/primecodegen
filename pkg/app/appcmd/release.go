@@ -30,6 +30,5 @@ func ReleaseCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().Bool("dry-run", false, "Perform a dry run without making any changes")
-
 	return cmd
 }

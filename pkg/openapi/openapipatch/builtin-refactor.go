@@ -12,6 +12,31 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var SetEndpointPatch = BuiltInPatcher{
+	Type:                "builtin",
+	ID:                  "set-endpoint",
+	Description:         "Sets the server endpoint URL for the OpenAPI document",
+	PatchV3DocumentFunc: SetEndpoint,
+}
+
+func SetEndpoint(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
+	// validate config
+	url, err := getStringConfig(config, "url")
+	if err != nil {
+		return err
+	}
+
+	// clear existing servers
+	doc.Model.Servers = []*v3.Server{}
+
+	// add new server
+	doc.Model.Servers = append(doc.Model.Servers, &v3.Server{
+		URL: url,
+	})
+
+	return nil
+}
+
 var AddIdempotencyKeyPatch = BuiltInPatcher{
 	Type:                "builtin",
 	ID:                  "add-idempotency-key",

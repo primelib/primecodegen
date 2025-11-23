@@ -20,15 +20,46 @@ type OpenAPIDiff struct {
 	Source      string `json:"source"`
 }
 
+func (oad *OpenAPIDiff) IsBreakingChange() bool {
+	return oad.Level == 3
+}
+
+func (oad *OpenAPIDiff) IsMinorChange() bool {
+	return oad.Level == 2
+}
+
+func (oad *OpenAPIDiff) IsPatchChange() bool {
+	return oad.Level == 1
+}
+
+func (oad *OpenAPIDiff) LevelAsString() string {
+	switch oad.Level {
+	case 1:
+		return "patch"
+	case 2:
+		return "minor"
+	case 3:
+		return "breaking"
+	default:
+		return "unknown"
+	}
+}
+
 // DiffOpenAPI compares two OAS files and returns the differences, calls the oasdiff cli tool to retrieve the json
 func DiffOpenAPI(file1 string, file2 string) ([]OpenAPIDiff, error) {
+	// check for presence of oasdiff
+	_, err := exec.LookPath("oasdiff")
+	if err != nil {
+		return nil, fmt.Errorf("oasdiff CLI tool is not installed or not found in PATH")
+	}
+
 	// call cli
-	cmd := exec.Command("oasdiff", "changelog", file1, file2, "-f", "json", "--exclude-elements", "examples")
+	cmd := exec.Command("oasdiff", "changelog", file1, file2, "-f", "json")
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = os.Stdout
 
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute oasdiff: %w", err)
 	}
