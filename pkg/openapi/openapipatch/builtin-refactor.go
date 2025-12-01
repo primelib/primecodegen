@@ -129,13 +129,8 @@ var PrunePathPrefixPatch = BuiltInPatcher{
 
 func PrunePathPrefix(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	// validate config
-	prefix, err := getStringConfig(config, "prefix")
-	if err != nil {
-		return err
-	}
-
-	// if no prefix, nothing to do
-	if prefix == "" {
+	prefix, ok := getOptionalStringConfig(config, "prefix")
+	if !ok || prefix == "" {
 		return nil
 	}
 

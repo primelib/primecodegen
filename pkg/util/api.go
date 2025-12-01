@@ -24,11 +24,16 @@ func URLPathParamAddByPrefix(path string) string {
 	})
 }
 
+var versionPatterns = []*regexp.Regexp{
+	regexp.MustCompile(`/[vV]([0-9]+)(?:/|$)`), // /v2 or /v2/
+	regexp.MustCompile(`/api/([0-9]+)(?:/|$)`), // /api/2 or /api/2/
+}
+
 func ParseURLAPIVersion(url string) string {
-	re := regexp.MustCompile(`/[vV]([0-9]+)/`)
-	matches := re.FindStringSubmatch(url)
-	if len(matches) == 2 {
-		return matches[1]
+	for _, re := range versionPatterns {
+		if matches := re.FindStringSubmatch(url); len(matches) == 2 {
+			return matches[1]
+		}
 	}
 	return "1"
 }

@@ -304,6 +304,8 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 			return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), additionalPropertyType, schema), nil
 		} else if schema.AdditionalProperties != nil && schema.AdditionalProperties.IsB() && schema.AdditionalProperties.B {
 			return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), openapigenerator.NewSimpleCodeType("Object", schema), schema), nil
+		} else if schema.AdditionalProperties != nil && schema.AdditionalProperties.IsB() && schema.AdditionalProperties.B == false && schema.Properties == nil {
+			return openapigenerator.CodeType{Name: "Object"}, nil
 		} else if schema.AdditionalProperties == nil && schema.Properties == nil {
 			return openapigenerator.CodeType{Name: "Object"}, nil
 		} else {
@@ -516,6 +518,7 @@ func NewGenerator() *JavaGenerator {
 			"void",
 			"volatile",
 			"while",
+			"tostring",
 		},
 		reservedRunes: []rune{
 			'$',  // dollar sign
