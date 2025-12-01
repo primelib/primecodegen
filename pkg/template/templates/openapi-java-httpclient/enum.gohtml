@@ -46,7 +46,7 @@ public enum {{.Enum.Name}}{{if .Enum.Parent.Declaration}} extends {{.Enum.Parent
      * {{ $p.Description | commentSingleLine }}
      */
     {{- end }}
-    {{ $p.Name }}("{{ $p.Value }}"),
+    {{ $p.Name }}({{if eq $.Enum.ValueType.Name "String"}}"{{ $p.Value }}"{{else}}{{ $p.Value }}{{end}}),
 {{- end }}
     ;
 
