@@ -48,7 +48,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 		if s.File != "" && s.URL == "" {
 			bytes, err = os.ReadFile(filepath.Join(targetSpecDir, s.File))
 		} else if s.URL != "" {
-			bytes, err = openapidocument.FetchSpec(s)
+			bytes, err = openapidocument.FetchSpec(s.Format, s.URL)
 		}
 		if err != nil {
 			return fmt.Errorf("failed to fetch spec: %w", err)
@@ -77,7 +77,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 	// spec type conversions
 	for i, f := range specFiles {
 		// convert from swagger to openapi
-		if spec.Type == appconf.SpecTypeOpenAPI3 && specInfo[i].Type == appconf.SpecTypeSwagger2 {
+		if spec.Type == openapidocument.SpecTypeOpenAPI3 && specInfo[i].Type == openapidocument.SpecTypeSwagger2 {
 			log.Debug().Str("file", f).Msg("converting from swagger to openapi")
 			output, err := openapicmd.ConvertSpec(f, openapiconvert.FormatSwagger20, openapiconvert.FormatOpenAPI30JSON, "")
 			if err != nil {
@@ -97,7 +97,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 			continue
 		}
 
-		if spec.Type == appconf.SpecTypeOpenAPI3 {
+		if spec.Type == openapidocument.SpecTypeOpenAPI3 {
 			log.Debug().Str("file", f).Msg("patching openapi spec")
 			bytes, err := openapicmd.Patch([]string{f}, "", nil, specInfo[i].Patches)
 			if err != nil {
@@ -112,7 +112,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 	}
 
 	// openapi processing
-	if spec.Type == appconf.SpecTypeOpenAPI3 {
+	if spec.Type == openapidocument.SpecTypeOpenAPI3 {
 		log.Debug().Strs("files", specFiles).Str("output", specFile).Msg("merging and patching openapi spec")
 
 		// inputPatches - TODO: rework patch pre-processing?

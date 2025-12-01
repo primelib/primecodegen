@@ -4,21 +4,20 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/primelib/primecodegen/pkg/app/appconf"
 	"github.com/primelib/primecodegen/pkg/util"
 )
 
 // FetchSpec will download the spec from the source
-func FetchSpec(source appconf.SpecSource) ([]byte, error) {
-	switch source.Format {
-	case "", appconf.SourceTypeSpec:
-		return fetchSpecFromURL(source.URL)
-	case appconf.SourceTypeSwaggerUI:
-		return fetchSpecFromSwaggerUI(source.URL)
-	case appconf.SourceTypeRedoc:
-		return fetchSpecFromRedoc(source.URL)
+func FetchSpec(format SourceType, url string) ([]byte, error) {
+	switch format {
+	case "", SourceTypeSpec:
+		return fetchSpecFromURL(url)
+	case SourceTypeSwaggerUI:
+		return fetchSpecFromSwaggerUI(url)
+	case SourceTypeRedoc:
+		return fetchSpecFromRedoc(url)
 	default:
-		return nil, fmt.Errorf("unsupported source type: %s", source.Format)
+		return nil, fmt.Errorf("unsupported source type: %s", format)
 	}
 }
 

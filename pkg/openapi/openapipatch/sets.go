@@ -5,14 +5,20 @@ import (
 )
 
 type PatchSet struct {
-	Name    string                  `yaml:"name"`
+	Id     string                            `yaml:"id"`
+	Config map[string]map[string]interface{} `yaml:"config,omitempty"`
+}
+
+type PatchPreset struct {
+	Id      string                  `yaml:"id"`
 	Patches []sharedpatch.SpecPatch `yaml:"patches"`
 }
 
-var patchSets = []PatchSet{
-	{
-		Name: "code-generation",
+var allPatchSets = map[string]PatchPreset{
+	"code-generation": {
+		Id: "code-generation",
 		Patches: []sharedpatch.SpecPatch{
+			PrunePathPrefixPatch.ToSpecPatch(),
 			GenerateOperationIdsPatch.ToSpecPatch(),
 			MergePolymorphicSchemasPatch.ToSpecPatch(),
 			FlattenComponentsPatch.ToSpecPatch(),
@@ -22,14 +28,23 @@ var patchSets = []PatchSet{
 	},
 }
 
-func ResolvePatchSets(patchSetNames []string) []sharedpatch.SpecPatch {
+func ResolvePatchSets(patchSets []PatchSet) []sharedpatch.SpecPatch {
 	var resolvedPatches []sharedpatch.SpecPatch
-	for _, setName := range patchSetNames {
-		for _, ps := range patchSets {
-			if ps.Name == setName {
-				resolvedPatches = append(resolvedPatches, ps.Patches...)
+
+	// resolve sets
+	for _, patchSet := range patchSets {
+		if patchSetConfig, patchSetConfigOk := allPatchSets[patchSet.Id]; patchSetConfigOk {
+			for _, patch := range patchSetConfig.Patches {
+				// apply config per patch ID if available
+				if cfg, cfgOk := patchSet.Config[patch.ID]; cfgOk {
+					patch.Config = cfg
+				}
+
+				// apply patch
+				resolvedPatches = append(resolvedPatches, patch)
 			}
 		}
 	}
+
 	return resolvedPatches
 }

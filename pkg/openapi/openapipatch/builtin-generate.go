@@ -98,8 +98,8 @@ func generateOperationIds(doc *libopenapi.DocumentModel[v3.Document], replaceExi
 			}
 			usedOperationIds = append(usedOperationIds, generatedOperationId)
 
+			log.Trace().Str("path", strings.ToUpper(op.Key)+" "+url).Str("operation-id", generatedOperationId).Str("original-operation-id", op.Value.OperationId).Msg("replacing operation id with generated id")
 			op.Value.OperationId = generatedOperationId
-			log.Trace().Str("path", strings.ToUpper(op.Key)+" "+url).Str("operation-id", op.Value.OperationId).Msg("replacing operation id with generated id")
 		}
 	}
 

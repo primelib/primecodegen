@@ -134,6 +134,11 @@ func PrunePathPrefix(doc *libopenapi.DocumentModel[v3.Document], config map[stri
 		return err
 	}
 
+	// if no prefix, nothing to do
+	if prefix == "" {
+		return nil
+	}
+
 	// rename path keys
 	_ = util.RenameOrderedMapKeys(
 		doc.Model.Paths.PathItems,
