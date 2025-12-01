@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
+	"github.com/primelib/primecodegen/pkg/openapi/openapipatch"
 	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 	"gopkg.in/yaml.v3"
 )
@@ -166,11 +168,11 @@ type Spec struct {
 	// Sources contains one or multiple sources to specifications
 	Sources []SpecSource `yaml:"sources" required:"true"`
 	// Type is the format of the api specification
-	Type SpecType `yaml:"type" required:"true"`
+	Type openapidocument.SpecType `yaml:"type" required:"true"`
 	// InputPatches are applied to the source specifications before merging
 	InputPatches []sharedpatch.SpecPatch `yaml:"inputPatches"`
 	// PatchSets are the named patch sets that are applied to the specification
-	PatchSets []string `yaml:"patchSets"`
+	PatchSets []openapipatch.PatchSet `yaml:"patchSets"`
 	// Patches are the patches that are applied to the specification
 	Patches []sharedpatch.SpecPatch `yaml:"patches"`
 }
@@ -196,11 +198,11 @@ func (s Spec) GetSourcesDir(rootDir string) string {
 }
 
 type SpecSource struct {
-	File    string                  `yaml:"file"` // File path to the openapi specification
-	URL     string                  `yaml:"url"`  // URL to the openapi specification
-	Format  SourceType              `yaml:"format" default:"spec"`
-	Type    SpecType                `yaml:"type"`
-	Patches []sharedpatch.SpecPatch `yaml:"patches"` // Patches are the patches that are applied to the specification
+	File    string                     `yaml:"file"` // File path to the openapi specification
+	URL     string                     `yaml:"url"`  // URL to the openapi specification
+	Format  openapidocument.SourceType `yaml:"format" default:"spec"`
+	Type    openapidocument.SpecType   `yaml:"type"`
+	Patches []sharedpatch.SpecPatch    `yaml:"patches"` // Patches are the patches that are applied to the specification
 }
 
 type GeneratorConfig struct {
@@ -227,7 +229,7 @@ func LoadConfig(content string) (Configuration, error) {
 	// spec defaults
 	for i, _ := range config.Spec.Sources {
 		if config.Spec.Sources[i].Format == "" {
-			config.Spec.Sources[i].Format = SourceTypeSpec
+			config.Spec.Sources[i].Format = openapidocument.SourceTypeSpec
 		}
 	}
 	if config.Spec.File == "" {

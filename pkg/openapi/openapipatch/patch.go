@@ -16,7 +16,7 @@ func ApplyPatches(input []byte, patches []sharedpatch.SpecPatch) ([]byte, error)
 	inputFormat := util.DetectJSONOrYAML(input)
 
 	for _, p := range patches {
-		log.Info().Str("id", p.String()).Msg("applying patch to spec")
+		log.Info().Str("id", p.String()).Interface("config", p.Config).Msg("applying patch to spec")
 
 		if patcher, ok := EmbeddedPatcherMap[p.Type+":"+p.ID]; ok {
 			// In-Memory Patcher (libopenapi)

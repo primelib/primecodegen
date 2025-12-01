@@ -22,6 +22,9 @@
           },
           "type": "array"
         },
+        "provider": {
+          "$ref": "#/$defs/Provider"
+        },
         "spec": {
           "$ref": "#/$defs/Spec"
         },
@@ -103,6 +106,43 @@
         "email"
       ]
     },
+    "Provider": {
+      "properties": {
+        "productDescription": {
+          "type": "string",
+          "description": "A brief description of the product this provider is for."
+        },
+        "organizations": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "The organizations responsible for this provider."
+        },
+        "documentation": {
+          "items": {
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of the documentation."
+              },
+              "url": {
+                "type": "string",
+                "description": "The URL of the documentation."
+              }
+            },
+            "required": [
+              "name",
+              "url"
+            ],
+            "type": "object"
+          },
+          "type": "array",
+          "description": "A list of relevant documentation links for this provider."
+        }
+      },
+      "additionalProperties": false
+    },
     "Spec": {
       "properties": {
         "file": {
@@ -160,10 +200,7 @@
         "patchSets": {
           "type": "array",
           "items": {
-            "type": "string",
-            "enum": [
-              "code-generation"
-            ]
+            "$ref": "#/$defs/PatchSet"
           },
           "description": "A list of patch set IDs to apply to this source."
         },
@@ -178,7 +215,25 @@
         "type"
       ]
     },
+    "PatchSet": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the patchset.",
+          "enum": [
+            "code-generation"
+          ]
+        },
+        "config": {
+          "type": "object",
+          "description": "Configuration options for the patch set.",
+          "nullable": true
+        }
+      }
+    },
     "Patch": {
+      "type": "object",
       "properties": {
         "id": {
           "type": "string",
@@ -193,11 +248,16 @@
             "json-patch",
             "speakeasy"
           ]
+        },
+        "config": {
+          "type": "object",
+          "description": "Configuration options for the patch set."
         }
       },
       "if": {
         "properties": {
           "type": {
+            "type": "string",
             "enum": [
               "",
               "builtin"
