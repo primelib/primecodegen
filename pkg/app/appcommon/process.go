@@ -43,6 +43,18 @@ func ProcessRepository(platform api.Platform, repo api.Repository, dryRun bool, 
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
+	// change directory to the project directory to ensure relative path operations work correctly
+	originalCwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	defer os.Chdir(originalCwd)
+	err = os.Chdir(taskContext.Directory)
+	if err != nil {
+		return fmt.Errorf("failed to change working directory: %w", err)
+	}
+
+	// read config file
 	content, err := taskContext.Platform.FileContent(taskContext.Repository, taskContext.Repository.DefaultBranch, appconf.ConfigFileName)
 	if err != nil {
 		return fmt.Errorf("failed to get %s content: %w", appconf.ConfigFileName, err)
