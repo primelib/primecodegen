@@ -305,8 +305,11 @@ func flattenInnerSchemaObject(doc *libopenapi.DocumentModel[v3.Document], parent
 			}
 
 			// Inner objects
-			if slices.Contains(propSchema.Type, "object") {
+			if slices.Contains(propSchema.Type, "object") && propSchema.AdditionalProperties == nil {
 				key := parentKey + util.ToPascalCase(p.Key)
+				if propSchema.AdditionalProperties != nil && propSchema.AdditionalProperties.IsA() {
+					key += "Map"
+				}
 				log.Trace().Msg("moving inner schema to components: " + key)
 				if ref, err := moveSchemaIntoComponents(doc, key, p.Value); err != nil {
 					return fmt.Errorf("error moving inner property schema to components: %w", err)
@@ -325,6 +328,21 @@ func flattenInnerSchemaObject(doc *libopenapi.DocumentModel[v3.Document], parent
 						return fmt.Errorf("error moving array object schema to components: %w", err)
 					} else if ref != nil {
 						propSchema.Items.A = ref
+					}
+				}
+			}
+
+			// Inner map schemas (maps whose values are objects)
+			if propSchema.AdditionalProperties != nil && propSchema.AdditionalProperties.IsA() {
+				mapValueSchema := propSchema.AdditionalProperties.A.Schema()
+				if !propSchema.AdditionalProperties.A.IsReference() && isObjectSchema(mapValueSchema) {
+					key := parentKey + util.ToPascalCase(p.Key) + "Map"
+					log.Trace().Msg("moving inner map value schema to components: " + key)
+					if ref, err := moveSchemaIntoComponents(doc, key, propSchema.AdditionalProperties.A); err != nil {
+						return fmt.Errorf("error moving inner map value schema to components: %w", err)
+					} else if ref != nil {
+						// Replace inline schema with component reference
+						propSchema.AdditionalProperties.A = ref
 					}
 				}
 			}
