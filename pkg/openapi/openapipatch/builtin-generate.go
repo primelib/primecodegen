@@ -82,6 +82,9 @@ func GenerateMissingOperationIds(doc *libopenapi.DocumentModel[v3.Document], con
 func generateOperationIds(doc *libopenapi.DocumentModel[v3.Document], replaceExisting bool, trimPrefix string) error {
 	var usedOperationIds []string
 
+	if doc.Model.Paths == nil {
+		return nil
+	}
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		url := path.Key
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
