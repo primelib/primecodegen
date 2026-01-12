@@ -82,7 +82,7 @@ func suggestGroupAndArtifactId(groupId string, artifactId string, repository app
 		case strings.HasPrefix(groupId, "com.gitlab"):
 			groupId = strings.Replace(groupId, "com.gitlab", "io.gitlab", 1)
 		}
-		if envGroup := os.Getenv("PRIMELIB_APP_JAVA_GROUP_ID"); envGroup != "" {
+		if envGroup := os.Getenv("PRIMEAPP_JAVA_GROUP_ID"); envGroup != "" {
 			groupId = envGroup
 		}
 	}
