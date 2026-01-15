@@ -21,11 +21,13 @@ func MergePolymorphicSchemas(v3Model *libopenapi.DocumentModel[v3.Document], con
 	derivedSchemaReplacementMap := make(map[string]string)
 
 	// component schemas
-	for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-		var err error
-		schema.Value, err = openapidocument.SimplifyPolymorphism(schema.Key, schema.Value, v3Model.Model.Components.Schemas, derivedSchemaReplacementMap)
-		if err != nil {
-			return err
+	if v3Model != nil && v3Model.Model.Components != nil {
+		for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
+			var err error
+			schema.Value, err = openapidocument.SimplifyPolymorphism(schema.Key, schema.Value, v3Model.Model.Components.Schemas, derivedSchemaReplacementMap)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
