@@ -2,6 +2,7 @@ package openapidocument
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/pb33f/libopenapi/datamodel/high/base"
@@ -31,6 +32,10 @@ func SimplifyPolymorphism(schemaName string, schemaProxy *base.SchemaProxy, sche
 	if schema.Properties != nil {
 		for op := schema.Properties.Oldest(); op != nil; op = op.Next() {
 			propertySchema := op.Value.Schema()
+			if propertySchema == nil {
+				slog.With("schema", schemaName).With("propertyName", op.Key).Debug("simplifyPolymorphism: property schema is nil, skipping")
+				continue
+			}
 
 			if propertySchema.Properties == nil && IsPolymorphicSchema(propertySchema) {
 				log.Warn().Msg("polymorphic property detected, need to merge into base schema")
