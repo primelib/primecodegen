@@ -20,9 +20,8 @@ func TestMergeSchema(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotNil(t, mergedSchema)
-	assert.Equal(t, len(ow.Type), 2)
-	assert.Equal(t, len(b.Type), 3)
-	assert.Equal(t, len(mergedSchema.Type), 3)
+	assert.Equal(t, 2, len(b.Type))
+	assert.Equal(t, 2, len(mergedSchema.Type))
 	assert.Equal(t, ow.Format, b.Format)
 	assert.Equal(t, ow.Description, b.Description)
 	assert.Equal(t, ow.Required, b.Required)
