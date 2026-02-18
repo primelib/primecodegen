@@ -8,7 +8,7 @@ import (
 	"github.com/primelib/primecodegen/pkg/llm"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
-	"github.com/speakeasy-api/openapi-overlay/pkg/overlay"
+	"github.com/speakeasy-api/openapi/overlay"
 	"gopkg.in/yaml.v3"
 )
 
