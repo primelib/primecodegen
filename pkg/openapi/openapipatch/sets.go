@@ -20,6 +20,7 @@ var allPatchSets = map[string]PatchPreset{
 		Patches: []sharedpatch.SpecPatch{
 			PrunePathPrefixPatch.ToSpecPatch(),
 			GenerateOperationIdsPatch.ToSpecPatch(),
+			FixMissingOneOfFromDiscriminatorPatch.ToSpecPatch(),
 			MergePolymorphicSchemasPatch.ToSpecPatch(),
 			FlattenComponentsPatch.ToSpecPatch(),
 			FixMissingSchemaTitlePatch.ToSpecPatch(),

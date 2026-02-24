@@ -157,6 +157,13 @@ func simplifyAllOfRecursive(schema *base.Schema) error {
 				continue
 			}
 
+			if subSchema.AllOf != nil {
+				err := simplifyAllOfRecursive(subSchema)
+				if err != nil {
+					return err
+				}
+			}
+
 			_, err := openapidocument.MergeSchema(schema, subSchema)
 			if err != nil {
 				return err

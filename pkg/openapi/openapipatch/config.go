@@ -40,6 +40,7 @@ var EmbeddedPatchers = []BuiltInPatcher{
 	FixOperationTagsPatch,
 	FixMissingSchemaTitlePatch,
 	FixRemoveCommonOperationIdPrefixPatch,
+	FixMissingOneOfFromDiscriminatorPatch,
 	// - simplification
 	FlattenComponentsPatch,
 	MergePolymorphicSchemasPatch,

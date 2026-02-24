@@ -1,6 +1,7 @@
 package openapipatch
 
 import (
+	"log/slog"
 	"slices"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
+	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/rs/zerolog/log"
 )
@@ -191,6 +193,53 @@ func FixRemoveCommonOperationIdPrefix(doc *libopenapi.DocumentModel[v3.Document]
 			for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 				op.Value.OperationId = strings.TrimPrefix(op.Value.OperationId, commonPrefix)
 			}
+		}
+	}
+
+	return nil
+}
+
+var FixMissingOneOfFromDiscriminatorPatch = BuiltInPatcher{
+	Type:                "builtin",
+	ID:                  "fix-missing-oneof-from-discriminator",
+	Description:         "Adds missing oneOf entries based on discriminator.mapping when discriminator is present but oneOf is missing.",
+	PatchV3DocumentFunc: FixMissingOneOfFromDiscriminator,
+}
+
+func FixMissingOneOfFromDiscriminator(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
+	walkedDoc := openapidocument.WalkDocument(doc)
+	if len(walkedDoc.Schemas) == 0 {
+		return nil
+	}
+
+	for _, schema := range openapidocument.CollectSchemas(doc) {
+		if schema == nil {
+			continue
+		}
+
+		// check if discriminator is missing or oneOf is already present
+		if schema.Discriminator == nil || len(schema.OneOf) > 0 {
+			continue
+		}
+
+		// discriminator without mapping is too ambiguous to recover
+		if schema.Discriminator.Mapping == nil || schema.Discriminator.Mapping.Len() == 0 {
+			slog.Warn("discriminator present without oneOf and without mapping; cannot infer variants")
+			continue
+		}
+
+		// Build oneOf from mapping values
+		for entry := schema.Discriminator.Mapping.Oldest(); entry != nil; entry = entry.Next() {
+			if entry.Value == "" {
+				continue
+			}
+
+			slog.With("discriminatorKey", entry.Key).With("schemaRef", entry.Value).Info("adding missing oneOf entry from discriminator mapping")
+			if schema.OneOf == nil {
+				schema.OneOf = make([]*base.SchemaProxy, 0)
+			}
+			schema.OneOf = append(schema.OneOf, base.CreateSchemaProxyRef(entry.Value))
+			slog.With("current oneOf", schema.OneOf).Warn("added oneOf entry to discriminator mapping")
 		}
 	}
 
