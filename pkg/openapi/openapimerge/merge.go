@@ -12,7 +12,7 @@ import (
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
+	"log/slog"
 )
 
 var (
@@ -43,7 +43,8 @@ func MergeOpenAPI3(specs [][]byte) (*libopenapi.DocumentModel[v3.Document], erro
 		// open document
 		doc, err := openapidocument.OpenDocument(specs[0])
 		if err != nil {
-			log.Fatal().Err(err).Msg("failed to open document")
+			slog.Error("failed to open document", "err", err)
+			os.Exit(1)
 		}
 
 		// build v3 model
@@ -58,7 +59,8 @@ func MergeOpenAPI3(specs [][]byte) (*libopenapi.DocumentModel[v3.Document], erro
 			// open document
 			doc, err := openapidocument.OpenDocument(spec)
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to open document")
+				slog.Error("failed to open document", "err", err)
+				os.Exit(1)
 			}
 
 			if specVersion == "" {
@@ -152,7 +154,7 @@ func mergePaths(dest, src *v3.Document) {
 		if _, exists := dest.Paths.PathItems.Get(pathName); !exists {
 			dest.Paths.PathItems.Set(pathName, pathValue)
 		} else {
-			log.Error().Str("path", pathName).Msg("mergePaths: Path Item already exists")
+			slog.Error("mergePaths: Path Item already exists", "path", pathName)
 			// TODO: Handle duplicate (rename | prefix)
 		}
 	}

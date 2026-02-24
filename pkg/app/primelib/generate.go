@@ -9,13 +9,12 @@ import (
 	"github.com/primelib/primecodegen/pkg/app/appconf"
 	"github.com/primelib/primecodegen/pkg/app/generator"
 	"github.com/primelib/primecodegen/pkg/app/preset"
-	"github.com/rs/zerolog/log"
 )
 
 func Generate(dir string, conf appconf.Configuration, repository api.Repository) error {
 	spec := conf.Spec
 	specFile := filepath.Join(dir, conf.Spec.File)
-	log.Debug().Strs("spec-urls", spec.UrlSlice()).Str("spec-file", specFile).Msg("processing module")
+	slog.Debug("processing module", "spec-urls", spec.UrlSlice(), "spec-file", specFile)
 
 	// prepare generators
 	generators := preset.Generators(specFile, conf)
@@ -43,7 +42,7 @@ func Generate(dir string, conf appconf.Configuration, repository api.Repository)
 			outputDir = filepath.Join(outputDir, gen.GetOutputName())
 		}
 
-		log.Info().Str("generator", gen.Name()).Str("projectDir", dir).Str("outputDir", outputDir).Msg("running code generator")
+		slog.Info("running code generator", "generator", gen.Name(), "projectDir", dir, "outputDir", outputDir)
 		err := gen.Generate(generator.GenerateOptions{
 			ProjectDirectory: dir,
 			OutputDirectory:  outputDir,
@@ -53,7 +52,7 @@ func Generate(dir string, conf appconf.Configuration, repository api.Repository)
 		if err != nil {
 			return fmt.Errorf("failed to generate code: %w", err)
 		}
-		log.Info().Str("generator", gen.Name()).Msg("code generation completed")
+		slog.Info("code generation completed", "generator", gen.Name())
 	}
 
 	return nil

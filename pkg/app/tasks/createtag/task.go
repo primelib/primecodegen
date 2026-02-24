@@ -3,12 +3,12 @@ package createtag
 import (
 	_ "embed"
 	"fmt"
+	"log/slog"
 
 	"github.com/cidverse/go-vcsapp/pkg/platform/api"
 	"github.com/cidverse/go-vcsapp/pkg/task/taskcommon"
 	"github.com/primelib/primecodegen/pkg/app/appconf"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
 )
 
 type PrimeLibTagCreateTask struct {
@@ -52,7 +52,7 @@ func (n PrimeLibTagCreateTask) Execute(ctx taskcommon.TaskContext) error {
 	}
 	for _, release := range tagList {
 		if release.CommitHash == ctx.Repository.CommitHash {
-			log.Debug().Msg("latest commit already has a tag, skipping")
+			slog.Debug("latest commit already has a tag, skipping")
 			return nil
 		}
 	}
@@ -64,7 +64,7 @@ func (n PrimeLibTagCreateTask) Execute(ctx taskcommon.TaskContext) error {
 			lastRelease = &tag
 		}
 	}
-	log.Debug().Interface("tag", lastRelease).Msg("found last tag")
+	slog.Debug("found last tag", "tag", lastRelease)
 
 	// get next version
 	nextVersion := []string{"0.1.0"}
@@ -116,7 +116,7 @@ func (n PrimeLibTagCreateTask) Execute(ctx taskcommon.TaskContext) error {
 	if err != nil {
 		return fmt.Errorf("failed to create tag: %w", err)
 	}
-	log.Info().Str("repository", ctx.Repository.Namespace+"/"+ctx.Repository.Name).Str("tag", "v"+version).Msg("created tag")
+	slog.Info("created tag", "repository", ctx.Repository.Namespace+"/"+ctx.Repository.Name, "tag", "v"+version)
 
 	return nil
 }

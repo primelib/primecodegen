@@ -1,9 +1,10 @@
 package preset
 
 import (
+	"log/slog"
+
 	"github.com/primelib/primecodegen/pkg/app/appconf"
 	"github.com/primelib/primecodegen/pkg/app/generator"
-	"github.com/rs/zerolog/log"
 )
 
 type TypeScriptLibraryGenerator struct {
@@ -23,7 +24,7 @@ func (n *TypeScriptLibraryGenerator) GetOutputName() string {
 }
 
 func (n *TypeScriptLibraryGenerator) Generate(opts generator.GenerateOptions) error {
-	log.Info().Str("dir", opts.OutputDirectory).Str("spec", n.APISpec).Msg("generating python library")
+	slog.Info("generating typescript library", "dir", opts.OutputDirectory, "spec", n.APISpec)
 
 	gen := generator.OpenAPIGenerator{
 		OutputName: n.GetOutputName(),

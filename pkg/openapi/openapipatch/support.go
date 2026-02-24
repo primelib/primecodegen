@@ -2,12 +2,13 @@ package openapipatch
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/primelib/primecodegen/pkg/logging"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
-	"github.com/rs/zerolog/log"
 )
 
 func moveSchemaIntoComponents(doc *libopenapi.DocumentModel[v3.Document], key string, schema *base.SchemaProxy) (*base.SchemaProxy, error) {
@@ -41,7 +42,7 @@ func deleteEmptySchemas(v3Model *libopenapi.DocumentModel[v3.Document], schemata
 	var keysForDeletion []string
 
 	for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
-		log.Trace().Str("components.schema", schema.Key).Msg("checking for empty schemas")
+		logging.Trace("checking for empty schemas", "components.schema", schema.Key)
 		value, present := v3Model.Model.Components.Schemas.Get(schema.Key)
 		if !present {
 			continue
@@ -52,8 +53,8 @@ func deleteEmptySchemas(v3Model *libopenapi.DocumentModel[v3.Document], schemata
 	}
 	for deleteKeyIdx := range keysForDeletion {
 		derivedSchemaReplacement := schemataMap[keysForDeletion[deleteKeyIdx]]
-		log.Info().Str("key", keysForDeletion[deleteKeyIdx]).Str("replacement", derivedSchemaReplacement).Msg("Replacement for empty schema")
-		log.Info().Str("key", keysForDeletion[deleteKeyIdx]).Msg("Deleting empty schema")
+		slog.Info("Replacement for empty schema", "key", keysForDeletion[deleteKeyIdx], "replacement", derivedSchemaReplacement)
+		slog.Info("Deleting empty schema", "key", keysForDeletion[deleteKeyIdx])
 		replaceEmptySchemaRefsByBaseSchemaRefs(keysForDeletion[deleteKeyIdx], derivedSchemaReplacement, v3Model)
 		v3Model.Model.Components.Schemas.Delete(keysForDeletion[deleteKeyIdx])
 	}
@@ -64,7 +65,7 @@ func replaceEmptySchemaRefsByBaseSchemaRefs(derivedEmptySchema string, baseSchem
 	derivedEmptySchemaRef := "#/components/schemas/" + derivedEmptySchema
 	baseSchemaReplacementRef := "#/components/schemas/" + baseSchemaReplacement
 
-	log.Debug().Str("schema", derivedEmptySchema).Msg("checking references of empty")
+	slog.Debug("checking references of empty", "schema", derivedEmptySchema)
 
 	// properties
 	for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
@@ -72,7 +73,7 @@ func replaceEmptySchemaRefsByBaseSchemaRefs(derivedEmptySchema string, baseSchem
 		if schema.Value.Schema().Properties != nil {
 			for p := schema.Value.Schema().Properties.Oldest(); p != nil; p = p.Next() {
 				if p.Value.GetReference() == derivedEmptySchemaRef {
-					log.Info().Str("schema", derivedEmptySchema).Str("with base schema", baseSchemaReplacement).Msg("replacing derived empty")
+					slog.Info("replacing derived empty", "schema", derivedEmptySchema, "with base schema", baseSchemaReplacement)
 					schemaRefReplacementSP := base.CreateSchemaProxyRef(baseSchemaReplacementRef)
 					p.Value = schemaRefReplacementSP
 				}

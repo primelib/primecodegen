@@ -7,7 +7,7 @@ require (
 	github.com/bluekeyes/go-gitdiff v0.8.1
 	github.com/cidverse/cidverseutils/core v0.0.0-20260120202941-ba7eef6381fa
 	github.com/cidverse/cidverseutils/filesystem v0.1.2-0.20250627221305-78405635788a
-	github.com/cidverse/cidverseutils/zerologconfig v0.1.2-0.20250911180938-73fe1e6268f7
+	github.com/cidverse/cidverseutils/zerologconfig v0.1.2-0.20260225205012-7328c766ce81
 	github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf
 	github.com/cidverse/go-vcsapp v0.0.0-20260223181852-4ca5d45a6cfa
 	github.com/evanphx/json-patch/v5 v5.9.11
@@ -16,7 +16,6 @@ require (
 	github.com/jarcoal/httpmock v1.4.1
 	github.com/pb33f/doctor v0.0.46
 	github.com/pb33f/libopenapi v0.33.11
-	github.com/rs/zerolog v1.34.0
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/shomali11/parallelizer v0.0.0-20220717173222-a6776fbf40a9
 	github.com/speakeasy-api/openapi v1.19.2
@@ -63,6 +62,7 @@ require (
 	github.com/pb33f/ordered-map/v2 v2.3.0 // indirect
 	github.com/pjbgf/sha1cd v0.5.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
+	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/samber/lo v1.52.0 // indirect
 	github.com/samber/slog-common v0.20.0 // indirect
 	github.com/samber/slog-zerolog/v2 v2.9.1 // indirect

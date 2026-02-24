@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/primelib/primecodegen/pkg/app/appconf"
-	"github.com/rs/zerolog/log"
+	"github.com/primelib/primecodegen/pkg/logging"
 )
 
 type OpenAPIGenerator struct {
@@ -173,7 +173,7 @@ func (n *OpenAPIGenerator) generateCode(opts GenerateOptions) error {
 	cmd.Dir = opts.ProjectDirectory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	log.Trace().Str("command", cmd.String()).Msg("executing code generation")
+	logging.Trace("executing code generation", "command", cmd.String())
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to execute code generation: %w", err)
 	}

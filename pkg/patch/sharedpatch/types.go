@@ -2,9 +2,9 @@ package sharedpatch
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
 	"strings"
-
-	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -58,7 +58,8 @@ func ParsePatchSpecsFromStrings(patches []string) []SpecPatch {
 		if strings.Contains(p, ":") {
 			parts := strings.SplitN(p, ":", 2)
 			if len(parts) != 2 {
-				log.Fatal().Msg("invalid patch file syntax")
+				slog.Error("invalid patch file syntax")
+				os.Exit(1)
 			}
 			patchType = parts[0]
 			patchFile = parts[1]
@@ -66,7 +67,7 @@ func ParsePatchSpecsFromStrings(patches []string) []SpecPatch {
 			patchType = "builtin"
 			patchFile = p
 		}
-		log.Debug().Str("patchType", patchType).Str("patchFile", patchFile).Msg("adding patch to spec")
+		slog.Debug("adding patch to spec", "patchType", patchType, "patchFile", patchFile)
 
 		if patchType == "builtin" {
 			specs = append(specs, SpecPatch{

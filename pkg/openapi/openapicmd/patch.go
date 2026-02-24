@@ -3,6 +3,7 @@ package openapicmd
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/primelib/primecodegen/pkg/patch"
 	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +39,8 @@ func PatchCmd() *cobra.Command {
 			// inputs
 			inputFiles, _ := cmd.Flags().GetStringSlice("input")
 			if len(inputFiles) == 0 {
-				log.Fatal().Msg("input specification is required")
+				slog.Error("input specification is required")
+				os.Exit(1)
 			}
 			inputPatches, _ := cmd.Flags().GetStringSlice("input-patch")
 			out, _ := cmd.Flags().GetString("output")
@@ -48,7 +49,8 @@ func PatchCmd() *cobra.Command {
 			// run patch command
 			stdout, err := Patch(inputFiles, out, sharedpatch.ParsePatchSpecsFromStrings(inputPatches), sharedpatch.ParsePatchSpecsFromStrings(patches))
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to patch document")
+				slog.Error("failed to patch document", "err", err)
+				os.Exit(1)
 			} else if len(stdout) > 0 {
 				fmt.Printf("%s", stdout)
 			}
@@ -97,7 +99,7 @@ func PatchListCmd() *cobra.Command {
 			// print
 			err := clioutputwriter.PrintData(os.Stdout, data, clioutputwriter.Format(format))
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to print data")
+				slog.Error("failed to print data", "err", err)
 				os.Exit(1)
 			}
 		},
@@ -129,14 +131,15 @@ func PatchValidateCmd() *cobra.Command {
 		Example: "validate openapi-overlay:dir/patch.yaml json-patch:dir/patch.json",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
-				log.Fatal().Msg("no patches specified")
+				slog.Error("no patches specified")
+				os.Exit(1)
 			}
 
 			errorCount := 0
 			for _, arg := range args {
 				parts := strings.SplitN(arg, ":", 2)
 				if len(parts) != 2 {
-					log.Error().Str("patch", arg).Msg("invalid patch file syntax, expected is <patchType>:<patchFile>")
+					slog.Error("invalid patch file syntax, expected is <patchType>:<patchFile>", "patch", arg)
 					errorCount++
 					continue
 				}
@@ -145,10 +148,10 @@ func PatchValidateCmd() *cobra.Command {
 
 				err := patch.ValidatePatchFile(patchType, patchFile)
 				if err != nil {
-					log.Error().Err(err).Str("patchType", patchType).Str("patchFile", patchFile).Msg("patch is invalid")
+					slog.Error("patch is invalid", "err", err, "patchType", patchType, "patchFile", patchFile)
 					errorCount++
 				}
-				log.Info().Str("patchType", patchType).Str("patchFile", patchFile).Msg("patch is valid")
+				slog.Info("patch is valid", "patchType", patchType, "patchFile", patchFile)
 			}
 
 			if errorCount > 0 {
@@ -168,7 +171,7 @@ func PatchValidateCmd() *cobra.Command {
 //   - inputPatches: patches to apply to the input specification(s) pre-merge
 //   - patches: patches to apply to the merged specification
 func Patch(inputFiles []string, output string, inputPatches []sharedpatch.SpecPatch, patches []sharedpatch.SpecPatch) ([]byte, error) {
-	log.Info().Strs("input", inputFiles).Strs("input-patches", sharedpatch.SpecPatchesToStringSlice(inputPatches)).Strs("patches", sharedpatch.SpecPatchesToStringSlice(patches)).Str("output-file", output).Msg("patching")
+	slog.Info("patching", "input", inputFiles, "input-patches", sharedpatch.SpecPatchesToStringSlice(inputPatches), "patches", sharedpatch.SpecPatchesToStringSlice(patches), "output-file", output)
 	for i, v := range inputFiles {
 		inputFiles[i] = util.ResolvePath(v)
 	}
@@ -245,36 +248,43 @@ func PatchGenerateCmd() *cobra.Command {
 			// inputs
 			inputFile, _ := cmd.Flags().GetString("input")
 			if inputFile == "" {
-				log.Fatal().Msg("input specification is required")
+				slog.Error("input specification is required")
+				os.Exit(1)
 			}
 			outputFile, _ := cmd.Flags().GetString("output")
 			if outputFile == "" {
-				log.Fatal().Msg("output file is required")
+				slog.Error("output file is required")
+				os.Exit(1)
 			}
 			if len(args) == 0 {
-				log.Fatal().Msg("patch id argument is required")
+				slog.Error("patch id argument is required")
+				os.Exit(1)
 			}
 
 			// open document
 			document, err := openapidocument.OpenDocumentFile(inputFile)
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to open document")
+				slog.Error("failed to open document", "err", err)
+				os.Exit(1)
 			}
 			v3Model, err := document.BuildV3Model()
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to build v3 model")
+				slog.Error("failed to build v3 model", "err", err)
+				os.Exit(1)
 			}
 
 			// generate openapi overlay
 			bytes, err := openapipatch.GenerateOpenAPIOverlay(v3Model, args[0])
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to generate patch")
+				slog.Error("failed to generate patch", "err", err)
+				os.Exit(1)
 			}
 
 			// write patch file
 			err = os.WriteFile(outputFile, bytes, 0644)
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to write patch to file")
+				slog.Error("failed to write patch to file", "err", err)
+				os.Exit(1)
 			}
 		},
 	}

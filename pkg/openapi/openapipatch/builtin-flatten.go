@@ -2,13 +2,14 @@ package openapipatch
 
 import (
 	"fmt"
+	"log/slog"
 	"slices"
 
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/primelib/primecodegen/pkg/logging"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
 )
 
 var FlattenComponentsPatch = BuiltInPatcher{
@@ -83,7 +84,7 @@ func flattenRequestParameters(doc *libopenapi.DocumentModel[v3.Document]) error 
 				// move schema to components and replace with reference
 				/*
 					key := util.ToPascalCase(op.Value.OperationId) + "P" + param.Name
-					log.Trace().Msg("moving request parameter schema to components: " + key)
+					logging.Trace("moving request parameter schema to components: " + key)
 					if ref, err := moveSchemaIntoComponents(doc, key, param.Schema); err != nil {
 						return fmt.Errorf("error moving schema to components: %w", err)
 					} else if ref != nil {
@@ -152,7 +153,7 @@ func flattenInlineResponses(doc *libopenapi.DocumentModel[v3.Document]) error {
 					if responseCount > 1 { // if there are multiple responses, append response code to key
 						key = key + "R" + resp.Key
 					}
-					log.Trace().Msg("moving response schema to components: " + key)
+					slog.Debug("moving response schema to components: " + key)
 					if ref, err := moveSchemaIntoComponents(doc, key, rb.Value.Schema); err != nil {
 						return fmt.Errorf("error moving schema to components: %w", err)
 					} else if ref != nil {
@@ -194,7 +195,7 @@ func flattenRequestBodies(doc *libopenapi.DocumentModel[v3.Document]) error {
 			// Generate a unique key for the new component schema
 			key := util.ToPascalCase(rb.Key)
 
-			log.Trace().Msg("moving requestBody schema to components: " + key)
+			logging.Trace("moving requestBody schema to components: " + key)
 			if ref, err := moveSchemaIntoComponents(doc, key, schemaRef); err != nil {
 				return fmt.Errorf("error moving requestBody schema to components: %w", err)
 			} else if ref != nil {
@@ -223,7 +224,7 @@ func flattenEnumsInComponentProperties(doc *libopenapi.DocumentModel[v3.Document
 			// property itself is an enum
 			if ps.Enum != nil {
 				key := util.ToPascalCase(p.Key) + "Enum"
-				log.Trace().Msg("moving property enum to components: " + key)
+				logging.Trace("moving property enum to components: " + key)
 				if ref, err := moveSchemaIntoComponents(doc, key, p.Value); err != nil {
 					return fmt.Errorf("error moving enum property schema to components: %w", err)
 				} else if ref != nil {
@@ -234,7 +235,7 @@ func flattenEnumsInComponentProperties(doc *libopenapi.DocumentModel[v3.Document
 			// property is an array and items has an enum
 			if ps.Items != nil && ps.Items.IsA() && ps.Items.A != nil && ps.Items.A.Schema().Enum != nil {
 				key := util.ToPascalCase(p.Key) + "ItemEnum"
-				log.Trace().Msg("moving array item enum to components: " + key)
+				logging.Trace("moving array item enum to components: " + key)
 				if ref, err := moveSchemaIntoComponents(doc, key, ps.Items.A); err != nil {
 					return fmt.Errorf("error moving enum items schema to components: %w", err)
 				} else if ref != nil {
@@ -287,7 +288,7 @@ func flattenInnerSchemaObject(doc *libopenapi.DocumentModel[v3.Document], parent
 		itemSchema := valueSchema.Items.A.Schema()
 		if !valueSchema.Items.A.IsReference() && isObjectSchema(itemSchema) {
 			key := util.ToPascalCase(parentKey) + "Item"
-			log.Trace().Msg("moving top-level array inner schema to components: " + key)
+			logging.Trace("moving top-level array inner schema to components: " + key)
 			if ref, err := moveSchemaIntoComponents(doc, key, valueSchema.Items.A); err != nil {
 				return fmt.Errorf("error moving top-level array object schema to components: %w", err)
 			} else if ref != nil {
@@ -310,7 +311,7 @@ func flattenInnerSchemaObject(doc *libopenapi.DocumentModel[v3.Document], parent
 				if propSchema.AdditionalProperties != nil && propSchema.AdditionalProperties.IsA() {
 					key += "Map"
 				}
-				log.Trace().Msg("moving inner schema to components: " + key)
+				logging.Trace("moving inner schema to components: " + key)
 				if ref, err := moveSchemaIntoComponents(doc, key, p.Value); err != nil {
 					return fmt.Errorf("error moving inner property schema to components: %w", err)
 				} else if ref != nil {
@@ -323,7 +324,7 @@ func flattenInnerSchemaObject(doc *libopenapi.DocumentModel[v3.Document], parent
 				itemSchema := propSchema.Items.A.Schema()
 				if !propSchema.Items.A.IsReference() && isObjectSchema(itemSchema) {
 					key := util.ToPascalCase(p.Key) + "Item"
-					log.Trace().Msg("moving array inner schema to components: " + key)
+					logging.Trace("moving array inner schema to components: " + key)
 					if ref, err := moveSchemaIntoComponents(doc, key, propSchema.Items.A); err != nil {
 						return fmt.Errorf("error moving array object schema to components: %w", err)
 					} else if ref != nil {
@@ -337,7 +338,7 @@ func flattenInnerSchemaObject(doc *libopenapi.DocumentModel[v3.Document], parent
 				mapValueSchema := propSchema.AdditionalProperties.A.Schema()
 				if !propSchema.AdditionalProperties.A.IsReference() && isObjectSchema(mapValueSchema) {
 					key := parentKey + util.ToPascalCase(p.Key) + "Map"
-					log.Trace().Msg("moving inner map value schema to components: " + key)
+					logging.Trace("moving inner map value schema to components: " + key)
 					if ref, err := moveSchemaIntoComponents(doc, key, propSchema.AdditionalProperties.A); err != nil {
 						return fmt.Errorf("error moving inner map value schema to components: %w", err)
 					} else if ref != nil {
@@ -416,7 +417,7 @@ func processRequestBody(doc *libopenapi.DocumentModel[v3.Document], operation *v
 
 		// move schema to components and replace with reference
 		key := fmt.Sprintf(schemaKeyTemplate, util.ToPascalCase(operation.OperationId), util.Ternary(addSuffix, util.UpperCaseFirstLetter(util.ContentTypeToShortName(rb.Key)), ""))
-		log.Trace().Msg("moving request schema to components: " + key)
+		logging.Trace("moving request schema to components: " + key)
 		if ref, err := moveSchemaIntoComponents(doc, key, rb.Value.Schema); err != nil {
 			return fmt.Errorf("error moving schema to components: %w", err)
 		} else if ref != nil {

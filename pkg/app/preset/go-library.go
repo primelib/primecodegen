@@ -5,9 +5,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"log/slog"
+
 	"github.com/primelib/primecodegen/pkg/app/appconf"
 	"github.com/primelib/primecodegen/pkg/app/generator"
-	"github.com/rs/zerolog/log"
 )
 
 type GoLibraryGenerator struct {
@@ -29,7 +30,7 @@ func (n *GoLibraryGenerator) GetOutputName() string {
 func (n *GoLibraryGenerator) Generate(opts generator.GenerateOptions) error {
 	moduleName := suggestGoModuleName(n.Opts.ModuleName, n.Repository, opts.ProjectDirectory, opts.OutputDirectory)
 
-	log.Info().Str("dir", opts.OutputDirectory).Str("spec", n.APISpec).Msg("generating go library")
+	slog.Info("generating go library", "dir", opts.OutputDirectory, "spec", n.APISpec)
 	gen := generator.PrimeCodeGenGenerator{
 		OutputName: n.GetOutputName(),
 		APISpec:    n.APISpec,

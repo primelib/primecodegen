@@ -1,8 +1,10 @@
 package main
 
 import (
+	"log/slog"
+	"os"
+
 	"github.com/primelib/primecodegen/pkg/cmd"
-	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -25,6 +27,7 @@ func init() {
 func main() {
 	cmdErr := cmd.Execute()
 	if cmdErr != nil {
-		log.Fatal().Err(cmdErr).Msg("cli error")
+		slog.Error("cli error", "err", cmdErr)
+		os.Exit(1)
 	}
 }
