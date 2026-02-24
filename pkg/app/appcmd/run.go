@@ -127,7 +127,7 @@ func runLocal(dir string, dryRun bool, tasks []string) {
 		})
 		if genErr != nil {
 			slog.Error("failed to generate code", "err", genErr)
-		os.Exit(1)
+			os.Exit(1)
 		}
 	}
 }

@@ -24,7 +24,7 @@ func VisitAllSchemas(
 			}
 			for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 				if op.Value == nil {
-						slog.Warn("Operation is nil, skipping", "operation", op.Key)
+					slog.Warn("Operation is nil, skipping", "operation", op.Key)
 					continue
 				}
 

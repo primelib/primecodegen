@@ -20,7 +20,7 @@ func ReleaseCmd() *cobra.Command {
 			platform, err := vcsapp.GetPlatformFromEnvironment()
 			if err != nil {
 				slog.Error("failed to configure platform from environment", "err", err)
-			os.Exit(1)
+				os.Exit(1)
 			}
 
 			// execute
@@ -29,7 +29,7 @@ func ReleaseCmd() *cobra.Command {
 			})
 			if err != nil {
 				slog.Error("failed to execute release task", "err", err)
-			os.Exit(1)
+				os.Exit(1)
 			}
 		},
 	}
