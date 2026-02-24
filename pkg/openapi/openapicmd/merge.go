@@ -2,12 +2,13 @@ package openapicmd
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
 
 	"github.com/cidverse/cidverseutils/filesystem"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/openapi/openapimerge"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -21,23 +22,26 @@ func MergeCmd() *cobra.Command {
 			// inputs
 			inputFiles, _ := cmd.Flags().GetStringSlice("input")
 			if len(inputFiles) == 0 {
-				log.Fatal().Msg("input specification is required")
+				slog.Error("input specification is required")
+				os.Exit(1)
 			}
 			format, _ := cmd.Flags().GetString("format")
 			output, _ := cmd.Flags().GetString("output")
 			output = util.ResolvePath(output)
-			log.Info().Strs("input", inputFiles).Str("output", output).Msg("Merging Specifications")
+			slog.Info("Merging Specifications", "input", inputFiles, "output", output)
 
 			// read and merge documents
 			mergedSpec, err := openapimerge.MergeOpenAPI3Files(inputFiles)
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to merge api specs")
+				slog.Error("failed to merge api specs", "err", err)
+				os.Exit(1)
 			}
 
 			// render
 			rendered, err := openapidocument.RenderV3ModelFormat(mergedSpec, format)
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to render document")
+				slog.Error("failed to render document", "err", err)
+				os.Exit(1)
 			}
 
 			// output
@@ -46,9 +50,10 @@ func MergeCmd() *cobra.Command {
 			} else {
 				err = filesystem.SaveFileText(output, string(rendered))
 				if err != nil {
-					log.Fatal().Err(err).Msg("failed to save output file")
+					slog.Error("failed to save output file", "err", err)
+					os.Exit(1)
 				}
-				log.Info().Str("file", output).Msg("Saved")
+				slog.Info("Saved", "file", output)
 			}
 		},
 	}

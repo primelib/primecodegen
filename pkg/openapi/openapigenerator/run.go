@@ -9,7 +9,7 @@ import (
 	"github.com/primelib/primecodegen/pkg/template"
 	"github.com/primelib/primecodegen/pkg/template/templateapi"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
+	"log/slog"
 	"github.com/shomali11/parallelizer"
 	"gopkg.in/yaml.v3"
 )
@@ -25,7 +25,7 @@ func GeneratorById(id string, allGenerators []CodeGenerator) (CodeGenerator, err
 }
 
 func GenerateFiles(templateId string, outputDir string, templateData DocumentModel, renderOpts templateapi.RenderOpts, generatorOpts GenerateOpts) (map[string]templateapi.RenderedFile, error) {
-	log.Debug().Str("template-id", templateId).Str("output-dir", outputDir).Msg("Generating files")
+	slog.Debug("Generating files", "template-id", templateId, "output-dir", outputDir)
 	files := make(map[string]templateapi.RenderedFile)
 	var filesMutex sync.Mutex
 
@@ -111,7 +111,7 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 	}
 
 	// render files
-	log.Debug().Str("templateId", templateId).Str("outputDir", outputDir).Int("files", len(data)).Msg("rendering template files")
+	slog.Debug("rendering template files", "templateId", templateId, "outputDir", outputDir, "files", len(data))
 	group := parallelizer.NewGroup(parallelizer.WithPoolSize(6))
 	defer group.Close()
 

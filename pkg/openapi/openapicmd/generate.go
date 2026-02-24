@@ -3,6 +3,7 @@ package openapicmd
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 
 	openapi_default "github.com/primelib/primecodegen/pkg/generator/openapi-default"
@@ -15,7 +16,6 @@ import (
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
 	"github.com/primelib/primecodegen/pkg/openapi/openapipatch"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -42,12 +42,14 @@ func GenerateCmd() *cobra.Command {
 			in = util.ResolvePath(in)
 			out = util.ResolvePath(out)
 			if in == "" {
-				log.Fatal().Msg("input specification is required")
+				slog.Error("input specification is required")
+				os.Exit(1)
 			}
 			if out == "" {
-				log.Fatal().Msg("output directory is required")
+				slog.Error("output directory is required")
+				os.Exit(1)
 			}
-			log.Info().Str("input", in).Str("output", out).Msg("generating")
+			slog.Info("generating", "input", in, "output", out)
 
 			// metadata
 			metadataGroupId, _ := cmd.Flags().GetString("md-group-id")
@@ -65,7 +67,8 @@ func GenerateCmd() *cobra.Command {
 				LicenseUrl:      metadataLicenseUrl,
 			})
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to generate code")
+				slog.Error("failed to generate code", "err", err)
+				os.Exit(1)
 			}
 		},
 	}
@@ -130,7 +133,7 @@ func Generate(inputSpec string, patches []string, generatorId string, templateId
 		GeneratorNames:   opts.GeneratorNames,
 		GeneratorOutputs: opts.GeneratorOutputs,
 	}
-	log.Info().Str("generator-id", gen.Id()).Str("template", templateId).Bool("dry-run", generatorOpts.DryRun).Str("output-dir", generatorOpts.OutputDir).Msg("running generator")
+	slog.Info("running generator", "generator-id", gen.Id(), "template", templateId, "dry-run", generatorOpts.DryRun, "output-dir", generatorOpts.OutputDir)
 	err = gen.Generate(generatorOpts)
 	if err != nil {
 		return err

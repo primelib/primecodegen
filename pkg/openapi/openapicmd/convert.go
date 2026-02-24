@@ -2,12 +2,12 @@ package openapicmd
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/primelib/primecodegen/pkg/openapi/openapiconvert"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,8 @@ func ConvertCmd() *cobra.Command {
 			formatOut, _ := cmd.Flags().GetString("format-out")
 			converter, _ := cmd.Flags().GetString("converter")
 			if len(inputFiles) == 0 {
-				log.Fatal().Msg("input specification is required")
+				slog.Error("input specification is required")
+				os.Exit(1)
 			}
 			outputDir, _ := cmd.Flags().GetString("output-dir")
 
@@ -31,7 +32,8 @@ func ConvertCmd() *cobra.Command {
 			for _, path := range inputFiles {
 				converted, err := ConvertSpec(path, formatIn, formatOut, converter)
 				if err != nil {
-					log.Fatal().Err(err).Str("input format", formatIn).Str("output format", formatOut).Msg("Error converting OpenAPI Specification")
+					slog.Error("Error converting OpenAPI Specification", "err", err, "input format", formatIn, "output format", formatOut)
+					os.Exit(1)
 				}
 
 				// write document (stdout or file)
@@ -41,9 +43,10 @@ func ConvertCmd() *cobra.Command {
 					fmt.Printf("%s", converted)
 				} else {
 					if err = os.WriteFile(filePath, converted, 0644); err != nil {
-						log.Fatal().Err(err).Str("output format", formatOut).Msg("Error writing YAML file")
+						slog.Error("Error writing YAML file", "err", err, "output format", formatOut)
+						os.Exit(1)
 					}
-					log.Info().Str("input", path).Str("output", filePath).Msg("Converted OpenAPI Specification")
+					slog.Info("Converted OpenAPI Specification", "input", path, "output", filePath)
 				}
 			}
 		},

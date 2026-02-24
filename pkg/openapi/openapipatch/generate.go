@@ -2,12 +2,12 @@ package openapipatch
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/pb33f/libopenapi"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/llm"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
 	"github.com/speakeasy-api/openapi/overlay"
 	"gopkg.in/yaml.v3"
 )
@@ -54,10 +54,10 @@ func LLMOperationIDPatch(doc *libopenapi.DocumentModel[v3.Document]) ([]byte, er
 
 			suggestedOperationId, err := llm.LLMChatCompletion(systemMessage, userMessage)
 			if err != nil {
-				log.Error().Str("method", fmt.Sprintf("%s %s", op.Key, url)).Err(err).Msg("failed to generate operation ID using LLM")
+				slog.Error("failed to generate operation ID using LLM", "method", fmt.Sprintf("%s %s", op.Key, url), "err", err)
 				continue
 			}
-			log.Info().Str("operation-id", suggestedOperationId).Str("method", fmt.Sprintf("%s %s", op.Key, url)).Msg("Operation ID generated")
+			slog.Info("Operation ID generated", "operation-id", suggestedOperationId, "method", fmt.Sprintf("%s %s", op.Key, url))
 
 			ol.Actions = append(ol.Actions, overlay.Action{
 				Target: fmt.Sprintf("$.paths['%s'].%s", url, op.Key),

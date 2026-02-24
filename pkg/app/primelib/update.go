@@ -2,6 +2,7 @@ package primelib
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -14,14 +15,13 @@ import (
 	"github.com/primelib/primecodegen/pkg/patch"
 	"github.com/primelib/primecodegen/pkg/patch/openapioverlay"
 	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
-	"github.com/rs/zerolog/log"
 )
 
 // Update will update the openapi spec and apply patches
 func Update(dir string, conf appconf.Configuration, repository api.Repository) error {
 	spec := conf.Spec
 	specFile := filepath.Join(dir, conf.Spec.File)
-	log.Debug().Strs("spec-urls", spec.UrlSlice()).Str("spec-format", string(spec.Type)).Str("spec-file", specFile).Msg("processing module")
+	slog.Debug("processing module", "spec-urls", spec.UrlSlice(), "spec-format", string(spec.Type), "spec-file", specFile)
 
 	// remove old file
 	_ = os.Remove(specFile)
@@ -39,7 +39,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 
 	// download spec sources
 	for _, s := range spec.Sources {
-		log.Debug().Str("url", s.URL).Str("type", string(s.Type)).Msg("fetching spec")
+		slog.Debug("fetching spec", "url", s.URL, "type", string(s.Type))
 		var targetFile string
 		var bytes []byte
 		var err error
@@ -78,7 +78,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 	for i, f := range specFiles {
 		// convert from swagger to openapi
 		if spec.Type == openapidocument.SpecTypeOpenAPI3 && specInfo[i].Type == openapidocument.SpecTypeSwagger2 {
-			log.Debug().Str("file", f).Msg("converting from swagger to openapi")
+			slog.Debug("converting from swagger to openapi", "file", f)
 			output, err := openapicmd.ConvertSpec(f, openapiconvert.FormatSwagger20, openapiconvert.FormatOpenAPI30JSON, "")
 			if err != nil {
 				return fmt.Errorf("failed to convert swagger to openapi: %w", err)
@@ -98,7 +98,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 		}
 
 		if spec.Type == openapidocument.SpecTypeOpenAPI3 {
-			log.Debug().Str("file", f).Msg("patching openapi spec")
+			slog.Debug("patching openapi spec", "file", f)
 			bytes, err := openapicmd.Patch([]string{f}, "", nil, specInfo[i].Patches)
 			if err != nil {
 				return fmt.Errorf("failed to patch openapi spec: %w", err)
@@ -113,7 +113,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 
 	// openapi processing
 	if spec.Type == openapidocument.SpecTypeOpenAPI3 {
-		log.Debug().Strs("files", specFiles).Str("output", specFile).Msg("merging and patching openapi spec")
+		slog.Debug("merging and patching openapi spec", "files", specFiles, "output", specFile)
 
 		// inputPatches - TODO: rework patch pre-processing?
 		_, inputPatchTempFiles, err := processPatches(spec.InputPatches)

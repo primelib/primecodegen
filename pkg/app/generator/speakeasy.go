@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/primelib/primecodegen/pkg/app/appconf"
+	"github.com/primelib/primecodegen/pkg/logging"
 	"github.com/primelib/primecodegen/pkg/tools/speakeasycli"
-	"github.com/rs/zerolog/log"
 )
 
 const speakEasyWorkflowTemplate = `
@@ -142,7 +142,7 @@ func (n *SpeakEasyGenerator) generateCode(opts GenerateOptions) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = opts.OutputDirectory
-	log.Trace().Str("cmd", cmd.String()).Msg("calling speakeasy run to generate sdk")
+	logging.Trace("calling speakeasy run to generate sdk", "cmd", cmd.String())
 	err = cmd.Run()
 	if err != nil {
 		return err

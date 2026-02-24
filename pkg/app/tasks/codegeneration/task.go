@@ -3,6 +3,7 @@ package codegeneration
 import (
 	_ "embed"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -16,7 +17,6 @@ import (
 	"github.com/primelib/primecodegen/pkg/app/primelib"
 	"github.com/primelib/primecodegen/pkg/app/specutil"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
 )
 
 const branchName = "feat/primelib-generate"
@@ -94,7 +94,7 @@ func (n PrimeLibGenerateTask) Execute(ctx taskcommon.TaskContext) error {
 	// store updated spec file
 	diff, err := specutil.DiffSpec("openapi", originalSpecFile.Name(), specFile)
 	if err != nil {
-		log.Warn().Err(err).Msg("failed to diff spec file")
+		slog.Warn("failed to diff spec file", "err", err)
 	}
 	if len(diff.OpenAPI) > 15 {
 		diff.OpenAPI = diff.OpenAPI[:15] // limit to the first n changes, sorted by level
@@ -126,7 +126,7 @@ func (n PrimeLibGenerateTask) Execute(ctx taskcommon.TaskContext) error {
 
 	// do not commit if only .openapi-generator/FILES changed
 	if len(filteredChanges) == 0 {
-		log.Info().Int("total-changes", len(changes)).Int("actual-changes", len(filteredChanges)).Msg("no changes detected, skipping commit and merge request")
+		slog.Info("no changes detected, skipping commit and merge request", "total-changes", len(changes), "actual-changes", len(filteredChanges))
 		return nil
 	}
 

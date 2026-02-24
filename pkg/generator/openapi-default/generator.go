@@ -3,12 +3,12 @@ package openapi_default
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	texttemplate "text/template"
 
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
 	"github.com/primelib/primecodegen/pkg/template/templateapi"
-	"github.com/rs/zerolog/log"
 )
 
 type DefaultGenerator struct {
@@ -67,15 +67,15 @@ func (g *DefaultGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}
 	for _, f := range files {
-		log.Debug().Str("file", f.File).Str("template-file", f.TemplateFile).Str("state", string(f.State)).Msg("Generated file")
+		slog.Debug("Generated file", "file", f.File, "template-file", f.TemplateFile, "state", string(f.State))
 	}
-	log.Info().Msgf("Generated %d files", len(files))
+	slog.Info(fmt.Sprintf("Generated %d files", len(files)))
 
 	// delete old files (oldfiles - files)
 	oldFiles := openapigenerator.FilesListedInMetadata(opts.OutputDir)
 	for _, f := range oldFiles {
 		if _, ok := files[f]; !ok {
-			log.Debug().Str("file", f).Msg("Removing obsolete file")
+			slog.Debug("Removing obsolete file", "file", f)
 			if !opts.DryRun {
 				err = openapigenerator.RemoveGeneratedFile(opts.OutputDir, f)
 				if err != nil {

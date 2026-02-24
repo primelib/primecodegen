@@ -14,7 +14,7 @@ import (
 
 	"github.com/primelib/primecodegen/pkg/template/templateapi"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
+	"log/slog"
 	"github.com/shomali11/parallelizer"
 )
 
@@ -119,7 +119,7 @@ func RenderTemplate(config templateapi.Config, outputDir string, templateType te
 				}
 				state = templateapi.FileRendered
 			}
-			log.Debug().Str("template-id", config.ID).Str("file", targetFile).Msg("Rendered file")
+			slog.Debug("Rendered file", "template-id", config.ID, "file", targetFile)
 
 			filesMutex.Lock()
 			files[targetFile] = templateapi.RenderedFile{File: targetFile, TemplateFile: file.SourceTemplate, State: state}

@@ -3,6 +3,7 @@ package openapidocument
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/pb33f/libopenapi/datamodel"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
 )
 
 func OpenDocumentFile(file string) (libopenapi.Document, error) {
@@ -31,7 +31,8 @@ func OpenDocumentFile(file string) (libopenapi.Document, error) {
 	// create a new document from specification bytes
 	document, err := libopenapi.NewDocumentWithConfiguration(input, &conf)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to create document from spec")
+		slog.Error("failed to create document from spec", "err", err)
+		os.Exit(1)
 	}
 
 	return document, nil
@@ -103,11 +104,13 @@ func RenderDocumentFile(doc libopenapi.Document, file string) error {
 func EmptyDocument() libopenapi.DocumentModel[v3.Document] {
 	doc, err := OpenDocument([]byte("openapi: 3.0.0"))
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to create empty document")
+		slog.Error("failed to create empty document", "err", err)
+		os.Exit(1)
 	}
 	v3doc, err := doc.BuildV3Model()
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to create empty v3 document")
+		slog.Error("failed to create empty v3 document", "err", err)
+		os.Exit(1)
 	}
 	return *v3doc
 }

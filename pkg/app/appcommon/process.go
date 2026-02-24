@@ -18,7 +18,6 @@ import (
 	"github.com/primelib/primecodegen/pkg/app/primelib"
 	"github.com/primelib/primecodegen/pkg/app/specutil"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
 )
 
 //go:embed templates/description.gohtml
@@ -138,7 +137,7 @@ func ProcessRepository(platform api.Platform, repo api.Repository, dryRun bool, 
 		return fmt.Errorf("failed to get uncommitted changes: %w", err)
 	}
 	if len(changes) == 0 {
-		log.Info().Int("total-changes", len(changes)).Msg("no changes detected, skipping commit and merge request")
+		slog.Info("no changes detected, skipping commit and merge request", "total-changes", len(changes))
 		return nil
 	}
 

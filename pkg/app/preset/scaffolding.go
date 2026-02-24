@@ -1,9 +1,10 @@
 package preset
 
 import (
+	"log/slog"
+
 	"github.com/primelib/primecodegen/pkg/app/appconf"
 	"github.com/primelib/primecodegen/pkg/app/generator"
-	"github.com/rs/zerolog/log"
 )
 
 type ScaffoldingGenerator struct {
@@ -23,7 +24,7 @@ func (n *ScaffoldingGenerator) GetOutputName() string {
 }
 
 func (n *ScaffoldingGenerator) Generate(opts generator.GenerateOptions) error {
-	log.Info().Str("dir", opts.OutputDirectory).Str("spec", n.APISpec).Msg("generating scaffolding")
+	slog.Info("generating scaffolding", "dir", opts.OutputDirectory, "spec", n.APISpec)
 	gen := generator.PrimeCodeGenGenerator{
 		OutputName: n.GetOutputName(),
 		APISpec:    n.APISpec,

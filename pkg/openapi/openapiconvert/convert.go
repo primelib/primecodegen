@@ -13,7 +13,7 @@ import (
 
 	"github.com/primelib/primecodegen/pkg/tools/speakeasycli"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
+	"log/slog"
 )
 
 const (
@@ -90,7 +90,7 @@ func ConvertSwaggerToOpenAPIUsingSwaggerConverter(swaggerData []byte, converterU
 			converterUrl = converterEndpoint
 		}
 	}
-	log.Debug().Str("url", converterUrl).Msg("Using swagger converter endpoint for openapi conversion")
+	slog.Debug("Using swagger converter endpoint for openapi conversion", "url", converterUrl)
 
 	req, err := http.NewRequest("POST", converterUrl, bytes.NewBuffer(swaggerData))
 	if err != nil {

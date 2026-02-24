@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/primelib/primecodegen/pkg/loader"
-	"github.com/rs/zerolog/log"
+	"github.com/primelib/primecodegen/pkg/logging"
 	"github.com/speakeasy-api/openapi/overlay"
 	"gopkg.in/yaml.v3"
 )
@@ -33,7 +33,7 @@ func ParseOpenAPIOverlay(patchContent []byte) (*overlay.Overlay, error) {
 
 // ApplyOpenAPIOverlay applies the overlay content to the input
 func ApplyOpenAPIOverlay(input []byte, patchContent []byte) ([]byte, error) {
-	log.Trace().Str("patchContent", string(patchContent)).Msg("applying openapi-overlay to spec")
+	logging.Trace("applying openapi-overlay to spec", "patchContent", string(patchContent))
 	o, err := ParseOpenAPIOverlay(patchContent)
 	if err != nil {
 		return nil, errors.Join(ErrFailedToDecodeOpenAPIOverlay, err)

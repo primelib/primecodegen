@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	"github.com/primelib/primecodegen/pkg/template/templateapi"
-	"github.com/rs/zerolog/log"
+	"log/slog"
 )
 
 func FilesListedInMetadata(outputDir string) []string {
 	writtenFiles := path.Join(outputDir, ".openapi-generator", "FILES")
-	log.Debug().Str("output-dir", outputDir).Str("lookup-file", writtenFiles).Msg("Listing generated files")
+	slog.Debug("Listing generated files", "output-dir", outputDir, "lookup-file", writtenFiles)
 
 	file, err := os.Open(writtenFiles)
 	if err != nil {
@@ -32,7 +32,7 @@ func FilesListedInMetadata(outputDir string) []string {
 	}
 
 	if err = scanner.Err(); err != nil {
-		log.Error().Err(err).Msg("Error reading file metadata")
+		slog.Error("Error reading file metadata", "err", err)
 		return nil
 	}
 

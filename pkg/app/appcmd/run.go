@@ -13,7 +13,6 @@ import (
 	"github.com/primelib/primecodegen/pkg/app/appcommon"
 	"github.com/primelib/primecodegen/pkg/app/appconf"
 	"github.com/primelib/primecodegen/pkg/app/primelib"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -92,18 +91,20 @@ func runLocal(dir string, dryRun bool, tasks []string) {
 	configPath := path.Join(dir, appconf.ConfigFileName)
 	bytes, err := os.ReadFile(configPath)
 	if err != nil {
-		log.Fatal().Err(err).Str("config-path", configPath).Msg("failed to read " + appconf.ConfigFileName)
+		slog.Error("failed to read "+appconf.ConfigFileName, "err", err, "config-path", configPath)
+		os.Exit(1)
 	}
 
 	// load config
 	conf, err := appconf.LoadConfig(string(bytes))
 	if err != nil {
-		log.Fatal().Err(err).Str("config-path", configPath).Msg("failed to parse " + appconf.ConfigFileName)
+		slog.Error("failed to parse "+appconf.ConfigFileName, "err", err, "config-path", configPath)
+		os.Exit(1)
 	}
 
 	// update specifications
 	if slices.Contains(tasks, appcommon.UpdateTaskName) && !dryRun {
-		log.Info().Str("dir", dir).Str("config", configPath).Msg("running local specification update")
+		slog.Info("running local specification update", "dir", dir, "config", configPath)
 		err = primelib.Update(dir, conf, api.Repository{
 			Name:        conf.Repository.Name,
 			Description: conf.Repository.Description,
@@ -111,13 +112,13 @@ func runLocal(dir string, dryRun bool, tasks []string) {
 			LicenseURL:  conf.Repository.LicenseURL,
 		})
 		if err != nil {
-			log.Warn().Err(err).Msg("failed to update spec")
+			slog.Warn("failed to update spec", "err", err)
 		}
 	}
 
 	// generate code
 	if slices.Contains(tasks, appcommon.GenerateTaskName) && !dryRun {
-		log.Info().Str("dir", dir).Str("config", configPath).Msg("running local code generation")
+		slog.Info("running local code generation", "dir", dir, "config", configPath)
 		genErr := primelib.Generate(dir, conf, api.Repository{
 			Name:        conf.Repository.Name,
 			Description: conf.Repository.Description,
@@ -125,7 +126,8 @@ func runLocal(dir string, dryRun bool, tasks []string) {
 			LicenseURL:  conf.Repository.LicenseURL,
 		})
 		if genErr != nil {
-			log.Fatal().Err(genErr).Msg("failed to generate code")
+			slog.Error("failed to generate code", "err", genErr)
+			os.Exit(1)
 		}
 	}
 }

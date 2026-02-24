@@ -1,8 +1,9 @@
 package util
 
 import (
+	"log/slog"
+
 	"github.com/pb33f/libopenapi/orderedmap"
-	"github.com/rs/zerolog/log"
 )
 
 func AppendOrSetString(destStr *string, srcStr, prefix, separator string) {
@@ -23,7 +24,7 @@ func MergeComponentMap[V any](destMap, srcMap *orderedmap.Map[string, V], compon
 		if _, exists := destMap.Get(name); !exists {
 			destMap.Set(name, value)
 		} else {
-			log.Error().Str("component", name).Str("type", componentType).Msg("Component already exists")
+			slog.Error("Component already exists", "component", name, "type", componentType)
 			// TODO: Handle duplicate (rename | prefix)
 		}
 	}

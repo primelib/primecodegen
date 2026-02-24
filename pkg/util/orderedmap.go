@@ -1,8 +1,9 @@
 package util
 
 import (
+	"log/slog"
+
 	"github.com/pb33f/libopenapi/orderedmap"
-	"github.com/rs/zerolog/log"
 )
 
 func RenameOrderedMapKeys[V any](
@@ -38,7 +39,7 @@ func RenameOrderedMapKeys[V any](
 		if _, exists := m.Get(newKey); !exists {
 			m.Set(newKey, originalValues[i])
 		} else {
-			log.Error().Str("oldKey", oldKey).Str("newKey", newKey).Msg("Key already exists, skipping")
+			slog.Error("Key already exists, skipping", "oldKey", oldKey, "newKey", newKey)
 			continue
 		}
 
