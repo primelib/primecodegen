@@ -26,7 +26,7 @@ func (n *KotlinLibraryGenerator) GetOutputName() string {
 func (n *KotlinLibraryGenerator) Generate(opts generator.GenerateOptions) error {
 	groupId, artifactId := suggestGroupAndArtifactId(n.Opts.GroupId, n.Opts.ArtifactId, n.Repository)
 
-	slog.Info("generating java library", "dir", opts.OutputDirectory, "spec", n.APISpec)
+	slog.Info("generating kotlin library", "dir", opts.OutputDirectory, "spec", n.APISpec)
 	gen := generator.PrimeCodeGenGenerator{
 		OutputName: n.GetOutputName(),
 		APISpec:    n.APISpec,

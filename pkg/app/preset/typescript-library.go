@@ -24,7 +24,7 @@ func (n *TypeScriptLibraryGenerator) GetOutputName() string {
 }
 
 func (n *TypeScriptLibraryGenerator) Generate(opts generator.GenerateOptions) error {
-	slog.Info("generating python library", "dir", opts.OutputDirectory, "spec", n.APISpec)
+	slog.Info("generating typescript library", "dir", opts.OutputDirectory, "spec", n.APISpec)
 
 	gen := generator.OpenAPIGenerator{
 		OutputName: n.GetOutputName(),
