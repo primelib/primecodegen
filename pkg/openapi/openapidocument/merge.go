@@ -2,6 +2,7 @@ package openapidocument
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/pb33f/libopenapi/orderedmap"
@@ -50,7 +51,11 @@ func MergeSchema(result *base.Schema, override *base.Schema) (*base.Schema, erro
 		if result.Type == nil {
 			result.Type = override.Type
 		} else {
-			result.Type = append(result.Type, override.Type...)
+			for _, ot := range override.Type {
+				if !slices.Contains(result.Type, ot) {
+					result.Type = append(result.Type, ot)
+				}
+			}
 		}
 	}
 	// AllOf: Copy props from derived schemas (defining allOf refs) into referenced schemas

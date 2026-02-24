@@ -42,8 +42,8 @@ github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf h1:/DLETx+e0J8mWZy
 github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf/go.mod h1:nvQPqid2KB17xXiiFp/Fhd+dO5lusCSuBQtOXfsd+mk=
 github.com/cidverse/go-vcs v0.0.0-20260212200909-9b5af309d730 h1:yzb5flafCMSWNT70XAiluxVRlZwALUEohDv5msgjNTI=
 github.com/cidverse/go-vcs v0.0.0-20260212200909-9b5af309d730/go.mod h1:l3NIt9ZuHtlwxHT+kbkR8WX83ieFVJRvbxq45lWBx94=
-github.com/cidverse/go-vcsapp v0.0.0-20260217185221-b4bcbbb42a23 h1:kD05EZn7VtUqOoihmTBPYc0i73JGp4w9yDjI+dtdkTg=
-github.com/cidverse/go-vcsapp v0.0.0-20260217185221-b4bcbbb42a23/go.mod h1:ftlgUibqX+IxiIbf1tB7wKXLyAGegtqhjpwD+d/YNAE=
+github.com/cidverse/go-vcsapp v0.0.0-20260223181852-4ca5d45a6cfa h1:6D5lOXNu4WHvKOw5g+Or1Tioa6JeiucfAQNc0q21UsI=
+github.com/cidverse/go-vcsapp v0.0.0-20260223181852-4ca5d45a6cfa/go.mod h1:IH9toAhDRh5TiWTEX0Zaie7CR13hDwNUiyNsQgeyAIc=
 github.com/cloudflare/circl v1.6.3 h1:9GPOhQGF9MCYUeXyMYlqTR6a5gTrgR/fBLXvUgtVcg8=
 github.com/cloudflare/circl v1.6.3/go.mod h1:2eXP6Qfat4O/Yhh8BznvKnJ+uzEoTQ6jVKJRn81BiS4=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
@@ -298,8 +298,8 @@ github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.4.1/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-gitlab.com/gitlab-org/api/client-go v1.36.0 h1:2WvXQE/eat5iHNqvPpWwA3yWoz5OKHA2QzA8fzDJU1c=
-gitlab.com/gitlab-org/api/client-go v1.36.0/go.mod h1:txpNttRZAkUa4mmqr9WJh99XT+WtfytQXbswFdMwNsc=
+gitlab.com/gitlab-org/api/client-go v1.42.0 h1:kwikf7kEOV9k5d6b8xjrZFjoJnk3Rs1dhARpKTKnqng=
+gitlab.com/gitlab-org/api/client-go v1.42.0/go.mod h1:xS4YrDOA5gcM+aDQ+uiQ9TparIEgfCiEzFA7TChGZPY=
 go.yaml.in/yaml/v3 v3.0.4/go.mod h1:DhzuOOF2ATzADvBadXxruRBLzYTpT36CKvDb3+aBEFg=
 go.yaml.in/yaml/v4 v4.0.0-rc.4 h1:UP4+v6fFrBIb1l934bDl//mmnoIZEDK0idg1+AIvX5U=
 go.yaml.in/yaml/v4 v4.0.0-rc.4/go.mod h1:aZqd9kCMsGL7AuUv/m/PvWLdg5sjJsZ4oHDEnfPPfY0=
