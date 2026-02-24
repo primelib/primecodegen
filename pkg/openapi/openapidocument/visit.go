@@ -1,10 +1,11 @@
 package openapidocument
 
 import (
+	"log/slog"
+
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
-	"github.com/rs/zerolog/log"
 )
 
 func VisitAllSchemas(
@@ -18,12 +19,12 @@ func VisitAllSchemas(
 	if doc.Model.Paths != nil && doc.Model.Paths.PathItems != nil {
 		for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 			if path.Value == nil {
-				log.Warn().Str("path", path.Key).Msg("Path item is nil, skipping")
+				slog.Warn("Path item is nil, skipping", "path", path.Key)
 				continue
 			}
 			for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 				if op.Value == nil {
-					log.Warn().Str("operation", op.Key).Msg("Operation is nil, skipping")
+						slog.Warn("Operation is nil, skipping", "operation", op.Key)
 					continue
 				}
 

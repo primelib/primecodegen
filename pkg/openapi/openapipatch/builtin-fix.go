@@ -12,7 +12,6 @@ import (
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
 )
 
 var FixCommonPatch = BuiltInPatcher{
@@ -43,10 +42,10 @@ func FixCommon(doc *libopenapi.DocumentModel[v3.Document], config map[string]int
 			if a.Properties != nil {
 				for p := a.Properties.Oldest(); p != nil; p = p.Next() {
 					if _, exists := s.Properties.Get(p.Key); !exists {
-						log.Trace().Str("schema", schema.Key).Str("property", p.Key).Msg("moving property from additionalProperties to properties")
+						slog.Debug("moving property from additionalProperties to properties", "schema", schema.Key, "property", p.Key)
 						s.Properties.Set(p.Key, p.Value)
 					} else {
-						log.Warn().Str("schema", schema.Key).Str("property", p.Key).Msg("property already exists in properties, skipping")
+						slog.Warn("property already exists in properties, skipping", "schema", schema.Key, "property", p.Key)
 					}
 				}
 				s.AdditionalProperties = nil
@@ -86,7 +85,7 @@ func FixInvalidMaxValue(doc *libopenapi.DocumentModel[v3.Document], config map[s
 			if slices.Contains(s.Type, "integer") && p.Value.Schema().Maximum != nil {
 				if *p.Value.Schema().Maximum > 2147483647 {
 					p.Value.Schema().Maximum = ptr.Ptr(float64(2147483647))
-					log.Trace().Str("schema", schema.Key).Str("property", p.Key).Msg("fixing maximum value for integer")
+					slog.Debug("fixing maximum value for integer", "schema", schema.Key, "property", p.Key)
 				}
 			}
 		}
@@ -113,13 +112,13 @@ func FixOperationTags(doc *libopenapi.DocumentModel[v3.Document], config map[str
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 			if len(op.Value.Tags) == 0 {
 				// add default tag, if missing
-				log.Trace().Str("path", strings.ToUpper(op.Key)+" "+path.Key).Msg("operation is missing tags, adding default tag")
+				slog.Debug("operation is missing tags, adding default tag", "path", strings.ToUpper(op.Key)+" "+path.Key)
 				op.Value.Tags = append(op.Value.Tags, "default")
 			} else {
 				// ensure all tags are documented
 				for _, tag := range op.Value.Tags {
 					if _, ok := documentedTags[tag]; !ok {
-						log.Trace().Str("path", strings.ToUpper(op.Key)+" "+path.Key).Str("tag", tag).Msg("tag is not documented, adding to document")
+						slog.Debug("tag is not documented, adding to document", "path", strings.ToUpper(op.Key)+" "+path.Key, "tag", tag)
 						doc.Model.Tags = append(doc.Model.Tags, &base.Tag{Name: tag})
 						documentedTags[tag] = true
 					}
@@ -144,7 +143,7 @@ func FixMissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document], config ma
 	for schema := doc.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
 		if schema.Value.Schema().Title == "" {
 			schema.Value.Schema().Title = schema.Key
-			log.Trace().Str("schema", schema.Key).Msg("missing schema title, setting to schema key")
+			slog.Debug("missing schema title, setting to schema key", "schema", schema.Key)
 		}
 	}
 
@@ -159,7 +158,7 @@ func FixMissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document], config ma
 			schemaRef := mt.Value.Schema
 			if schemaRef != nil && schemaRef.Schema().Title == "" {
 				schemaRef.Schema().Title = rb.Key
-				log.Trace().Str("requestBody", rb.Key).Str("mediaType", mt.Key).Msg("missing schema title in requestBody, setting to requestBody key")
+				slog.Debug("missing schema title in requestBody, setting to requestBody key", "requestBody", rb.Key, "mediaType", mt.Key)
 			}
 		}
 	}
@@ -188,7 +187,7 @@ func FixRemoveCommonOperationIdPrefix(doc *libopenapi.DocumentModel[v3.Document]
 	// detect common prefix
 	commonPrefix := util.FindCommonStrPrefix(operationIds)
 	if commonPrefix != "" {
-		log.Trace().Str("prefix", commonPrefix).Msg("removing common prefix from operation IDs")
+		slog.Debug("removing common prefix from operation IDs", "prefix", commonPrefix)
 		for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 			for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 				op.Value.OperationId = strings.TrimPrefix(op.Value.OperationId, commonPrefix)

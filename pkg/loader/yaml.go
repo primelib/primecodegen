@@ -3,9 +3,9 @@ package loader
 import (
 	"bytes"
 	"fmt"
+	"log/slog"
 	"os"
 
-	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -51,12 +51,14 @@ func InterfaceToYaml(payload interface{}) ([]byte, error) {
 func YamlNodeFromInterfaceNoErr(input interface{}) yaml.Node {
 	yamlData, err := yaml.Marshal(input)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to marshal yaml")
+		slog.Error("failed to marshal yaml", "err", err)
+		os.Exit(1)
 	}
 
 	var docNode yaml.Node
 	if err = yaml.Unmarshal(yamlData, &docNode); err != nil {
-		log.Fatal().Err(err).Msg("failed to parse into yaml node")
+		slog.Error("failed to parse into yaml node", "err", err)
+		os.Exit(1)
 	}
 
 	if docNode.Kind == yaml.DocumentNode && len(docNode.Content) > 0 {

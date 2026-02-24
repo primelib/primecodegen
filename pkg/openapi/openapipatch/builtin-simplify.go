@@ -1,11 +1,12 @@
 package openapipatch
 
 import (
+	"log/slog"
+
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
-	"github.com/rs/zerolog/log"
 )
 
 var MergePolymorphicSchemasPatch = BuiltInPatcher{
@@ -109,7 +110,7 @@ func SimplifyPolymorphicBooleans(doc *libopenapi.DocumentModel[v3.Document], con
 				schema.AnyOf = nil
 				schema.Enum = nil
 				schema.Format = ""
-				log.Trace().Str("schema", schema.Title).Msg("Simplified polymorphic boolean schema to plain boolean")
+				slog.Debug("Simplified polymorphic boolean schema to plain boolean", "schema", schema.Title)
 			}
 		}
 	}

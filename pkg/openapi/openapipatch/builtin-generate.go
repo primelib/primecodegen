@@ -1,6 +1,7 @@
 package openapipatch
 
 import (
+	"log/slog"
 	"slices"
 	"strings"
 
@@ -9,7 +10,6 @@ import (
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
 )
 
 var GenerateTagFromDocTitlePatch = BuiltInPatcher{
@@ -38,10 +38,10 @@ func GenerateTagFromDocTitle(doc *libopenapi.DocumentModel[v3.Document], config 
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 			if len(op.Value.Tags) == 0 {
 				// add default tag, if missing
-				log.Trace().Str("path", strings.ToUpper(op.Key)+" "+path.Key).Str("tag", specTitle).Msg("operation is missing tags, adding default tag:")
+				slog.Debug("operation is missing tags, adding default tag:", "path", strings.ToUpper(op.Key)+" "+path.Key, "tag", specTitle)
 				op.Value.Tags = append(op.Value.Tags, specTitle)
 			} else {
-				log.Warn().Strs("Operation Tag", op.Value.Tags).Msg("Found non-empty operation tag - ")
+				slog.Warn("Found non-empty operation tag - ", "Operation Tag", op.Value.Tags)
 			}
 		}
 	}
@@ -97,11 +97,11 @@ func generateOperationIds(doc *libopenapi.DocumentModel[v3.Document], replaceExi
 			generatedOperationId := util.ToOperationId(op.Key, input)
 
 			if slices.Contains(usedOperationIds, generatedOperationId) {
-				log.Warn().Str("path", url).Str("operation", strings.ToUpper(op.Key)).Msg("Duplicated operation id for method")
+				slog.Warn("Duplicated operation id for method", "path", url, "operation", strings.ToUpper(op.Key))
 			}
 			usedOperationIds = append(usedOperationIds, generatedOperationId)
 
-			log.Trace().Str("path", strings.ToUpper(op.Key)+" "+url).Str("operation-id", generatedOperationId).Str("original-operation-id", op.Value.OperationId).Msg("replacing operation id with generated id")
+			slog.Debug("replacing operation id with generated id", "path", strings.ToUpper(op.Key)+" "+url, "operation-id", generatedOperationId, "original-operation-id", op.Value.OperationId)
 			op.Value.OperationId = generatedOperationId
 		}
 	}

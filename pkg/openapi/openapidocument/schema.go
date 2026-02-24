@@ -3,11 +3,11 @@ package openapidocument
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/pb33f/libopenapi/orderedmap"
-	"github.com/rs/zerolog/log"
 )
 
 type SchemaMatchFunc func(schema *base.Schema) bool
@@ -38,7 +38,7 @@ func SimplifyPolymorphism(schemaName string, schemaProxy *base.SchemaProxy, sche
 			}
 
 			if propertySchema.Properties == nil && IsPolymorphicSchema(propertySchema) {
-				log.Warn().Msg("polymorphic property detected, need to merge into base schema")
+				slog.Warn("polymorphic property detected, need to merge into base schema")
 				if err := simplifyPolymorphismForSchema(propertySchema, op.Key, schemas, schemataMap); err != nil {
 					return nil, err
 				}
@@ -149,16 +149,17 @@ func mergeAllOf(schemaRef *base.SchemaProxy, schema *base.Schema, derivedSchemaN
 		baseSP, present := schemas.Get(baseSchemaName)
 
 		if !present {
-			log.Fatal().Str("schema", baseSchemaName).Msg("base schema is missing in model")
+			slog.Error("base schema is missing in model", "schema", baseSchemaName)
+			os.Exit(1)
 		} else {
-			log.Debug().Str("schema", polymorphicRel).Str("into base schema ref", reference).Msg("merging derived")
+			slog.Debug("merging derived", "schema", polymorphicRel, "into base schema ref", reference)
 			mergedBaseSchema, err := MergeSchemaProxySchema(baseSP, schema)
 			if err != nil {
 				return fmt.Errorf("error merging %s schema into base schema: %w", polymorphicRel, err)
 			}
 			// update model
 			renderedUpdatedBaseSchema, _ := mergedBaseSchema.Render()
-			log.Trace().Str("schema", baseSchemaName).Str("rendered", string(renderedUpdatedBaseSchema)).Msg("Updated base")
+			slog.Debug("Updated base", "schema", baseSchemaName, "rendered", string(renderedUpdatedBaseSchema))
 			schemas.Set(baseSchemaName, base.CreateSchemaProxy(mergedBaseSchema))
 			schemataMap[derivedSchemaName] = baseSchemaName
 		}
@@ -177,16 +178,17 @@ func mergeAnyOfOneOf(schemaRef *base.SchemaProxy, baseSchema *base.Schema, baseS
 			return fmt.Errorf("error building schema: %w", err)
 		}
 		if !present {
-			log.Fatal().Str("schema", composedSchemaName).Msg("base schema is missing in model")
+			slog.Error("base schema is missing in model", "schema", composedSchemaName)
+			os.Exit(1)
 		} else {
-			log.Debug().Str("schema", polymorphicRel).Str("into base schema ref", baseSchemaName).Msg("merging derived")
+			slog.Debug("merging derived", "schema", polymorphicRel, "into base schema ref", baseSchemaName)
 			mergedBaseSchema, err := MergeSchema(baseSchema, composedSchema)
 			if err != nil {
 				return fmt.Errorf("error merging %s schema into base schema: %w", polymorphicRel, err)
 			}
 			// update model
 			renderedUpdatedBaseSchema, _ := mergedBaseSchema.Render()
-			log.Trace().Str("schema", baseSchemaName).Str("rendered", string(renderedUpdatedBaseSchema)).Msg("Updated base")
+			slog.Debug("Updated base", "schema", baseSchemaName, "rendered", string(renderedUpdatedBaseSchema))
 			schemas.Set(baseSchemaName, base.CreateSchemaProxy(mergedBaseSchema))
 			schemataMap[composedSchemaName] = baseSchemaName
 		}
@@ -198,7 +200,7 @@ func mergeAnyOfOneOf(schemaRef *base.SchemaProxy, baseSchema *base.Schema, baseS
 func copyPropertiesIntoBaseSchema(result *base.Schema, subSchemaSP *base.SchemaProxy) error {
 	if subSchemaSP.IsReference() {
 		subSchemaRef := subSchemaSP.GetReference()
-		log.Debug().Str("ref", subSchemaRef).Msg("sub-schema reference, i.e. base schema:")
+		slog.Debug("sub-schema reference, i.e. base schema:", "ref", subSchemaRef)
 		return nil
 	}
 
@@ -210,7 +212,7 @@ func copyPropertiesIntoBaseSchema(result *base.Schema, subSchemaSP *base.SchemaP
 	if subSchema.Properties != nil {
 		for op := subSchema.Properties.Oldest(); op != nil; op = op.Next() {
 			bytes, _ := op.Value.Render()
-			log.Trace().Str("key", op.Key).Interface("value", string(bytes)).Msg("Extending Properties: ")
+			slog.Debug("Extending Properties: ", "key", op.Key, "value", string(bytes))
 		}
 
 		if result.Properties == nil {
@@ -219,7 +221,7 @@ func copyPropertiesIntoBaseSchema(result *base.Schema, subSchemaSP *base.SchemaP
 			for op := subSchema.Properties.Oldest(); op != nil; op = op.Next() {
 				// Do not overwrite props already existent in base class
 				if _, exists := result.Properties.Get(op.Key); exists {
-					log.Trace().Str("key", op.Key).Msg("Property (key) already exists in base classe - skip copy:")
+					slog.Debug("Property (key) already exists in base classe - skip copy:", "key", op.Key)
 				} else {
 					result.Properties.Set(op.Key, op.Value)
 				}

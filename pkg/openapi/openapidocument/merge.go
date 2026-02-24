@@ -2,11 +2,11 @@ package openapidocument
 
 import (
 	"fmt"
+	"log/slog"
 	"slices"
 
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/pb33f/libopenapi/orderedmap"
-	"github.com/rs/zerolog/log"
 )
 
 func MergeSchemaProxy(baseSP *base.SchemaProxy, overwriteSP *base.SchemaProxy) (*base.Schema, error) {
@@ -157,7 +157,7 @@ func MergeSchema(result *base.Schema, override *base.Schema) (*base.Schema, erro
 	if override.Properties != nil {
 		for op := override.Properties.Oldest(); op != nil; op = op.Next() {
 			bytes, _ := op.Value.Render()
-			log.Trace().Str("key", op.Key).Interface("value", string(bytes)).Msg("Properties: ")
+			slog.Debug("Properties: ", "key", op.Key, "value", string(bytes))
 		}
 		if result.Properties == nil {
 			result.Properties = orderedmap.New[string, *base.SchemaProxy]()

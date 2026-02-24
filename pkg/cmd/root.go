@@ -4,7 +4,11 @@ import (
 	"os"
 	"strings"
 
+	"log/slog"
+
 	"github.com/cidverse/cidverseutils/zerologconfig"
+	slogzerolog "github.com/samber/slog-zerolog/v2"
+	"github.com/rs/zerolog/log"
 	"github.com/primelib/primecodegen/pkg/app/appcmd"
 	"github.com/primelib/primecodegen/pkg/openapi/openapicmd"
 	"github.com/spf13/cobra"
@@ -18,6 +22,10 @@ func rootCmd() *cobra.Command {
 		Short: `PrimeCodeGen is a code generator for API specifications.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			zerologconfig.Configure(cfg)
+			slog.SetDefault(slog.New(slogzerolog.Option{
+				Level:  slogzerolog.ZeroLogLeveler{Logger: &log.Logger},
+				Logger: &log.Logger,
+			}.NewZerologHandler()))
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			_ = cmd.Help()

@@ -1,10 +1,12 @@
 package appcmd
 
 import (
+	"log/slog"
+	"os"
+
 	"github.com/cidverse/go-vcsapp/pkg/task/taskcommon"
 	"github.com/cidverse/go-vcsapp/pkg/vcsapp"
 	"github.com/primelib/primecodegen/pkg/app/tasks/createtag"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +19,8 @@ func ReleaseCmd() *cobra.Command {
 			// platform
 			platform, err := vcsapp.GetPlatformFromEnvironment()
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to configure platform from environment")
+				slog.Error("failed to configure platform from environment", "err", err)
+			os.Exit(1)
 			}
 
 			// execute
@@ -25,7 +28,8 @@ func ReleaseCmd() *cobra.Command {
 				createtag.NewTask(),
 			})
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to execute release task")
+				slog.Error("failed to execute release task", "err", err)
+			os.Exit(1)
 			}
 		},
 	}

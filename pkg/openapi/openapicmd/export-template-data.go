@@ -2,6 +2,7 @@ package openapicmd
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
@@ -9,7 +10,6 @@ import (
 	"github.com/primelib/primecodegen/pkg/openapi/openapipatch"
 	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -29,48 +29,56 @@ func GenerateTemplateCmd() *cobra.Command {
 			in = util.ResolvePath(in)
 			out = util.ResolvePath(out)
 			if in == "" {
-				log.Fatal().Msg("input specification is required")
+				slog.Error("input specification is required")
+				os.Exit(1)
 			}
-			log.Info().Str("input", in).Str("output", out).Msg("generating")
+			slog.Info("generating", "input", in, "output", out)
 
 			// patch
 			bytes, err := os.ReadFile(in)
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to read document")
+				slog.Error("failed to read document", "err", err)
+				os.Exit(1)
 			}
 
 			bytes, err = openapipatch.ApplyPatches(bytes, sharedpatch.ParsePatchSpecsFromStrings(patches))
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to apply input patches")
+				slog.Error("failed to apply input patches", "err", err)
+				os.Exit(1)
 			}
 
 			// open document
 			doc, err := openapidocument.OpenDocument(bytes)
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to open document")
+				slog.Error("failed to open document", "err", err)
+				os.Exit(1)
 			}
 			v3doc, err := doc.BuildV3Model()
 			if err != nil {
-				log.Fatal().Err(err).Msg("failed to build v3 high level model")
+				slog.Error("failed to build v3 high level model", "err", err)
+				os.Exit(1)
 			}
 
 			// run generator
 			gen, err := openapigenerator.GeneratorById(generatorId, generators)
 			if err != nil {
-				log.Fatal().Err(err).Str("generator-id", generatorId).Msg("failed to find generator with provided id")
+				slog.Error("failed to find generator with provided id", "err", err, "generator-id", generatorId)
+				os.Exit(1)
 			}
 
 			// build template data
-			log.Info().Str("generator-id", gen.Id()).Str("output-file", out).Msg("generating template data")
+			slog.Info("generating template data", "generator-id", gen.Id(), "output-file", out)
 			templateData, err := gen.TemplateData(openapigenerator.TemplateDataOpts{
 				Doc: v3doc,
 			})
 			if err != nil {
-				log.Fatal().Err(err).Str("generator-id", gen.Id()).Msg("failed to transform spec into template data for the generator")
+				slog.Error("failed to transform spec into template data for the generator", "err", err, "generator-id", gen.Id())
+				os.Exit(1)
 			}
 			templateDataYaml, err := yaml.Marshal(templateData)
 			if err != nil {
-				log.Fatal().Err(err).Str("generator-id", gen.Id()).Msg("failed to marshal template data")
+				slog.Error("failed to marshal template data", "err", err, "generator-id", gen.Id())
+				os.Exit(1)
 			}
 
 			if out == "" {
@@ -78,7 +86,8 @@ func GenerateTemplateCmd() *cobra.Command {
 			} else {
 				err = os.WriteFile(out, templateDataYaml, 0644)
 				if err != nil {
-					log.Fatal().Err(err).Msg("failed to write template data to file")
+					slog.Error("failed to write template data to file", "err", err)
+				os.Exit(1)
 				}
 			}
 		},

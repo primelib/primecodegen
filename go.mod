@@ -17,6 +17,7 @@ require (
 	github.com/pb33f/doctor v0.0.46
 	github.com/pb33f/libopenapi v0.33.11
 	github.com/rs/zerolog v1.34.0
+	github.com/samber/slog-zerolog/v2 v2.9.1
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/shomali11/parallelizer v0.0.0-20220717173222-a6776fbf40a9
 	github.com/speakeasy-api/openapi v1.19.2
@@ -65,7 +66,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/samber/lo v1.52.0 // indirect
 	github.com/samber/slog-common v0.20.0 // indirect
-	github.com/samber/slog-zerolog/v2 v2.9.1 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/skeema/knownhosts v1.3.2 // indirect

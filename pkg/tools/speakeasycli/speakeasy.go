@@ -3,10 +3,9 @@ package speakeasycli
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
-
-	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -33,7 +32,7 @@ func SpeakEasyTransformCommand(file string, transformMethod string) ([]byte, err
 		"http_proxy=http://localhost:9999",  // disable telemetry
 		"https_proxy=http://localhost:9999", // disable telemetry
 	}
-	log.Trace().Str("cmd", cmd.String()).Msg("calling speakeasy cli to transform openapi specification")
+	slog.Debug("calling speakeasy cli to transform openapi specification", "cmd", cmd.String())
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, errors.Join(ErrSpeakeasyTransformFailed, err)
@@ -60,7 +59,7 @@ func SpeakEasySwaggerConvertCommand(file string) ([]byte, error) {
 		"http_proxy=http://localhost:9999",  // disable telemetry
 		"https_proxy=http://localhost:9999", // disable telemetry
 	}
-	log.Trace().Str("cmd", cmd.String()).Msg("calling speakeasy cli to convert openapi specification to swagger")
+	slog.Debug("calling speakeasy cli to convert openapi specification to swagger", "cmd", cmd.String())
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, errors.Join(ErrorSpeakeasyConvertFailed, err)

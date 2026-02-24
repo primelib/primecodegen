@@ -1,6 +1,7 @@
 package openapipatch
 
 import (
+	"log/slog"
 	"strings"
 
 	"github.com/cidverse/go-ptr"
@@ -9,7 +10,6 @@ import (
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/rs/zerolog/log"
 )
 
 var SetEndpointPatch = BuiltInPatcher{
@@ -53,7 +53,7 @@ func AddIdempotencyKey(doc *libopenapi.DocumentModel[v3.Document], config map[st
 					op.Value.Parameters = []*v3.Parameter{}
 				}
 
-				log.Trace().Str("path", path.Key).Str("op", op.Key).Msg("adding idempotency key as header parameter")
+				slog.Debug("adding idempotency key as header parameter", "path", path.Key, "op", op.Key)
 				op.Value.Parameters = append(op.Value.Parameters, &v3.Parameter{
 					Name:        "Idempotency-Key",
 					In:          "header",
@@ -179,11 +179,11 @@ func updateAllSchemaRefs(
 	doc *libopenapi.DocumentModel[v3.Document],
 	referenceMapping map[string]string,
 ) {
-	log.Trace().Int("numRefs", len(referenceMapping)).Msg("updating schema references in document")
+	slog.Debug("updating schema references in document", "numRefs", len(referenceMapping))
 	openapidocument.VisitAllSchemas(doc, func(name string, schema *base.SchemaProxy) *base.SchemaProxy {
 		if schema.IsReference() {
 			if newReference, ok := referenceMapping[schema.GetReference()]; ok {
-				log.Trace().Str("oldRef", schema.GetReference()).Str("newRef", newReference).Msg("updating schema reference")
+				slog.Debug("updating schema reference", "oldRef", schema.GetReference(), "newRef", newReference)
 				schema = base.CreateSchemaProxyRef(newReference)
 			}
 		}
