@@ -1,0 +1,24 @@
+openapi: 3.0.1
+info:
+  title: Sample API
+  version: 1.0.0
+components:
+  schemas:
+    Animal:
+      title: AnimalDto
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    Dog:
+      title: DogDto
+      allOf:
+        - $ref: '#/components/schemas/Animal'
+        - type: object
+          required:
+            - breed
+          properties:
+            breed:
+              type: string

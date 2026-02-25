@@ -263,18 +263,29 @@ type Parameter struct {
 	Stability        string                                  `yaml:"stability,omitempty"`
 }
 
+// DiscriminatorModel holds the discriminator property name and value-to-type mapping
+// for oneOf/anyOf schemas, allowing generators to emit proper dispatch code (e.g. Jackson annotations).
+type DiscriminatorModel struct {
+	PropertyName string            `yaml:"propertyName"`           // JSON property that carries the type tag
+	Mapping      map[string]string `yaml:"mapping,omitempty"`      // discriminator value → code class name
+}
+
 type Model struct {
-	Name             string     `yaml:"name"`
-	Description      string     `yaml:"description,omitempty"`
-	Parent           CodeType   `yaml:"parent,omitempty"`
-	Properties       []Property `yaml:"properties,omitempty"`
-	AnyOf            []Model    `yaml:"anyOf,omitempty"`
-	AllOf            []Model    `yaml:"allOf,omitempty"`
-	OneOf            []Model    `yaml:"oneOf,omitempty"`
-	Imports          []string   `yaml:"imports,omitempty"`
-	Deprecated       bool       `yaml:"deprecated,omitempty"`
-	DeprecatedReason string     `yaml:"deprecatedReason,omitempty"`
-	IsTypeAlias      bool       `yaml:"isTypeAlias,omitempty"`
+	Name             string              `yaml:"name"`
+	Description      string              `yaml:"description,omitempty"`
+	Parent           CodeType            `yaml:"parent,omitempty"`
+	Properties       []Property          `yaml:"properties,omitempty"`
+	IsOneOf          bool                `yaml:"isOneOf,omitempty"`          // true when the schema uses oneOf
+	IsAnyOf          bool                `yaml:"isAnyOf,omitempty"`          // true when the schema uses anyOf
+	IsAllOf          bool                `yaml:"isAllOf,omitempty"`          // true when the schema uses allOf
+	OneOf            []CodeType          `yaml:"oneOf,omitempty"`            // resolved variant types for oneOf
+	AnyOf            []CodeType          `yaml:"anyOf,omitempty"`            // resolved variant types for anyOf
+	AllOf            []CodeType          `yaml:"allOf,omitempty"`            // resolved parent types for allOf
+	Discriminator    *DiscriminatorModel `yaml:"discriminator,omitempty"`    // discriminator info if present
+	Imports          []string            `yaml:"imports,omitempty"`
+	Deprecated       bool                `yaml:"deprecated,omitempty"`
+	DeprecatedReason string              `yaml:"deprecatedReason,omitempty"`
+	IsTypeAlias      bool                `yaml:"isTypeAlias,omitempty"`
 }
 
 type Enum struct {
@@ -295,7 +306,10 @@ type Property struct {
 	Description     string                                  `yaml:"description,omitempty"` // Description is the human-readable description of the parameter
 	Type            CodeType                                `yaml:"type,omitempty"`
 	IsPrimitiveType bool                                    `yaml:"isPrimitiveType,omitempty"`
+	Required        bool                                    `yaml:"required,omitempty"`
 	Nullable        bool                                    `yaml:"nullable,omitempty"`
+	ReadOnly        bool                                    `yaml:"readOnly,omitempty"`
+	WriteOnly       bool                                    `yaml:"writeOnly,omitempty"`
 	AllowedValues   map[string]openapidocument.AllowedValue `yaml:"allowedValues,omitempty"`
 	Items           []Property                              `yaml:"items,omitempty"`
 }

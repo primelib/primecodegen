@@ -9,6 +9,7 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/openapi/openapiutil"
 )
@@ -412,65 +413,124 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 		}
 
 		add := Model{
-			Name:        gen.ToClassName(s.Title),
-			Description: s.Description,
+			Name:             gen.ToClassName(s.Title),
+			Description:      s.Description,
+			Deprecated:       getBoolValue(s.Deprecated, false),
+			DeprecatedReason: getOrDefault(s.Extensions, "x-deprecated", ""),
 		}
-		if slices.Contains(s.Type, "object") && s.Properties != nil {
-			var addedProperties []string
 
-			for p := s.Properties.Oldest(); p != nil; p = p.Next() {
-				if slices.Contains(addedProperties, gen.ToPropertyName(p.Key)) {
+		// --- oneOf: union / sum type ---
+		if len(s.OneOf) > 0 && !openapidocument.IsEnumSchema(s) {
+			add.IsOneOf = true
+			for _, sp := range s.OneOf {
+				oneOfSchema, schemaErr := sp.BuildSchema()
+				if schemaErr != nil || oneOfSchema == nil {
 					continue
 				}
-
-				pSchema, pErr := p.Value.BuildSchema()
-				if pErr != nil {
-					return models, fmt.Errorf("error building property schema: %w", err)
+				codeType, ctErr := gen.ToCodeType(oneOfSchema, CodeTypeSchemaProperty, false)
+				if ctErr != nil {
+					continue
 				}
-
-				pType, err := gen.ToCodeType(pSchema, CodeTypeSchemaProperty, false)
-				if err != nil {
-					return models, fmt.Errorf("error converting type of [%s:object:%s]: %w", schema.Key, p.Key, err)
-				}
-				pType = gen.PostProcessType(pType)
-
-				allowedValues, err := openapidocument.EnumToAllowedValues(pSchema)
-				if err != nil {
-					return models, fmt.Errorf("error processing enum definitions: %w", err)
-				}
-				add.Properties = append(add.Properties, Property{
-					Name:            gen.ToPropertyName(p.Key),
-					FieldName:       p.Key,
-					Description:     pSchema.Description,
-					Title:           pSchema.Title,
-					Type:            pType,
-					IsPrimitiveType: gen.IsPrimitiveType(pType.Name),
-					Nullable:        openapiutil.IsSchemaNullable(pSchema),
-					AllowedValues:   allowedValues,
-				})
-				add.Imports = append(add.Imports, gen.TypeToImport(pType))
-
-				addedProperties = append(addedProperties, gen.ToPropertyName(p.Key))
+				codeType = gen.PostProcessType(codeType)
+				add.OneOf = append(add.OneOf, codeType)
+				add.Imports = append(add.Imports, gen.TypeToImport(codeType))
 			}
+			if s.Discriminator != nil {
+				add.Discriminator = buildDiscriminatorModel(s.Discriminator, gen, opts.Doc.Model.Components.Schemas)
+			}
+		}
+
+		// --- anyOf: union type ---
+		if len(s.AnyOf) > 0 {
+			add.IsAnyOf = true
+			for _, sp := range s.AnyOf {
+				anyOfSchema, schemaErr := sp.BuildSchema()
+				if schemaErr != nil || anyOfSchema == nil {
+					continue
+				}
+				codeType, ctErr := gen.ToCodeType(anyOfSchema, CodeTypeSchemaProperty, false)
+				if ctErr != nil {
+					continue
+				}
+				codeType = gen.PostProcessType(codeType)
+				add.AnyOf = append(add.AnyOf, codeType)
+				add.Imports = append(add.Imports, gen.TypeToImport(codeType))
+			}
+			if s.Discriminator != nil && add.Discriminator == nil {
+				add.Discriminator = buildDiscriminatorModel(s.Discriminator, gen, opts.Doc.Model.Components.Schemas)
+			}
+		}
+
+		// --- allOf: inheritance / composition ---
+		if len(s.AllOf) > 0 {
+			add.IsAllOf = true
+			// collect required fields from both the root schema and any inline allOf sub-schemas
+			allRequired := append([]string{}, s.Required...)
+			for _, sp := range s.AllOf {
+				if !sp.IsReference() {
+					if inlineS := sp.Schema(); inlineS != nil {
+						allRequired = append(allRequired, inlineS.Required...)
+					}
+				}
+			}
+
+			for _, sp := range s.AllOf {
+				allOfSchema, schemaErr := sp.BuildSchema()
+				if schemaErr != nil || allOfSchema == nil {
+					continue
+				}
+				if sp.IsReference() {
+					// referenced schema → record as a parent/interface type
+					codeType, ctErr := gen.ToCodeType(allOfSchema, CodeTypeSchemaParent, false)
+					if ctErr != nil {
+						continue
+					}
+					codeType = gen.PostProcessType(codeType)
+					add.AllOf = append(add.AllOf, codeType)
+					add.Imports = append(add.Imports, gen.TypeToImport(codeType))
+				} else {
+					// inline sub-schema → merge its properties directly
+					if allOfSchema.Properties != nil {
+						props, imports, propErr := buildModelProperties(allOfSchema, gen, allRequired, add.Properties)
+						if propErr != nil {
+							return models, propErr
+						}
+						add.Properties = append(add.Properties, props...)
+						add.Imports = append(add.Imports, imports...)
+					}
+				}
+			}
+		}
+
+		// --- object: direct properties ---
+		if slices.Contains(s.Type, "object") && s.Properties != nil {
+			props, imports, propErr := buildModelProperties(s, gen, s.Required, add.Properties)
+			if propErr != nil {
+				return models, propErr
+			}
+			add.Properties = append(add.Properties, props...)
+			add.Imports = append(add.Imports, imports...)
 		} else if slices.Contains(s.Type, "array") {
-			mParent, err := gen.ToCodeType(s, CodeTypeSchemaArray, false)
-			if err != nil {
-				return models, fmt.Errorf("error converting type of [%s:array]: %w", schema.Key, err)
+			// array type alias
+			mParent, ctErr := gen.ToCodeType(s, CodeTypeSchemaArray, false)
+			if ctErr != nil {
+				return models, fmt.Errorf("error converting type of [%s:array]: %w", schema.Key, ctErr)
+			}
+			add.Parent = gen.PostProcessType(mParent)
+		} else if !add.IsOneOf && !add.IsAnyOf && !add.IsAllOf {
+			// fallback: simple type alias or unrecognised type
+			mParent, ctErr := gen.ToCodeType(s, CodeTypeSchemaParent, false)
+			if ctErr != nil {
+				return models, fmt.Errorf("error converting type of [%s]: %w", schema.Key, ctErr)
 			}
 			mParent = gen.PostProcessType(mParent)
-
-			add.Parent = mParent
-		} else {
-			mParent, err := gen.ToCodeType(s, CodeTypeSchemaParent, false)
-			if err != nil {
-				return models, fmt.Errorf("error converting type of [%s]: %w", schema.Key, err)
-			}
-			mParent = gen.PostProcessType(mParent)
-
 			add.Parent = mParent
 			add.Imports = append(add.Imports, gen.TypeToImport(add.Parent))
 		}
-		if len(add.Properties) == 0 && (add.Parent.Name != "" || add.Parent.IsArray || add.Parent.IsList || add.Parent.IsMap) {
+
+		// mark as a type alias when the model has no properties and no polymorphic structure
+		if len(add.Properties) == 0 && !add.IsOneOf && !add.IsAnyOf && !add.IsAllOf &&
+			(add.Parent.Name != "" || add.Parent.IsArray || add.Parent.IsList || add.Parent.IsMap) {
 			add.IsTypeAlias = true
 		}
 
@@ -479,6 +539,103 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 	}
 
 	return models, nil
+}
+
+// buildModelProperties converts the properties of an OpenAPI schema into template Property values.
+// existing is the list already accumulated so that duplicate property names are skipped.
+func buildModelProperties(s *base.Schema, gen CodeGenerator, required []string, existing []Property) ([]Property, []string, error) {
+	var properties []Property
+	var imports []string
+
+	if s.Properties == nil {
+		return properties, imports, nil
+	}
+
+	for p := s.Properties.Oldest(); p != nil; p = p.Next() {
+		propName := gen.ToPropertyName(p.Key)
+
+		// skip duplicates already present in existing or already added in this call
+		alreadyAdded := false
+		for _, ep := range existing {
+			if ep.Name == propName {
+				alreadyAdded = true
+				break
+			}
+		}
+		if !alreadyAdded {
+			for _, np := range properties {
+				if np.Name == propName {
+					alreadyAdded = true
+					break
+				}
+			}
+		}
+		if alreadyAdded {
+			continue
+		}
+
+		pSchema, pErr := p.Value.BuildSchema()
+		if pErr != nil {
+			return properties, imports, fmt.Errorf("error building property schema: %w", pErr)
+		}
+
+		pType, err := gen.ToCodeType(pSchema, CodeTypeSchemaProperty, false)
+		if err != nil {
+			return properties, imports, fmt.Errorf("error converting type of property [%s]: %w", p.Key, err)
+		}
+		pType = gen.PostProcessType(pType)
+
+		allowedValues, err := openapidocument.EnumToAllowedValues(pSchema)
+		if err != nil {
+			return properties, imports, fmt.Errorf("error processing enum definitions: %w", err)
+		}
+
+		properties = append(properties, Property{
+			Name:            propName,
+			FieldName:       p.Key,
+			Description:     pSchema.Description,
+			Title:           pSchema.Title,
+			Type:            pType,
+			IsPrimitiveType: gen.IsPrimitiveType(pType.Name),
+			Required:        slices.Contains(required, p.Key),
+			Nullable:        openapiutil.IsSchemaNullable(pSchema),
+			ReadOnly:        getBoolValue(pSchema.ReadOnly, false),
+			WriteOnly:       getBoolValue(pSchema.WriteOnly, false),
+			AllowedValues:   allowedValues,
+		})
+		imports = append(imports, gen.TypeToImport(pType))
+	}
+
+	return properties, imports, nil
+}
+
+// buildDiscriminatorModel converts a libopenapi Discriminator into a DiscriminatorModel.
+// It resolves each mapping value (a $ref) to the code-level class name using the component schemas.
+func buildDiscriminatorModel(disc *base.Discriminator, gen CodeGenerator, schemas *orderedmap.Map[string, *base.SchemaProxy]) *DiscriminatorModel {
+	dm := &DiscriminatorModel{
+		PropertyName: disc.PropertyName,
+		Mapping:      make(map[string]string),
+	}
+	if disc.Mapping == nil {
+		return dm
+	}
+	for entry := disc.Mapping.Oldest(); entry != nil; entry = entry.Next() {
+		ref := entry.Value
+		// extract schema key from "#/components/schemas/<Key>" or a bare name
+		schemaKey := ref
+		if idx := strings.LastIndex(ref, "/"); idx >= 0 {
+			schemaKey = ref[idx+1:]
+		}
+		// resolve the actual title from the component schema so we get the right class name
+		className := gen.ToClassName(schemaKey)
+		if sp, ok := schemas.Get(schemaKey); ok {
+			if resolved, err := sp.BuildSchema(); err == nil && resolved != nil && resolved.Title != "" {
+				className = gen.ToClassName(resolved.Title)
+			}
+		}
+		dm.Mapping[entry.Key] = className
+	}
+	return dm
 }
 
 func BuildEnums(opts ModelOpts) ([]Enum, error) {

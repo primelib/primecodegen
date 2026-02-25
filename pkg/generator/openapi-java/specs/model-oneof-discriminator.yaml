@@ -1,0 +1,32 @@
+openapi: 3.0.1
+info:
+  title: Sample API
+  version: 1.0.0
+components:
+  schemas:
+    Pet:
+      title: PetDto
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: petType
+        mapping:
+          cat: '#/components/schemas/Cat'
+          dog: '#/components/schemas/Dog'
+    Cat:
+      title: CatDto
+      type: object
+      properties:
+        petType:
+          type: string
+        name:
+          type: string
+    Dog:
+      title: DogDto
+      type: object
+      properties:
+        petType:
+          type: string
+        breed:
+          type: string
