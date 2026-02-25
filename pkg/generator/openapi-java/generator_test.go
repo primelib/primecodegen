@@ -188,8 +188,8 @@ func TestOneOfDiscriminator(t *testing.T) {
 	// assert discriminator
 	assert.NotNil(t, petModel.Discriminator)
 	assert.Equal(t, "petType", petModel.Discriminator.PropertyName)
-	assert.Equal(t, "CatDto", petModel.Discriminator.Mapping["cat"])
-	assert.Equal(t, "DogDto", petModel.Discriminator.Mapping["dog"])
+	assert.Equal(t, "CatDto", petModel.Discriminator.Mapping["cat"].Name)
+	assert.Equal(t, "DogDto", petModel.Discriminator.Mapping["dog"].Name)
 }
 
 func TestAnyOf(t *testing.T) {

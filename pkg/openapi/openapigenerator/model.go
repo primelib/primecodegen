@@ -610,11 +610,11 @@ func buildModelProperties(s *base.Schema, gen CodeGenerator, required []string, 
 }
 
 // buildDiscriminatorModel converts a libopenapi Discriminator into a DiscriminatorModel.
-// It resolves each mapping value (a $ref) to the code-level class name using the component schemas.
+// It resolves each mapping value (a $ref) to a CodeType using the component schemas.
 func buildDiscriminatorModel(disc *base.Discriminator, gen CodeGenerator, schemas *orderedmap.Map[string, *base.SchemaProxy]) *DiscriminatorModel {
 	dm := &DiscriminatorModel{
 		PropertyName: disc.PropertyName,
-		Mapping:      make(map[string]string),
+		Mapping:      make(map[string]CodeType),
 	}
 	if disc.Mapping == nil {
 		return dm
@@ -626,14 +626,18 @@ func buildDiscriminatorModel(disc *base.Discriminator, gen CodeGenerator, schema
 		if idx := strings.LastIndex(ref, "/"); idx >= 0 {
 			schemaKey = ref[idx+1:]
 		}
-		// resolve the actual title from the component schema so we get the right class name
-		className := gen.ToClassName(schemaKey)
+		// resolve the component schema to a CodeType
 		if sp, ok := schemas.Get(schemaKey); ok {
-			if resolved, err := sp.BuildSchema(); err == nil && resolved != nil && resolved.Title != "" {
-				className = gen.ToClassName(resolved.Title)
+			if resolved, err := sp.BuildSchema(); err == nil && resolved != nil {
+				codeType, ctErr := gen.ToCodeType(resolved, CodeTypeSchemaProperty, false)
+				if ctErr == nil {
+					dm.Mapping[entry.Key] = gen.PostProcessType(codeType)
+					continue
+				}
 			}
 		}
-		dm.Mapping[entry.Key] = className
+		// fallback: construct a plain CodeType from the schema key name
+		dm.Mapping[entry.Key] = gen.PostProcessType(CodeType{Name: gen.ToClassName(schemaKey)})
 	}
 	return dm
 }

@@ -266,8 +266,8 @@ type Parameter struct {
 // DiscriminatorModel holds the discriminator property name and value-to-type mapping
 // for oneOf/anyOf schemas, allowing generators to emit proper dispatch code (e.g. Jackson annotations).
 type DiscriminatorModel struct {
-	PropertyName string            `yaml:"propertyName"`           // JSON property that carries the type tag
-	Mapping      map[string]string `yaml:"mapping,omitempty"`      // discriminator value → code class name
+	PropertyName string              `yaml:"propertyName"`      // JSON property that carries the type tag
+	Mapping      map[string]CodeType `yaml:"mapping,omitempty"` // discriminator value → resolved CodeType
 }
 
 type Model struct {
