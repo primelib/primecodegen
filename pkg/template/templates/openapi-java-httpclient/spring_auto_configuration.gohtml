@@ -13,6 +13,7 @@ import {{ $.Common.Packages.Client }}.{{ $service.Type }}ConsumerApi;
 {{- end }}
 
 import io.github.primelib.primecodegenlib.java.feign.common.api.AuthMethod;
+import io.github.primelib.primecodegenlib.java.feign.common.auth.BasicAuthSpec;
 import io.github.primelib.primecodegenlib.java.feign.common.auth.BearerAuthSpec;
 import io.github.primelib.primecodegenlib.java.feign.common.auth.OAuth2ClientCredentialsAuthSpec;
 import io.github.primelib.primecodegenlib.java.feign.common.auth.OAuth2UserCredentialsAuthSpec;
@@ -155,6 +156,11 @@ public class {{ .Metadata.Name }}SpringAutoConfiguration {
                         auth.propertyKey(props.getAuth().getTokenValueTemplate());
                     }
                     auth.propertyKey(props.getAuth().getToken());
+                }));
+            case "basic":
+                return List.of(new BasicAuthSpec(auth -> {
+                    auth.username(props.getAuth().getUsername());
+                    auth.password(props.getAuth().getPassword());
                 }));
             default:
                 return null;

@@ -6,10 +6,11 @@ import (
 	"strings"
 	"sync"
 
+	"log/slog"
+
 	"github.com/primelib/primecodegen/pkg/template"
 	"github.com/primelib/primecodegen/pkg/template/templateapi"
 	"github.com/primelib/primecodegen/pkg/util"
-	"log/slog"
 	"github.com/shomali11/parallelizer"
 	"gopkg.in/yaml.v3"
 )
@@ -51,7 +52,10 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 		ArtifactId:       generatorOpts.ArtifactId,
 		Name:             strings.TrimSpace(templateData.Name),
 		DisplayName:      strings.TrimSpace(templateData.DisplayName),
+		Title:            templateData.Title,
 		Description:      templateData.Description,
+		APISpecVersion:   templateData.APISpecVersion,
+		GeneratorVersion: templateData.GeneratorVersion,
 		RepositoryUrl:    generatorOpts.RepositoryUrl,
 		LicenseName:      generatorOpts.LicenseName,
 		LicenseUrl:       generatorOpts.LicenseUrl,

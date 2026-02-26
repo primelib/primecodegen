@@ -10,18 +10,21 @@ import (
 )
 
 type DocumentModel struct {
-	Name            string
-	DisplayName     string
-	Description     string
-	Tags            map[string]Tag
-	Endpoints       Endpoints
-	Auth            Auth
-	Services        map[string]Service
-	Operations      []Operation
-	OperationsByTag map[string][]Operation
-	Models          []Model
-	Enums           []Enum
-	Packages        CommonPackages // Packages holds the import paths for output packages
+	Name             string
+	DisplayName      string
+	Title            string
+	Description      string
+	APISpecVersion   string
+	GeneratorVersion string
+	Tags             map[string]Tag
+	Endpoints        Endpoints
+	Auth             Auth
+	Services         map[string]Service
+	Operations       []Operation
+	OperationsByTag  map[string][]Operation
+	Models           []Model
+	Enums            []Enum
+	Packages         CommonPackages // Packages holds the import paths for output packages
 }
 
 type CommonPackages struct {
@@ -38,8 +41,11 @@ type Metadata struct {
 	ArtifactGroupId  string
 	ArtifactId       string
 	Name             string
-	DisplayName      string
+	DisplayName      string // DisplayName is the human-readable name of the library, can be used in generated code
+	Title            string // Title is the human-readable title of the library, can be used in documentation and comments
 	Description      string
+	APISpecVersion   string   // APISpecVersion is the version of the API specification (e.g. version in the OpenAPI document info section)
+	GeneratorVersion string   // GeneratorVersion is the version of the code generator
 	RepositoryUrl    string   // RepositoryUrl is the URL to the repository (without protocol or .git suffix)
 	LicenseName      string   // LicenseName is the name of the license (MIT, Apache-2.0, etc.)
 	LicenseUrl       string   // LicenseUrl is the URL to the license

@@ -35,6 +35,7 @@ func (c Configuration) MultiLanguage() bool {
 
 type RepositoryConf struct {
 	Name          string `yaml:"name"`
+	Title         string `yaml:"title"`
 	Description   string `yaml:"description"`
 	URL           string `yaml:"url"`
 	InceptionYear int    `yaml:"inceptionYear"`
@@ -50,10 +51,16 @@ type MaintainerConf struct {
 }
 
 type ProviderConf struct {
-	ProductDescription string   `yaml:"productDescription"`
-	Organizations      []string `yaml:"organizations"`
-	Documentation      []Link   `yaml:"documentation"`
-	Specifications     []Link   `yaml:"specifications"`
+	ProductDescription string      `yaml:"productDescription"`
+	Organizations      []string    `yaml:"organizations"`
+	Trademarks         []Trademark `yaml:"trademarks"`
+	Documentation      []Link      `yaml:"documentation"`
+	Specifications     []Link      `yaml:"specifications"`
+}
+
+type Trademark struct {
+	Name  string
+	Owner string
 }
 
 type Link struct {
