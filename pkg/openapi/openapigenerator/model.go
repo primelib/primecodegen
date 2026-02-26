@@ -14,15 +14,26 @@ import (
 )
 
 func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator CodeGenerator, packageConfig CommonPackages) (DocumentModel, error) {
-	title := doc.Model.Info.Title
-	title = strings.TrimSuffix(title, "API")
+	specNameNode, _ := doc.Model.Info.Extensions.Get("x-name")
+	if specNameNode == nil {
+		return DocumentModel{}, fmt.Errorf("document is missing required x-name extension in info section")
+	}
+
+	specName := specNameNode.Value
+	specName = strings.TrimSuffix(specName, "API")
+
+	specTitle := doc.Model.Info.Title
+	specTitle = strings.TrimSuffix(specTitle, "API")
 	var template = DocumentModel{
-		Name:        generator.ToClassName(title),
-		DisplayName: title,
-		Description: doc.Model.Info.Description,
-		Endpoints:   BuildEndpoints(doc),
-		Auth:        BuildAuth(doc),
-		Packages:    packageConfig,
+		Name:             generator.ToClassName(specName),
+		DisplayName:      specName,
+		Title:            specTitle,
+		Description:      doc.Model.Info.Description,
+		APISpecVersion:   doc.Model.Info.Version,
+		GeneratorVersion: "1.0.0", // TODO: introduce version constants
+		Endpoints:        BuildEndpoints(doc),
+		Auth:             BuildAuth(doc),
+		Packages:         packageConfig,
 	}
 
 	// all operations
