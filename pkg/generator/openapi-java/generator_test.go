@@ -32,6 +32,12 @@ var (
 	modelArrayOfMap []byte
 	//go:embed specs/model-array-oneof.yaml
 	modelArrayOfOneOf []byte
+	//go:embed specs/model-oneof-discriminator.yaml
+	modelOneOfDiscriminator []byte
+	//go:embed specs/model-anyof.yaml
+	modelAnyOf []byte
+	//go:embed specs/model-allof.yaml
+	modelAllOf []byte
 	//go:embed specs/callback-basic.yaml
 	callbackBasic []byte
 	//go:embed specs/webhook-basic.yaml
@@ -152,6 +158,92 @@ func TestWebhookBasic(t *testing.T) {
 
 	// assert
 	assert.Len(t, templateData.Models, 1)
+}
+
+func TestOneOfDiscriminator(t *testing.T) {
+	// arrange
+	v3doc := openapidocument.OpenV3DocumentForTest(modelOneOfDiscriminator)
+
+	// act
+	templateData, err := openapigenerator.BuildTemplateData(v3doc, NewGenerator(), commonPackages)
+	assert.NoError(t, err)
+	assert.NotNil(t, templateData)
+
+	// find PetDto
+	var petModel *openapigenerator.Model
+	for i := range templateData.Models {
+		if templateData.Models[i].Name == "PetDto" {
+			petModel = &templateData.Models[i]
+			break
+		}
+	}
+
+	// assert oneOf structure
+	assert.NotNil(t, petModel, "PetDto model should exist")
+	assert.True(t, petModel.IsOneOf)
+	assert.Len(t, petModel.OneOf, 2)
+	assert.Equal(t, "CatDto", petModel.OneOf[0].Name)
+	assert.Equal(t, "DogDto", petModel.OneOf[1].Name)
+
+	// assert discriminator
+	assert.NotNil(t, petModel.Discriminator)
+	assert.Equal(t, "petType", petModel.Discriminator.PropertyName)
+	assert.Equal(t, "CatDto", petModel.Discriminator.Mapping["cat"].Name)
+	assert.Equal(t, "DogDto", petModel.Discriminator.Mapping["dog"].Name)
+}
+
+func TestAnyOf(t *testing.T) {
+	// arrange
+	v3doc := openapidocument.OpenV3DocumentForTest(modelAnyOf)
+
+	// act
+	templateData, err := openapigenerator.BuildTemplateData(v3doc, NewGenerator(), commonPackages)
+	assert.NoError(t, err)
+	assert.NotNil(t, templateData)
+
+	// find StringOrIntegerDto
+	var model *openapigenerator.Model
+	for i := range templateData.Models {
+		if templateData.Models[i].Name == "StringOrIntegerDto" {
+			model = &templateData.Models[i]
+			break
+		}
+	}
+
+	assert.NotNil(t, model, "StringOrIntegerDto model should exist")
+	assert.True(t, model.IsAnyOf)
+	assert.Len(t, model.AnyOf, 2)
+	assert.Equal(t, "String", model.AnyOf[0].Name)
+	assert.Equal(t, "long", model.AnyOf[1].Name)
+}
+
+func TestAllOf(t *testing.T) {
+	// arrange
+	v3doc := openapidocument.OpenV3DocumentForTest(modelAllOf)
+
+	// act
+	templateData, err := openapigenerator.BuildTemplateData(v3doc, NewGenerator(), commonPackages)
+	assert.NoError(t, err)
+	assert.NotNil(t, templateData)
+
+	// find DogDto (the allOf model)
+	var dogModel *openapigenerator.Model
+	for i := range templateData.Models {
+		if templateData.Models[i].Name == "DogDto" {
+			dogModel = &templateData.Models[i]
+			break
+		}
+	}
+
+	assert.NotNil(t, dogModel, "DogDto model should exist")
+	assert.True(t, dogModel.IsAllOf)
+	assert.Len(t, dogModel.AllOf, 1)
+	assert.Equal(t, "AnimalDto", dogModel.AllOf[0].Name)
+
+	// inline allOf sub-schema properties are merged directly
+	assert.Len(t, dogModel.Properties, 1)
+	assert.Equal(t, "breed", dogModel.Properties[0].Name)
+	assert.True(t, dogModel.Properties[0].Required)
 }
 
 func dumpJSON(v interface{}) {
