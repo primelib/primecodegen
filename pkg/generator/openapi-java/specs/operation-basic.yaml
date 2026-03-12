@@ -2,6 +2,7 @@ openapi: 3.0.1
 info:
   title: Sample API
   version: 1.0.0
+  x-name: Sample API
 paths:
   /books:
     post:

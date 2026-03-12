@@ -138,7 +138,7 @@ func (g *JavaGenerator) TemplateData(opts openapigenerator.TemplateDataOpts) (op
 
 func (g *JavaGenerator) ToClassName(name string) string {
 	name = g.sanitizeName(name)
-	if slices.Contains(g.reservedWords, name) {
+	if slices.Contains(g.reservedWords, strings.ToLower(name)) {
 		name = name + "Model"
 	}
 
@@ -147,7 +147,7 @@ func (g *JavaGenerator) ToClassName(name string) string {
 
 func (g *JavaGenerator) ToFunctionName(name string) string {
 	name = g.sanitizeName(name)
-	if slices.Contains(g.reservedWords, name) {
+	if slices.Contains(g.reservedWords, strings.ToLower(name)) {
 		name = name + "Func"
 	}
 
@@ -160,7 +160,7 @@ func (g *JavaGenerator) ToPropertyName(name string) string {
 	}
 
 	name = g.sanitizeName(name)
-	if slices.Contains(g.reservedWords, name) {
+	if slices.Contains(g.reservedWords, strings.ToLower(name)) {
 		name = name + "Prop"
 	}
 
@@ -173,7 +173,7 @@ func (g *JavaGenerator) ToParameterName(name string) string {
 	}
 
 	name = g.sanitizeName(name)
-	if slices.Contains(g.reservedWords, name) {
+	if slices.Contains(g.reservedWords, strings.ToLower(name)) {
 		name = name + "Prop"
 	}
 
@@ -186,7 +186,7 @@ func (g *JavaGenerator) ToConstantName(name string) string {
 	}
 
 	name = g.sanitizeName(name)
-	if slices.Contains(g.reservedWords, name) {
+	if slices.Contains(g.reservedWords, strings.ToLower(name)) {
 		name = name + "_CONST"
 	}
 
