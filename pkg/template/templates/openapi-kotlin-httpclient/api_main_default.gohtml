@@ -53,36 +53,41 @@ class {{ .Metadata.Name }}Api(
     {{- end }}
     suspend fun {{ $op.Name | toFunctionName }}(
     {{- range $i, $param := $op.MutableParameters }}
-        {{ $param.Name }}: {{ if not $param.Required }}{{ $param.Type.Type }}? = null{{ else }}{{ $param.Type.Type }}{{ end }}{{ if notLast $op.MutableParameters $i }},{{ end }}
+        {{ $param.Name }}: {{ if not $param.Required }}{{ $param.Type.Type }}? = null{{ else }}{{ $param.Type.Type }}{{ end }},
     {{- end }}
+        extraHeaders: Map<String, String> = emptyMap(),
+        extraQueryParams: Map<String, String> = emptyMap(),
     ): {{ $op.Name }}Response {
         val url = URLBuilder(spec.baseUrl).apply {
             {{- if $op.PathSegments }}
             path({{- range $i, $seg := $op.PathSegments }}{{ if $seg.IsParameter }}{{ $seg.ParameterName }}{{ else }}"{{ $seg.Value | escapeStringValue }}"{{ end }}{{ if notLast $op.PathSegments $i }}, {{ end }}{{- end }})
             {{- end }}
-            {{- if $op.HeaderParameters }}
-            headers {
-                {{- range $qp := $op.HeaderParameters }}
-                {{- if $qp.StaticValue }}
-                append("{{ $qp.FieldName }}", "{{ $qp.StaticValue }}")
-                {{- else }}
-                {{ $qp.Name }}?.let { append("{{ $qp.FieldName }}", it.toString()) }}
-                {{- end }}
-                {{- end }}
-            }
-            {{- end }}
             {{- range $qp := $op.QueryParameters }}
+            {{- if $qp.Type.IsArray }}
+            {{ $qp.Name }}?.forEach { value ->
+                parameters.append("{{ $qp.FieldName }}", value.toString())
+            }
+            {{- else }}
             {{ $qp.Name }}?.let { parameters.append("{{ $qp.FieldName }}", it.toString()) }
             {{- end }}
+            {{- end }}
+            extraQueryParams.forEach { (key, value) ->
+                parameters.append(key, value)
+            }
         }.build()
 
         return try {
             val response: HttpResponse = httpClient.put(url) {
                 {{- range $hp := $op.HeaderParameters }}
-                {{- if not $hp.StaticValue }}
+                {{- if $hp.StaticValue }}
+                {{ $hp.Name }}?.let { headers.append("{{ $hp.FieldName }}", "{{ $hp.StaticValue }}") }
+                {{- else }}
                 {{ $hp.Name }}?.let { headers.append("{{ $hp.FieldName }}", it.toString()) }
                 {{- end }}
                 {{- end }}
+                extraHeaders.forEach { (key, value) ->
+                    headers.append(key, value)
+                }
                 {{- if $op.BodyParameter }}
                 setBody({{ $op.BodyParameter.Name }})
                 {{- end }}

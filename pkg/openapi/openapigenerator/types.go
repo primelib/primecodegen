@@ -261,6 +261,8 @@ type Parameter struct {
 	Type             CodeType                                `yaml:"type,omitempty"`
 	IsPrimitiveType  bool                                    `yaml:"isPrimitiveType,omitempty"`
 	IsImmutable      bool                                    `yaml:"isImmutable,omitempty"`
+	Explode          bool                                    `yaml:"explode,omitempty"`          // Explode decides if array values are joined or passed multiple times (exploded)
+	ExplodeDelimiter string                                  `yaml:"explodeDelimiter,omitempty"` // ExplodeDelimiter decides if array values are joined with a delimiter (e.g. comma) when explode is false
 	Required         bool                                    `yaml:"required,omitempty"`
 	AllowedValues    map[string]openapidocument.AllowedValue `yaml:"allowedValues,omitempty"`
 	StaticValue      string                                  `yaml:"staticValue,omitempty"`

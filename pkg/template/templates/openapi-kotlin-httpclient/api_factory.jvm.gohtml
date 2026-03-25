@@ -34,7 +34,7 @@ object {{ .Metadata.Name }}Factory {
 }
 
 @Suppress("UNCHECKED_CAST")
-fun <T : Any> buildClient(api: KClass<T>, spec: JvmKeycloakClientFactorySpec<T>): T {
+fun <T : Any> buildClient(api: KClass<T>, spec: Jvm{{ .Metadata.Name }}FactorySpec<T>): T {
     // create ktor http client
     val httpClient = HttpClient(CIO) {
         // content negotiation

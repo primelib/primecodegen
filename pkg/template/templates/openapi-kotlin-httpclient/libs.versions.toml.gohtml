@@ -2,13 +2,13 @@
 {{- template "header-hash" }}
 
 [versions]
-ktor-version = "3.3.1"
+ktor-version = "3.4.1"
 ktor-metrics-micrometer-version = "1.6.8"
-kotlin-version = "2.2.21"
+kotlin-version = "2.3.20"
 kotlinx-coroutines-version = "1.10.2"
-opentelemetry-version = "1.55.0"
-opentelemetry-ktor-version = "2.21.0-alpha"
-jetbrains-annotations-version = "26.0.2-1"
+opentelemetry-version = "1.60.1"
+opentelemetry-ktor-version = "2.26.1-alpha"
+jetbrains-annotations-version = "26.1.0"
 
 [libraries]
 openfeign-bom = { module = "io.github.openfeign:feign-bom", version = "13.6" }
@@ -39,5 +39,5 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations-version" }
 
 [plugins]
-configuration = { id = "me.philippheuer.configuration", version = "0.20.0" }
+configuration = { id = "me.philippheuer.configuration", version = "0.20.1" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform" }
