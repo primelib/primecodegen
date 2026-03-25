@@ -264,7 +264,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					Description:      param.Description,
 					Type:             pType,
 					IsPrimitiveType:  gen.IsPrimitiveType(pType.Name),
-					Explode:          getBoolValue(param.Explode, false),
+					Explode:          getBoolValue(param.Explode, true),
 					ExplodeDelimiter: explodeDelimiter,
 					AllowedValues:    allowedValues,
 					Required:         getBoolValue(param.Required, false),
@@ -315,11 +315,11 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 			}
 
 			// response type
+			operation.ReturnTypeByCode = make(map[string]*CodeType)
 			for resp := op.Value.Responses.Codes.Oldest(); resp != nil; resp = resp.Next() {
 				if resp.Value.Content == nil {
 					continue
 				}
-
 				if resp.Value.Content.First() == nil {
 					continue
 				}
@@ -332,7 +332,9 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					if err != nil {
 						return operations, fmt.Errorf("error converting type of [%s:%s:responseType:%s]: %w", path.Key, op.Key, resp.Key, err)
 					}
-					operation.ReturnType = gen.PostProcessType(responseType)
+					processedResponseType := gen.PostProcessType(responseType)
+					operation.ReturnType = processedResponseType
+					operation.ReturnTypeByCode[resp.Key] = &processedResponseType
 
 					// accept header as static parameter
 					mediaType := respContent.Key() // e.g. "application/json"
@@ -355,8 +357,16 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 							operation.AddParameter(headerParam)
 						}
 					}
+				} else {
+					respContent := resp.Value.Content.First()
 
-					break
+					// return type
+					responseType, err := gen.ToCodeType(respContent.Value().Schema.Schema(), CodeTypeSchemaResponse, false)
+					if err != nil {
+						return operations, fmt.Errorf("error converting type of [%s:%s:responseType:%s]: %w", path.Key, op.Key, resp.Key, err)
+					}
+					processedResponseType := gen.PostProcessType(responseType)
+					operation.ReturnTypeByCode[resp.Key] = &processedResponseType
 				}
 			}
 

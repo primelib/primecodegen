@@ -78,6 +78,15 @@ var Template = templateapi.Config{
 			Type:            templateapi.TypeOperationEach,
 			Kind:            templateapi.KindAPI,
 		},
+		// module - spring
+		{
+			SourceTemplate:  "build.gradle.kts.spring.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "spring",
+			TargetFileName:  "build.gradle.kts",
+			Type:            templateapi.TypeSupportOnce,
+			Kind:            templateapi.KindBuildSystem,
+		},
 		// support files - docs
 		{
 			Description:    "README.md",
