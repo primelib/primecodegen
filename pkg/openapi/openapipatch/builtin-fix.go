@@ -151,7 +151,7 @@ func FixMissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document], config ma
 	// request bodies
 	for rb := doc.Model.Components.RequestBodies.Oldest(); rb != nil; rb = rb.Next() {
 		rbValue := rb.Value
-		if rbValue == nil {
+		if rbValue == nil || rb.Value.Content == nil {
 			continue
 		}
 
@@ -160,6 +160,22 @@ func FixMissingSchemaTitle(doc *libopenapi.DocumentModel[v3.Document], config ma
 			if schemaRef != nil && schemaRef.Schema().Title == "" {
 				schemaRef.Schema().Title = rb.Key
 				logging.Trace("missing schema title in requestBody, setting to requestBody key", "requestBody", rb.Key, "mediaType", mt.Key)
+			}
+		}
+	}
+
+	// responses
+	for resp := doc.Model.Components.Responses.Oldest(); resp != nil; resp = resp.Next() {
+		respValue := resp.Value
+		if respValue == nil || respValue.Content == nil {
+			continue
+		}
+
+		for mt := respValue.Content.Oldest(); mt != nil; mt = mt.Next() {
+			schemaRef := mt.Value.Schema
+			if schemaRef != nil && schemaRef.Schema().Title == "" {
+				schemaRef.Schema().Title = resp.Key
+				logging.Trace("missing schema title in response, setting to response key", "response", resp.Key, "mediaType", mt.Key)
 			}
 		}
 	}
