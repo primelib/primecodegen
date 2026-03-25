@@ -11,6 +11,7 @@ import (
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/openapi/openapiutil"
+	"github.com/primelib/primecodegen/pkg/util"
 )
 
 func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator CodeGenerator, packageConfig CommonPackages) (DocumentModel, error) {
@@ -60,7 +61,7 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 	for _, tag := range doc.Model.Tags {
 		service := Service{
 			Name:          tag.Name,
-			Type:          generator.ToClassName(template.Name + tag.Name),
+			Type:          generator.ToClassName(template.Name + util.UpperCaseFirstLetter(tag.Name)),
 			Description:   tag.Description,
 			Operations:    []Operation{},
 			Documentation: make([]Documentation, 0),
