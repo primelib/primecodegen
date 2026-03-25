@@ -542,53 +542,50 @@ func BuildEnums(opts ModelOpts) ([]Enum, error) {
 	return enums, nil
 }
 
-// PruneTypeAliases removes type aliases and replaces it with the actual type
-// A type alias is identified by not having properties and the parent being a primitive type
+// PruneTypeAliases removes type aliases and replaces them with the actual type
+// A type alias is identified by the absence of properties and the parent being a primitive type
 func PruneTypeAliases(documentModel DocumentModel, primitiveTypes []string) DocumentModel {
-	var typeAliasModels []Model
+	// build alias map
+	aliasMap := make(map[string]CodeType)
 	for _, model := range documentModel.Models {
 		if model.IsTypeAlias {
-			typeAliasModels = append(typeAliasModels, model)
+			aliasMap[strings.ToLower(model.Name)] = model.Parent
+		}
+	}
+	resolveType := func(t CodeType) CodeType {
+		if resolved, ok := aliasMap[strings.ToLower(t.Name)]; ok {
+			return resolved
+		}
+		return t
+	}
+
+	// model aliases
+	for i := range documentModel.Models {
+		for j := range documentModel.Models[i].Properties {
+			documentModel.Models[i].Properties[j].Type =
+				resolveType(documentModel.Models[i].Properties[j].Type)
 		}
 	}
 
-	// fix types (replace type alias with primitive type)
-	for i, model := range documentModel.Models {
-		for j, property := range model.Properties {
-			for _, typeAliasModel := range typeAliasModels {
-				if property.Type.Name == typeAliasModel.Name {
-					documentModel.Models[i].Properties[j].Type = typeAliasModel.Parent
-					break
-				}
-			}
-		}
-	}
-	for i, op := range documentModel.Operations {
-		for j, param := range op.Parameters {
-			for _, typeAliasModel := range typeAliasModels {
-				if param.Type.Name == typeAliasModel.Name {
-					documentModel.Operations[i].Parameters[j].Type = typeAliasModel.Parent
-					break
-				}
-			}
+	// operation aliases
+	for i := range documentModel.Operations {
+		for j := range documentModel.Operations[i].Parameters {
+			documentModel.Operations[i].Parameters[j].Type =
+				resolveType(documentModel.Operations[i].Parameters[j].Type)
 		}
 
-		for _, typeAliasModel := range typeAliasModels {
-			if op.ReturnType.Name == typeAliasModel.Name {
-				documentModel.Operations[i].ReturnType = typeAliasModel.Parent
-				break
-			}
-		}
+		documentModel.Operations[i].ReturnType =
+			resolveType(documentModel.Operations[i].ReturnType)
 	}
 
-	// remove type alias models
-	for _, typeAliasModel := range typeAliasModels {
-		for i, model := range documentModel.Models {
-			if strings.ToLower(model.Name) == strings.ToLower(typeAliasModel.Name) {
-				documentModel.Models = append(documentModel.Models[:i], documentModel.Models[i+1:]...)
-			}
+	// filter models
+	filtered := make([]Model, 0, len(documentModel.Models))
+	for _, model := range documentModel.Models {
+		if _, isAlias := aliasMap[strings.ToLower(model.Name)]; !isAlias {
+			filtered = append(filtered, model)
 		}
 	}
+	documentModel.Models = filtered
 
 	return documentModel
 }
