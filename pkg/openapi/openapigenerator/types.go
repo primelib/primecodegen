@@ -166,6 +166,7 @@ type Operation struct {
 	Tag                      string                              `yaml:"tag,omitempty"`
 	Tags                     []string                            `yaml:"tags,omitempty"`
 	ReturnType               CodeType                            `yaml:"returnType,omitempty"`
+	ReturnTypeByCode         map[string]*CodeType                `yaml:"returnTypeByCode,omitempty"`
 	Deprecated               bool                                `yaml:"deprecated,omitempty"`
 	DeprecatedReason         string                              `yaml:"deprecatedReason,omitempty"`
 	Parameters               []Parameter                         `yaml:"parameters,omitempty"`          // Parameters holds all parameters, including static ones that can not be overridden

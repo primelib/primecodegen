@@ -1,0 +1,25 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.SupportOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+plugins {
+    `java-library`
+    alias(libs.plugins.configuration)
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.allopen)
+    alias(libs.plugins.kotlin.spring)
+}
+
+projectConfiguration {
+    language.set(me.philippheuer.projectcfg.domain.ProjectLanguage.KOTLIN)
+    type.set(me.philippheuer.projectcfg.domain.ProjectType.LIBRARY)
+{{- if .Metadata.ArtifactId }}
+    artifactId.set("{{ .Metadata.ArtifactId }}-spring-boot-starter")
+{{- end }}
+}
+
+dependencies {
+    // project
+    api(project(":core"))
+
+    // spring
+}

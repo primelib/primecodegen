@@ -9,6 +9,7 @@ import {{ $.Common.Packages.Models }}.{{ .Name }}
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 import org.jetbrains.annotations.ApiStatus
 
@@ -25,8 +26,30 @@ import org.jetbrains.annotations.ApiStatus
 @Serializable
 sealed class {{ .Operation.Name }}Response {
 
+{{- if index .Operation.ReturnTypeByCode "200" }}
     @Serializable
-    data class Ok(val data: {{ .Operation.ReturnType.QualifiedType }}) : {{ .Operation.Name }}Response()
+    data class Ok(val data: {{ (index .Operation.ReturnTypeByCode "200").QualifiedType }}) : {{ .Operation.Name }}Response()
+{{- end }}
+
+{{- if index .Operation.ReturnTypeByCode "201" }}
+    @Serializable
+    data class Created(val data: {{ (index .Operation.ReturnTypeByCode "201").QualifiedType }}) : {{ .Operation.Name }}Response()
+{{- end }}
+
+{{- if index .Operation.ReturnTypeByCode "204" }}
+    @Serializable
+    object NoContent : {{ .Operation.Name }}Response()
+{{- end }}
+
+{{- if index .Operation.ReturnTypeByCode "400" }}
+    @Serializable
+    data class BadRequest(val data: {{ (index .Operation.ReturnTypeByCode "400").QualifiedType }}) : {{ .Operation.Name }}Response()
+{{- end }}
+
+{{- if index .Operation.ReturnTypeByCode "404" }}
+    @Serializable
+    data class NotFound(val data: {{ (index .Operation.ReturnTypeByCode "404").QualifiedType }}) : {{ .Operation.Name }}Response()
+{{- end }}
 
     // default fallback for untyped or unexpected responses
     @Serializable

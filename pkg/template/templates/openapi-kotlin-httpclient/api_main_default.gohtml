@@ -11,6 +11,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
 import io.ktor.util.url
 import kotlinx.coroutines.*
+import kotlin.time.Instant
 
 import {{ $.Common.Packages.Root }}.{{ .Metadata.Name }}FactorySpec
 
@@ -64,11 +65,17 @@ class {{ .Metadata.Name }}Api(
             {{- end }}
             {{- range $qp := $op.QueryParameters }}
             {{- if $qp.Type.IsArray }}
-            {{ $qp.Name }}?.forEach { value ->
+            {{- if $qp.Explode }}
+            {{ $qp.Name }}{{if not $qp.Required}}?{{end}}.forEach { value ->
                 parameters.append("{{ $qp.FieldName }}", value.toString())
             }
             {{- else }}
-            {{ $qp.Name }}?.let { parameters.append("{{ $qp.FieldName }}", it.toString()) }
+            {{ $qp.Name }}{{if not $qp.Required}}?{{end}}.let { values ->
+                parameters.append("{{ $qp.FieldName }}", values.joinToString("{{ $qp.ExplodeDelimiter }}"))
+            }
+            {{- end }}
+            {{- else }}
+            {{ $qp.Name }}{{if not $qp.Required}}?{{end}}.let { parameters.append("{{ $qp.FieldName }}", it.toString()) }
             {{- end }}
             {{- end }}
             extraQueryParams.forEach { (key, value) ->
@@ -80,7 +87,7 @@ class {{ .Metadata.Name }}Api(
             val response: HttpResponse = httpClient.put(url) {
                 {{- range $hp := $op.HeaderParameters }}
                 {{- if $hp.StaticValue }}
-                {{ $hp.Name }}?.let { headers.append("{{ $hp.FieldName }}", "{{ $hp.StaticValue }}") }
+                headers.append("{{ $hp.FieldName }}", "{{ $hp.StaticValue }}")
                 {{- else }}
                 {{ $hp.Name }}?.let { headers.append("{{ $hp.FieldName }}", it.toString()) }
                 {{- end }}
@@ -94,13 +101,32 @@ class {{ .Metadata.Name }}Api(
             }
 
             when (response.status) {
+                {{- if index $op.ReturnTypeByCode "200" }}
                 HttpStatusCode.OK -> {{ $op.Name }}Response.Ok(response.body())
-                else -> {{ $op.Name }}Response.Unknown(
-                    status = response.status.value,
-                    rawBody = response.bodyAsText()
-                )
+                {{- end }}
+                {{- if index $op.ReturnTypeByCode "201" }}
+                HttpStatusCode.Created -> {{ $op.Name }}Response.Created(response.body())
+                {{- end }}
+                {{- if index $op.ReturnTypeByCode "204" }}
+                HttpStatusCode.NoContent -> {{ $op.Name }}Response.NoContent
+                {{- end }}
+                {{- if index $op.ReturnTypeByCode "400" }}
+                HttpStatusCode.BadRequest -> {{ $op.Name }}Response.BadRequest(response.body())
+                {{- end }}
+                {{- if index $op.ReturnTypeByCode "404" }}
+                HttpStatusCode.NotFound -> {{ $op.Name }}Response.NotFound(response.body())
+                {{- end }}
+                else -> {
+                    val text = response.bodyAsText()
+                    {{ $op.Name }}Response.Unknown(
+                        status = response.status.value,
+                        rawBody = text
+                    )
+                }
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+
             {{ $op.Name }}Response.Unknown(
                 status = HttpStatusCode.InternalServerError.value,
                 rawBody = e.message
