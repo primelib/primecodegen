@@ -1,6 +1,7 @@
 package openapigenerator
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/pb33f/libopenapi/orderedmap"
@@ -56,4 +57,17 @@ func getOrDefault(extensions *orderedmap.Map[string, *yaml.Node], key string, de
 	}
 
 	return defaultValue
+}
+
+func delimiterFromStyle(style string) (string, error) {
+	switch style {
+	case "pipeDelimited":
+		return "|", nil
+	case "spaceDelimited":
+		return " ", nil
+	case "form", "":
+		return ",", nil
+	default:
+		return ",", fmt.Errorf("unsupported style: %s", style)
+	}
 }

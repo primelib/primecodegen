@@ -255,6 +255,8 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				if err != nil {
 					return operations, fmt.Errorf("error processing enum definitions: %w", err)
 				}
+
+				explodeDelimiter, _ := delimiterFromStyle(param.Style)
 				p := Parameter{
 					Name:             gen.ToParameterName(param.Name),
 					FieldName:        param.Name,
@@ -262,6 +264,8 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					Description:      param.Description,
 					Type:             pType,
 					IsPrimitiveType:  gen.IsPrimitiveType(pType.Name),
+					Explode:          getBoolValue(param.Explode, false),
+					ExplodeDelimiter: explodeDelimiter,
 					AllowedValues:    allowedValues,
 					Required:         getBoolValue(param.Required, false),
 					Deprecated:       param.Deprecated,
