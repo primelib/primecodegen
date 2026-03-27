@@ -13,16 +13,18 @@ import {{ .Common.Packages.Root }}.auth.OAuth2ClientCredentialAuthMethod
 
 import kotlin.reflect.KClass
 
+import org.jetbrains.annotations.ApiStatus
+
 import io.opentelemetry.api.OpenTelemetry
 
 @DslMarker
-annotation class {{ .Metadata.Name }}FactoryDsl
+annotation class Jvm{{ .Metadata.Name }}FactoryDsl
 
 /**
 * A specification to construct a client instance.
 */
-@{{ .Metadata.Name }}FactoryDsl
-open class Jvm{{ .Metadata.Name }}FactorySpec<T : Any>(api: KClass<T>) : {{ .Metadata.Name }}FactorySpec<T>(api) {
+@Jvm{{ .Metadata.Name }}FactoryDsl
+open class Jvm{{ .Metadata.Name }}FactorySpec : {{ .Metadata.Name }}FactorySpec() {
     var openTelemetry: OpenTelemetry? = null
 
     @JvmName("apiKeyAuthJvm")
