@@ -1,0 +1,14 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Root }}.auth
+
+interface AuthMethod {
+    /**
+    * Default implementation returns null.
+    * Subclasses only override what they need.
+    */
+    fun headerMap(): Map<String, String>? = null
+    fun queryMap(): Map<String, String>? = null
+    fun cookieMap(): Map<String, String>? = null
+}

@@ -1,0 +1,31 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Root }}.auth
+
+class BearerAuthMethod(block: BearerAuthMethod.() -> Unit) : AuthMethod {
+    var propertyKey: String = "Authorization"
+    var valueTemplate: String = "Bearer {token}"
+    var token: String? = null
+
+    private var cachedMap: Map<String, String> = emptyMap()
+
+    init {
+        this.block()
+        validate()
+        update()
+    }
+
+    private fun validate() {
+        requireNotNull(token) { "token is a required parameter!" }
+        require(propertyKey.isNotBlank()) { "propertyKey is required" }
+        require(valueTemplate.isNotBlank()) { "valueTemplate is required" }
+    }
+
+    private fun update() {
+        val finalValue = valueTemplate.replace("{token}", token!!)
+        cachedMap = mapOf(propertyKey to finalValue)
+    }
+
+    override fun headerMap(): Map<String, String> = cachedMap
+}

@@ -1,0 +1,21 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Root }}.auth
+
+class ApiKeyAuthMethod(block: ApiKeyAuthMethod.() -> Unit) : AuthMethod {
+    var propertyLocation: String = "header"
+    var propertyKey: String = "x-api-key"
+    var apiKey: String? = null
+
+    private var cachedMap: Map<String, String> = emptyMap()
+
+    init {
+        this.block()
+        val key = requireNotNull(apiKey) { "apiKey is required" }
+        cachedMap = mapOf(propertyKey to key)
+    }
+
+    override fun headerMap() = if (propertyLocation == "header") cachedMap else null
+    override fun queryMap() = if (propertyLocation == "query") cachedMap else null
+}

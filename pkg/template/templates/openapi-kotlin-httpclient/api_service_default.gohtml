@@ -1,4 +1,4 @@
-{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIEachTemplate*/ -}}
 {{- template "header-singleline" }}
 
 package {{ .Package }}
@@ -21,18 +21,13 @@ import {{ $.Common.Packages.Responses }}.*
 import org.jetbrains.annotations.ApiStatus;
 
 /**
-* {{ .Metadata.Name }} API client implemented using Ktor HTTP client.
+* {{ .Service.Type }} API client implemented using Ktor HTTP client.
 */
-class {{ .Metadata.Name }}Api(
-    private val spec: {{ .Metadata.Name }}FactorySpec<{{ .Metadata.Name }}Api>,
+class {{ .Service.Type }}Api(
+    private val spec: {{ .Metadata.Name }}FactorySpec<{{ .Service.Type }}Api>,
     private val httpClient: HttpClient,
 ) {
-{{- range $service := .Common.Services }}
-    val {{ $service.Name | toPropertyName }} by lazy { {{ $service.Type }}Api(spec.copyTo({{ $service.Type }}Api::class), httpClient) }
-{{- end }}
-
-{{- range $op := .Common.Operations }}
-{{- if not $op.Tags }}
+{{ range $op := .Service.Operations }}
     /**
      * {{ $op.Name }}
      * {{ $op.Summary }}
@@ -138,5 +133,4 @@ class {{ .Metadata.Name }}Api(
         }
     }
 {{ end }}
-{{- end }}
 }

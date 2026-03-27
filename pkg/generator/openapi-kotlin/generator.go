@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
 	"slices"
 	"strings"
 	texttemplate "text/template"
@@ -428,13 +429,32 @@ func (g *KotlinGenerator) TypeToImport(iType openapigenerator.CodeType) string {
 	return g.typeToImport[typeName]
 }
 
+const ktFormatBinary = "ktfmt"
+
 func (g *KotlinGenerator) PostProcessing(files map[string]templateapi.RenderedFile) error {
 	if os.Getenv("PRIMECODEGEN_SKIP_POST_PROCESSING") == "true" {
 		slog.Debug("Skipping post processing kotlin files")
 		return nil
 	}
 
-	// TODO: cli tool for kotlin formatting
+	if openapigenerator.IsBinaryAvailable(ktFormatBinary) {
+		var formatFiles []string
+		for _, f := range files {
+			if strings.HasSuffix(f.File, ".kt") && f.State == templateapi.FileRendered {
+				formatFiles = append(formatFiles, f.File)
+			}
+		}
+
+		slog.Debug("Post processing kt files using "+ktFormatBinary, "file_len", len(files))
+		cmd := exec.Command(ktFormatBinary, "--kotlinlang-style")
+		cmd.Args = append(cmd.Args, formatFiles...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Run()
+		if err != nil {
+			return fmt.Errorf("error running %s: %v", ktFormatBinary, err)
+		}
+	}
 
 	return nil
 }
