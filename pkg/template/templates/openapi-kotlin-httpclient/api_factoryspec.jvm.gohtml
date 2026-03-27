@@ -4,6 +4,12 @@
 package {{ .Common.Packages.Root }}
 
 import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}Api
+import {{ .Common.Packages.Root }}.auth.AuthMethod
+import {{ .Common.Packages.Root }}.auth.ApiKeyAuthMethod
+import {{ .Common.Packages.Root }}.auth.BasicAuthMethod
+import {{ .Common.Packages.Root }}.auth.BearerAuthMethod
+import {{ .Common.Packages.Root }}.auth.OAuth2UserCredentialAuthMethod
+import {{ .Common.Packages.Root }}.auth.OAuth2ClientCredentialAuthMethod
 
 import kotlin.reflect.KClass
 
@@ -17,10 +23,34 @@ annotation class {{ .Metadata.Name }}FactoryDsl
 */
 @{{ .Metadata.Name }}FactoryDsl
 open class Jvm{{ .Metadata.Name }}FactorySpec<T : Any>(api: KClass<T>) : {{ .Metadata.Name }}FactorySpec<T>(api) {
-    /**
-     * OpenTelemetry instance for tracing.
-     */
     var openTelemetry: OpenTelemetry? = null
+
+    @JvmName("apiKeyAuthJvm")
+    fun apiKeyAuth(block: java.util.function.Consumer<ApiKeyAuthMethod>) {
+        authMethods.add(ApiKeyAuthMethod {
+            block.accept(this)
+        })
+    }
+
+    @JvmName("basicAuthJvm")
+    fun basicAuthJava(block: java.util.function.Consumer<BasicAuthMethod>) {
+        basicAuth { block.accept(this) }
+    }
+
+    @JvmName("bearerAuth")
+    fun bearerAuthJava(block: java.util.function.Consumer<BearerAuthMethod>) {
+        bearerAuth { block.accept(this) }
+    }
+
+    @JvmName("oauth2UserAuth")
+    fun oauth2UserAuthJava(block: java.util.function.Consumer<OAuth2UserCredentialAuthMethod>) {
+        oauth2UserAuth { block.accept(this) }
+    }
+
+    @JvmName("oauth2ClientAuth")
+    fun oauth2ClientAuthJava(block: java.util.function.Consumer<OAuth2ClientCredentialAuthMethod>) {
+        oauth2ClientAuth { block.accept(this) }
+    }
 
     override fun validate() {
         super.validate()

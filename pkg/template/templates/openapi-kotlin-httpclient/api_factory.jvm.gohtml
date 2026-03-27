@@ -23,14 +23,14 @@ import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.Json
 import io.opentelemetry.instrumentation.ktor.v3_0.KtorClientTelemetry
 
+object {{ .Metadata.Name }}Factory {
+    fun <T : Any> create(api: KClass<T>, block: Jvm{{ .Metadata.Name }}FactorySpec<T>.() -> Unit): T = create{{ .Metadata.Name }}(api, block)
+}
+
 inline fun <T : Any> create{{ .Metadata.Name }}(api: KClass<T>, block: Jvm{{ .Metadata.Name }}FactorySpec<T>.() -> Unit ): T {
     val spec = Jvm{{ .Metadata.Name }}FactorySpec(api).apply(block)
     spec.validate()
     return buildClient(api, spec)
-}
-
-object {{ .Metadata.Name }}Factory {
-    fun <T : Any> create(api: KClass<T>, block: Jvm{{ .Metadata.Name }}FactorySpec<T>.() -> Unit): T = create{{ .Metadata.Name }}(api, block)
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -78,9 +78,7 @@ fun <T : Any> buildClient(api: KClass<T>, spec: Jvm{{ .Metadata.Name }}FactorySp
     val kClass = spec.api
     val ctor = kClass.constructors.find { constructor ->
         val params = constructor.parameters
-        params.size == 2 &&
-                {{ .Metadata.Name }}FactorySpec::class.isSuperclassOf(params[0].type.classifier as KClass<*>) &&
-                params[1].type.classifier == HttpClient::class
+        params.size == 2 && {{ .Metadata.Name }}FactorySpec::class.isSuperclassOf(params[0].type.classifier as KClass<*>) && params[1].type.classifier == HttpClient::class
     } ?: throw IllegalArgumentException("No matching constructor found for ${kClass.simpleName}. Expected ({{ .Metadata.Name }}FactorySpec, HttpClient)")
 
     // construct the client

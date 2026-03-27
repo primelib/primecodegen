@@ -52,6 +52,14 @@ var Template = templateapi.Config{
 			Type:            templateapi.TypeAPIOnce,
 			Kind:            templateapi.KindAPI,
 		},
+		{
+			SourceTemplate:  "api_service_default.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "core/src/commonMain/kotlin/{{ .Common.Packages.Client | toFilePath }}",
+			TargetFileName:  "{{ .Service.Type }}Api.kt",
+			Type:            templateapi.TypeAPIEach,
+			Kind:            templateapi.KindAPI,
+		},
 		// core - model
 		{
 			SourceTemplate:  "model.gohtml",
@@ -78,6 +86,55 @@ var Template = templateapi.Config{
 			Type:            templateapi.TypeOperationEach,
 			Kind:            templateapi.KindAPI,
 		},
+		// core - auth
+		{
+			SourceTemplate:  "auth_api.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "core/src/commonMain/kotlin/{{ .Common.Packages.Root | toFilePath }}/auth",
+			TargetFileName:  "AuthMethod.kt",
+			Type:            templateapi.TypeAPIOnce,
+			Kind:            templateapi.KindAPI,
+		},
+		{
+			SourceTemplate:  "auth_apikey.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "core/src/commonMain/kotlin/{{ .Common.Packages.Root | toFilePath }}/auth",
+			TargetFileName:  "ApiKeyAuthMethod.kt",
+			Type:            templateapi.TypeAPIOnce,
+			Kind:            templateapi.KindAPI,
+		},
+		{
+			SourceTemplate:  "auth_basic.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "core/src/commonMain/kotlin/{{ .Common.Packages.Root | toFilePath }}/auth",
+			TargetFileName:  "BasicAuthMethod.kt",
+			Type:            templateapi.TypeAPIOnce,
+			Kind:            templateapi.KindAPI,
+		},
+		{
+			SourceTemplate:  "auth_bearer.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "core/src/commonMain/kotlin/{{ .Common.Packages.Root | toFilePath }}/auth",
+			TargetFileName:  "BearerAuthMethod.kt",
+			Type:            templateapi.TypeAPIOnce,
+			Kind:            templateapi.KindAPI,
+		},
+		{
+			SourceTemplate:  "auth_oauth2client.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "core/src/commonMain/kotlin/{{ .Common.Packages.Root | toFilePath }}/auth",
+			TargetFileName:  "OAuth2ClientCredentialAuthMethod.kt",
+			Type:            templateapi.TypeAPIOnce,
+			Kind:            templateapi.KindAPI,
+		},
+		{
+			SourceTemplate:  "auth_oauth2user.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "core/src/commonMain/kotlin/{{ .Common.Packages.Root | toFilePath }}/auth",
+			TargetFileName:  "OAuth2UserCredentialAuthMethod.kt",
+			Type:            templateapi.TypeAPIOnce,
+			Kind:            templateapi.KindAPI,
+		},
 		// module - spring
 		{
 			SourceTemplate:  "build.gradle.kts.spring.gohtml",
@@ -86,6 +143,22 @@ var Template = templateapi.Config{
 			TargetFileName:  "build.gradle.kts",
 			Type:            templateapi.TypeSupportOnce,
 			Kind:            templateapi.KindBuildSystem,
+		},
+		{
+			SourceTemplate:  "spring_auto_configuration.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "spring/src/main/java/{{ .Common.Packages.Root | toFilePath }}/spring",
+			TargetFileName:  "{{ .Metadata.Name }}SpringAutoConfiguration.kt",
+			Type:            templateapi.TypeAPIOnce,
+			Kind:            templateapi.KindAPI,
+		},
+		{
+			SourceTemplate:  "spring_auto_configuration_imports.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "spring/src/main/resources/META-INF/spring",
+			TargetFileName:  "org.springframework.boot.autoconfigure.AutoConfiguration.imports",
+			Type:            templateapi.TypeSupportOnce,
+			Kind:            templateapi.KindAPI,
 		},
 		// support files - docs
 		{

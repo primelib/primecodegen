@@ -4,6 +4,16 @@
 package {{ .Common.Packages.Root }}
 
 import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}Api
+import {{ .Common.Packages.Root }}.auth.AuthMethod
+import {{ .Common.Packages.Root }}.auth.ApiKeyAuthMethod
+import {{ .Common.Packages.Root }}.auth.BasicAuthMethod
+import {{ .Common.Packages.Root }}.auth.BearerAuthMethod
+import {{ .Common.Packages.Root }}.auth.OAuth2UserCredentialAuthMethod
+import {{ .Common.Packages.Root }}.auth.OAuth2ClientCredentialAuthMethod
+
+import io.ktor.client.HttpClient
+
+import org.jetbrains.annotations.ApiStatus
 
 import kotlin.reflect.KClass
 
@@ -11,7 +21,6 @@ import kotlin.reflect.KClass
 * A specification to construct a client instance.
 */
 open class {{ .Metadata.Name }}FactorySpec<T : Any>(
-    /** The API interface to create */
     val api: KClass<T>,
 ) {
     /**
@@ -34,8 +43,69 @@ open class {{ .Metadata.Name }}FactorySpec<T : Any>(
      */
     var insecure: Boolean = false
 
+    /** HTTP Client used for Authentication */
+    var authHttpClient: HttpClient = HttpClient()
+
+    /**
+    * The list of authentication methods to apply to requests.
+    */
+    var authMethods: MutableList<AuthMethod> = mutableListOf()
+
+    /**
+     * DSL helper to add an API Key authentication method.
+     */
+    fun apiKeyAuth(block: ApiKeyAuthMethod.() -> Unit) {
+        authMethods.add(ApiKeyAuthMethod(block))
+    }
+
+    /**
+     * DSL helper to add a Basic Auth method.
+     */
+    fun basicAuth(block: BasicAuthMethod.() -> Unit) {
+        authMethods.add(BasicAuthMethod(block))
+    }
+
+    /**
+     * DSL helper to add a Bearer Auth method.
+     */
+    fun bearerAuth(block: BearerAuthMethod.() -> Unit) {
+        authMethods.add(BearerAuthMethod(block))
+    }
+
+    /**
+     * DSL helper to add a OAuth2 User Auth method.
+     */
+    fun oauth2UserAuth(block: OAuth2UserCredentialAuthMethod.() -> Unit) {
+        authMethods.add(OAuth2UserCredentialAuthMethod(authHttpClient, block))
+    }
+
+    /**
+     * DSL helper to add a OAuth2 Client Auth method.
+     */
+    fun oauth2ClientAuth(block: OAuth2ClientCredentialAuthMethod.() -> Unit) {
+        authMethods.add(OAuth2ClientCredentialAuthMethod(authHttpClient, block))
+    }
+
+    /**
+     * Validate the spec. Called by the factory before creating the client instance.
+     */
     open fun validate() {
         require(baseUrl.isNotBlank()) { "baseUrl must not be blank" }
         require(logLevel.isNotBlank()) { "logLevel must not be blank" }
+    }
+
+    /**
+     * Creates a copy of this spec with a different API type.
+     */
+    @ApiStatus.Internal
+    fun <R : Any> copyTo(newApi: KClass<R>): {{ .Metadata.Name }}FactorySpec<R> {
+        return {{ .Metadata.Name }}FactorySpec(newApi).also {
+            it.backendName = this.backendName
+            it.baseUrl = this.baseUrl
+            it.logLevel = this.logLevel
+            it.insecure = this.insecure
+            it.authHttpClient = this.authHttpClient
+            it.authMethods = this.authMethods
+        }
     }
 }

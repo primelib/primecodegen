@@ -18,8 +18,12 @@ projectConfiguration {
 }
 
 dependencies {
-    // project
+    // library
     api(project(":core"))
 
     // spring
+    api(platform(libs.spring.boot.bom))
+    api(libs.spring.boot.starter)
+    annotationProcessor(libs.spring.boot.autoconfiguration.processor)
+    annotationProcessor(libs.spring.boot.configuration.processor)
 }

@@ -27,8 +27,12 @@ class {{ .Metadata.Name }}Api(
     private val spec: {{ .Metadata.Name }}FactorySpec<{{ .Metadata.Name }}Api>,
     private val httpClient: HttpClient,
 ) {
+{{- range $service := .Common.Services }}
+    val {{ $service.Name | toPropertyName }} by lazy { {{ $service.Type }}Api(spec.copyTo({{ $service.Type }}Api::class), httpClient) }
+{{- end }}
 
-{{ range $op := .Common.Operations }}
+{{- range $op := .Common.Operations }}
+{{- if not $op.Tags }}
     /**
      * {{ $op.Name }}
      * {{ $op.Summary }}
@@ -134,4 +138,5 @@ class {{ .Metadata.Name }}Api(
         }
     }
 {{ end }}
+{{- end }}
 }

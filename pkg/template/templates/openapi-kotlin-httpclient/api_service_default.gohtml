@@ -1,0 +1,136 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIEachTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Package }}
+
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.*
+import io.ktor.util.url
+import kotlinx.coroutines.*
+import kotlin.time.Instant
+
+import {{ $.Common.Packages.Root }}.{{ .Metadata.Name }}FactorySpec
+
+import {{ $.Common.Packages.Models }}.*
+import {{ $.Common.Packages.Responses }}.*
+
+import org.jetbrains.annotations.ApiStatus;
+
+/**
+* {{ .Service.Type }} API client implemented using Ktor HTTP client.
+*/
+class {{ .Service.Type }}Api(
+    private val spec: {{ .Metadata.Name }}FactorySpec<{{ .Service.Type }}Api>,
+    private val httpClient: HttpClient,
+) {
+{{ range $op := .Service.Operations }}
+    /**
+     * {{ $op.Name }}
+     * {{ $op.Summary }}
+    {{- if $op.Description }}
+     * {{ $op.Description | escapeJavadoc | commentMultiLine "     * " }}
+    {{- end }}
+     *
+     * API Method: {{ $op.Method | upperCase }} {{ $op.Path }}
+     *
+    {{- range $param := $op.MutableParameters }}
+     * @param {{ $param.Name }} {{ $param.Description | commentMultiLine "     * " | escapeJavadoc }}
+    {{- end }}
+    {{- if $op.Documentation }}
+    {{- range $doc := $op.Documentation }}
+     * @see <a href="{{ $doc.URL }}">{{ $doc.Title }}</a>
+    {{- end }}
+    {{- end }}
+     */
+    {{- if eq $op.Stability "experimental" }}
+    {{- end }}
+    {{- if $op.Deprecated }}
+    @Deprecated(message = "{{ if $op.DeprecatedReason }}{{ $op.DeprecatedReason }}{{ else }}Deprecated operation{{ end }}")
+    {{- end }}
+    suspend fun {{ $op.Name | toFunctionName }}(
+    {{- range $i, $param := $op.MutableParameters }}
+        {{ $param.Name }}: {{ if not $param.Required }}{{ $param.Type.Type }}? = null{{ else }}{{ $param.Type.Type }}{{ end }},
+    {{- end }}
+        extraHeaders: Map<String, String> = emptyMap(),
+        extraQueryParams: Map<String, String> = emptyMap(),
+    ): {{ $op.Name }}Response {
+        val url = URLBuilder(spec.baseUrl).apply {
+            {{- if $op.PathSegments }}
+            path({{- range $i, $seg := $op.PathSegments }}{{ if $seg.IsParameter }}{{ $seg.ParameterName }}{{ else }}"{{ $seg.Value | escapeStringValue }}"{{ end }}{{ if notLast $op.PathSegments $i }}, {{ end }}{{- end }})
+            {{- end }}
+            {{- range $qp := $op.QueryParameters }}
+            {{- if $qp.Type.IsArray }}
+            {{- if $qp.Explode }}
+            {{ $qp.Name }}{{if not $qp.Required}}?{{end}}.forEach { value ->
+                parameters.append("{{ $qp.FieldName }}", value.toString())
+            }
+            {{- else }}
+            {{ $qp.Name }}{{if not $qp.Required}}?{{end}}.let { values ->
+                parameters.append("{{ $qp.FieldName }}", values.joinToString("{{ $qp.ExplodeDelimiter }}"))
+            }
+            {{- end }}
+            {{- else }}
+            {{ $qp.Name }}{{if not $qp.Required}}?{{end}}.let { parameters.append("{{ $qp.FieldName }}", it.toString()) }
+            {{- end }}
+            {{- end }}
+            extraQueryParams.forEach { (key, value) ->
+                parameters.append(key, value)
+            }
+        }.build()
+
+        return try {
+            val response: HttpResponse = httpClient.put(url) {
+                {{- range $hp := $op.HeaderParameters }}
+                {{- if $hp.StaticValue }}
+                headers.append("{{ $hp.FieldName }}", "{{ $hp.StaticValue }}")
+                {{- else }}
+                {{ $hp.Name }}?.let { headers.append("{{ $hp.FieldName }}", it.toString()) }
+                {{- end }}
+                {{- end }}
+                extraHeaders.forEach { (key, value) ->
+                    headers.append(key, value)
+                }
+                {{- if $op.BodyParameter }}
+                setBody({{ $op.BodyParameter.Name }})
+                {{- end }}
+            }
+
+            when (response.status) {
+                {{- if index $op.ReturnTypeByCode "200" }}
+                HttpStatusCode.OK -> {{ $op.Name }}Response.Ok(response.body())
+                {{- end }}
+                {{- if index $op.ReturnTypeByCode "201" }}
+                HttpStatusCode.Created -> {{ $op.Name }}Response.Created(response.body())
+                {{- end }}
+                {{- if index $op.ReturnTypeByCode "204" }}
+                HttpStatusCode.NoContent -> {{ $op.Name }}Response.NoContent
+                {{- end }}
+                {{- if index $op.ReturnTypeByCode "400" }}
+                HttpStatusCode.BadRequest -> {{ $op.Name }}Response.BadRequest(response.body())
+                {{- end }}
+                {{- if index $op.ReturnTypeByCode "404" }}
+                HttpStatusCode.NotFound -> {{ $op.Name }}Response.NotFound(response.body())
+                {{- end }}
+                else -> {
+                    val text = response.bodyAsText()
+                    {{ $op.Name }}Response.Unknown(
+                        status = response.status.value,
+                        rawBody = text
+                    )
+                }
+            }
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+
+            {{ $op.Name }}Response.Unknown(
+                status = HttpStatusCode.InternalServerError.value,
+                rawBody = e.message
+            )
+        }
+    }
+{{ end }}
+}

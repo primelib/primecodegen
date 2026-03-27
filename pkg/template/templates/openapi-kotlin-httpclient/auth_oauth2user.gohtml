@@ -1,0 +1,92 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Root }}.auth
+
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
+import io.ktor.http.*
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlin.time.Clock
+import kotlin.time.Instant
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlin.time.Duration.Companion.seconds
+
+class OAuth2UserCredentialAuthMethod(
+    private val httpClient: HttpClient,
+    block: OAuth2UserCredentialAuthMethod.() -> Unit
+) : AuthMethod {
+    private val mutex = Mutex()
+
+    var tokenEndpoint: String? = null
+    var clientId: String? = null
+    var clientSecret: String? = null
+    var username: String? = null
+    var password: String? = null
+    var scope: String? = null
+
+    var propertyKey: String = "Authorization"
+    var valueTemplate: String = "Bearer {token}"
+
+    private var accessToken: String? = null
+    private var expiresAt: Instant? = null
+
+    init {
+        this.block()
+        validate()
+    }
+
+    private fun validate() {
+        requireNotNull(tokenEndpoint) { "tokenEndpoint is required" }
+        requireNotNull(clientId) { "clientId is required" }
+        requireNotNull(username) { "username is required" }
+        requireNotNull(password) { "password is required" }
+    }
+
+    override fun headerMap(): Map<String, String> = runBlocking {
+        val token = getOrRefreshToken()
+        mapOf(propertyKey to valueTemplate.replace("{token}", token))
+    }
+
+    private suspend fun getOrRefreshToken(): String {
+        val now = Clock.System.now()
+
+        // Thread-safe check for expired/null token
+        if (accessToken == null || (expiresAt != null && now >= expiresAt!!)) {
+            mutex.withLock {
+                if (accessToken == null || (expiresAt != null && now >= expiresAt!!)) {
+                    refresh()
+                }
+            }
+        }
+        return accessToken!!
+    }
+
+    private suspend fun refresh() {
+        val response: TokenResponse = httpClient.submitForm(
+            url = tokenEndpoint!!,
+            formParameters = parameters {
+                append("grant_type", "password")
+                append("client_id", clientId!!)
+                if (!clientSecret.isNullOrBlank()) append("client_secret", clientSecret!!)
+                append("username", username!!)
+                append("password", password!!)
+                if (!scope.isNullOrBlank()) append("scope", scope!!)
+            }
+        ).body()
+
+        accessToken = response.accessToken
+        expiresAt = Clock.System.now().plus(response.expiresIn.seconds).minus(10.seconds)
+    }
+
+    @Serializable
+    private data class TokenResponse(
+        @SerialName("access_token") val accessToken: String,
+        @SerialName("expires_in") val expiresIn: Long = 3600 // Default if not provided
+    )
+}
