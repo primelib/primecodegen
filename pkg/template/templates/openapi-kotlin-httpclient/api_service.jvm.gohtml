@@ -1,0 +1,126 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIEachTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Package }}
+
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.*
+import io.ktor.util.url
+import kotlinx.coroutines.*
+import kotlin.time.Instant
+
+import {{ $.Common.Packages.Root }}.Jvm{{ .Metadata.Name }}FactorySpec
+
+import {{ $.Common.Packages.Models }}.*
+import {{ $.Common.Packages.Responses }}.*
+import {{ $.Common.Packages.Operations }}.*
+
+import org.jetbrains.annotations.ApiStatus;
+
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.future.future
+
+import java.util.function.Consumer
+import java.util.concurrent.CompletableFuture
+
+/**
+ * Jvm variant of {{ .Service.Type }}Api for Java compatibility.
+ * Provides non-blocking CompletableFuture methods instead of suspend functions.
+ */
+@OptIn(DelicateCoroutinesApi::class)
+class Jvm{{ .Service.Type }}Api(
+    spec: Jvm{{ .Metadata.Name }}FactorySpec,
+    httpClient: HttpClient,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+) : AutoCloseable {
+    val api = {{ .Service.Type }}Api(spec, httpClient)
+
+{{ range $op := .Service.Operations }}
+    /**
+     * {{ $op.Name }}
+     * {{ $op.Summary }}
+    {{- if $op.Description }}
+     * {{ $op.Description | escapeJavadoc | commentMultiLine "     * " }}
+    {{- end }}
+     *
+     * API Method: {{ $op.Method | upperCase }} {{ $op.Path }}
+     *
+     * @param spec Consumer to configure the request parameters
+{{- range $param := $op.MutableParameters }}
+     * - {{ $param.Name }} {{ $param.Description | commentMultiLine "     * " | escapeJavadoc }}
+{{- end }}
+     * @return The API response
+{{- if $op.Documentation }}
+{{- range $doc := $op.Documentation }}
+     * @see <a href="{{ $doc.URL }}">{{ $doc.Title }}</a>
+{{- end }}
+{{- end }}
+     */
+{{- if $op.Deprecated }}
+    @Deprecated(message = "{{ if $op.DeprecatedReason }}{{ $op.DeprecatedReason }}{{ else }}Deprecated operation{{ end }}")
+{{- end }}
+    fun {{ $op.Name | toFunctionName }}(
+        spec: Consumer<{{ $op.Name }}OperationSpec>
+    ): {{ $op.Name }}Response {
+        val request = {{ $op.Name }}OperationSpec(spec)
+        return runBlocking {
+            api.{{ $op.Name | toFunctionName }}(
+                {{- range $param := $op.MutableParameters }}
+                {{ $param.Name }} = request.{{ $param.Name }}{{ if $param.Required }}!!{{ end }},
+                {{- end }}
+                extraHeaders = request.extraHeaders,
+                extraQueryParams = request.extraQueryParams
+            )
+        }
+    }
+
+    /**
+     * {{ $op.Name }} (Async)
+     * {{ $op.Summary }}
+    {{- if $op.Description }}
+     * {{ $op.Description | escapeJavadoc | commentMultiLine "     * " }}
+    {{- end }}
+     *
+     * API Method: {{ $op.Method | upperCase }} {{ $op.Path }}
+     *
+     * @param spec Consumer to configure the request parameters
+{{- range $param := $op.MutableParameters }}
+     * - {{ $param.Name }} {{ $param.Description | commentMultiLine "     * " | escapeJavadoc }}
+{{- end }}
+     * @return The API response
+{{- if $op.Documentation }}
+{{- range $doc := $op.Documentation }}
+     * @see <a href="{{ $doc.URL }}">{{ $doc.Title }}</a>
+{{- end }}
+{{- end }}
+     */
+    {{- if $op.Deprecated }}
+        @Deprecated(message = "{{ if $op.DeprecatedReason }}{{ $op.DeprecatedReason }}{{ else }}Deprecated operation{{ end }}")
+    {{- end }}
+    fun {{ $op.Name | toFunctionName }}Async(
+        spec: Consumer<{{ $op.Name }}OperationSpec>
+    ): CompletableFuture<{{ $op.Name }}Response> {
+        val request = {{ $op.Name }}OperationSpec(spec)
+        return scope.future {
+            api.{{ $op.Name | toFunctionName }}(
+                {{- range $param := $op.MutableParameters }}
+                {{ $param.Name }} = request.{{ $param.Name }}{{ if $param.Required }}!!{{ end }},
+                {{- end }}
+                extraHeaders = request.extraHeaders,
+                extraQueryParams = request.extraQueryParams
+            )
+        }
+    }
+{{ end }}
+
+    /**
+     * Closes the underlying scope, cancelling all pending requests.
+     */
+    override fun close() {
+        scope.cancel()
+    }
+}

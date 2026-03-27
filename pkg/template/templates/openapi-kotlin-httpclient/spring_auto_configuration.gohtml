@@ -7,8 +7,10 @@ import {{ .Common.Packages.Root }}.{{ .Metadata.Name }}Factory
 import {{ .Common.Packages.Root }}.Jvm{{ .Metadata.Name }}FactorySpec
 
 import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}Api
+import {{ .Common.Packages.Client }}.Jvm{{ .Metadata.Name }}Api
 {{- range $service := .Common.Services }}
 import {{ $.Common.Packages.Client }}.{{ $service.Type }}Api
+import {{ $.Common.Packages.Client }}.Jvm{{ $service.Type }}Api
 {{- end }}
 
 import io.micrometer.core.instrument.MeterRegistry
@@ -34,7 +36,7 @@ class {{ .Metadata.Name }}SpringAutoConfiguration(
 ) {
     @Bean
     @Primary
-    fun prometheusClientApi(): {{ .Metadata.Name }}Api {
+    fun {{ .Metadata.Name | toPropertyName }}Api(): {{ .Metadata.Name }}Api {
         return {{ .Metadata.Name }}Factory.create({{ .Metadata.Name }}Api::class) {
             baseUrl = properties.url
 
@@ -48,7 +50,23 @@ class {{ .Metadata.Name }}SpringAutoConfiguration(
         }
     }
 
-    private fun configureAuth(spec: Jvm{{ .Metadata.Name }}FactorySpec<*>, auth: Properties.Auth?) {
+    @Bean
+    @Primary
+    fun jvm{{ .Metadata.Name | toPropertyName }}Api(): Jvm{{ .Metadata.Name }}Api {
+        return {{ .Metadata.Name }}Factory.create(Jvm{{ .Metadata.Name }}Api::class) {
+            baseUrl = properties.url
+
+            openTelemetryClient?.let { openTelemetry = it }
+
+            properties.backendName.takeIf { it.isNotBlank() }?.let { backendName = it }
+            properties.logLevel.takeIf { it.isNotBlank() }?.let { logLevel = it }
+            properties.insecure?.let { insecure = it }
+
+            configureAuth(this, properties.auth)
+        }
+    }
+
+    private fun configureAuth(spec: Jvm{{ .Metadata.Name }}FactorySpec, auth: Properties.Auth?) {
         val authConfig = auth?.takeIf { !it.type.isNullOrBlank() } ?: return
 
         when (authConfig.type?.lowercase()) {

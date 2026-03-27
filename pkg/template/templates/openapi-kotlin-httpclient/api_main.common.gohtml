@@ -24,11 +24,12 @@ import org.jetbrains.annotations.ApiStatus;
 * {{ .Metadata.Name }} API client implemented using Ktor HTTP client.
 */
 class {{ .Metadata.Name }}Api(
-    private val spec: {{ .Metadata.Name }}FactorySpec<{{ .Metadata.Name }}Api>,
+    private val spec: {{ .Metadata.Name }}FactorySpec,
     private val httpClient: HttpClient,
-) {
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+) : AutoCloseable {
 {{- range $service := .Common.Services }}
-    val {{ $service.Name | toPropertyName }} by lazy { {{ $service.Type }}Api(spec.copyTo({{ $service.Type }}Api::class), httpClient) }
+    val {{ $service.Name | toPropertyName }} by lazy { {{ $service.Type }}Api(spec, httpClient) }
 {{- end }}
 
 {{- range $op := .Common.Operations }}
@@ -65,7 +66,7 @@ class {{ .Metadata.Name }}Api(
     ): {{ $op.Name }}Response {
         val url = URLBuilder(spec.baseUrl).apply {
             {{- if $op.PathSegments }}
-            path({{- range $i, $seg := $op.PathSegments }}{{ if $seg.IsParameter }}{{ $seg.ParameterName }}{{ else }}"{{ $seg.Value | escapeStringValue }}"{{ end }}{{ if notLast $op.PathSegments $i }}, {{ end }}{{- end }})
+            appendPathSegments({{- range $i, $seg := $op.PathSegments }}{{ if $seg.IsParameter }}{{ $seg.ParameterName }}{{ else }}"{{ $seg.Value | escapeStringValue }}"{{ end }}{{ if notLast $op.PathSegments $i }}, {{ end }}{{- end }})
             {{- end }}
             {{- range $qp := $op.QueryParameters }}
             {{- if $qp.Type.IsArray }}
@@ -88,7 +89,7 @@ class {{ .Metadata.Name }}Api(
         }.build()
 
         return try {
-            val response: HttpResponse = httpClient.put(url) {
+            val response: HttpResponse = httpClient.{{$op.Method | lowerCase}}(url) {
                 {{- range $hp := $op.HeaderParameters }}
                 {{- if $hp.StaticValue }}
                 headers.append("{{ $hp.FieldName }}", "{{ $hp.StaticValue }}")
@@ -137,6 +138,13 @@ class {{ .Metadata.Name }}Api(
             )
         }
     }
-{{ end }}
 {{- end }}
+{{- end }}
+
+    /**
+     * Closes the underlying scope, cancelling all pending requests.
+     */
+    override fun close() {
+        scope.cancel()
+    }
 }

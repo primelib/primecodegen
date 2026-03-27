@@ -1,0 +1,109 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.OperationEachTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Package }};
+
+{{- range .Common.Models }}
+import {{ $.Common.Packages.Models }}.{{ .Name }};
+{{- end }}
+
+import org.jetbrains.annotations.ApiStatus
+
+import java.util.function.Consumer
+
+import kotlin.collections.toMutableMap
+
+/**
+ * {{ .Operation.Name }}
+{{- if .Operation.Description }}
+ * {{ .Operation.Description | commentMultiLine " * " | escapeJavadoc }}
+{{- end }}
+ */
+class {{ .Operation.Name }}OperationSpec {
+
+    companion object {
+        @JvmField
+        @ApiStatus.Experimental
+        var VALIDATION_ENABLED = true
+    }
+
+    {{- range $param := .Operation.MutableParameters }}
+
+    /** {{ if $param.Description }}{{ $param.Description | escapeJavadoc }}{{ else }}{{ $param.Name }}{{ end }} */
+    {{- if $param.Deprecated }}
+    @Deprecated("{{ if $param.DeprecatedReason }}{{ $param.DeprecatedReason }}{{ else }}Deprecated parameter{{ end }}")
+    {{- end }}
+    {{- if eq $param.Stability "experimental" }}
+    @get:ApiStatus.Experimental
+    @set:ApiStatus.Experimental
+    {{- end }}
+    var {{ $param.Name }}: {{ $param.Type.Declaration }}? = null
+        private set
+
+    /** {{ if $param.Description }}{{ $param.Description | escapeJavadoc }}{{ else }}{{ $param.Name }}{{ end }} */
+    {{- if $param.Deprecated }}
+    @Deprecated("{{ if $param.DeprecatedReason }}{{ $param.DeprecatedReason }}{{ else }}Deprecated parameter{{ end }}")
+    {{- end }}
+    {{- if eq $param.Stability "experimental" }}
+    @get:ApiStatus.Experimental
+    @set:ApiStatus.Experimental
+    {{- end }}
+    fun {{ $param.Name }}(value: {{ $param.Type.Declaration }}{{ if not $param.Required }}?{{ end }}): {{ $.Operation.Name }}OperationSpec = apply {
+        this.{{ $param.Name }} = value
+    }
+    {{- end }}
+
+    /** Extra headers to include in the request */
+    var extraHeaders: MutableMap<String, String> = mutableMapOf()
+        private set
+
+    /** Sets the extra headers map (overwrites existing) */
+    fun extraHeaders(headers: Map<String, String>): {{ .Operation.Name }}OperationSpec = apply {
+        this.extraHeaders = headers.toMutableMap()
+    }
+
+    /** Adds a single extra header */
+    fun extraHeader(key: String, value: String): {{ .Operation.Name }}OperationSpec = apply {
+        this.extraHeaders[key] = value
+    }
+
+    /** Extra query parameters to include in the request */
+    var extraQueryParams: MutableMap<String, String> = mutableMapOf()
+        private set
+
+    /** Sets the extra query parameters map (overwrites existing) */
+    fun extraQueryParams(params: Map<String, String>): {{ .Operation.Name }}OperationSpec = apply {
+        this.extraQueryParams = params.toMutableMap()
+    }
+
+    /** Adds a single extra query parameter */
+    fun extraQueryParam(key: String, value: String): {{ .Operation.Name }}OperationSpec = apply {
+        this.extraQueryParams[key] = value
+    }
+
+    /**
+     * Internal Constructor that accepts a Consumer for Java-friendly DSL usage.
+     */
+    @ApiStatus.Internal
+    constructor(spec: Consumer<{{ .Operation.Name }}OperationSpec>) {
+        spec.accept(this)
+        if (VALIDATION_ENABLED) {
+            validate()
+        }
+    }
+
+    /**
+     * Validates the Spec, will throw an exception if required parameters are missing.
+     */
+    fun validate() {
+        {{- range $param := .Operation.MutableParameters }}
+        {{- if $param.Required }}
+        requireNotNull({{ $param.Name }}) { "{{ $param.Name }} is a required parameter!" }
+        {{- end }}
+        {{- end }}
+    }
+}
+
+inline fun {{ .Operation.Name }}OperationSpec(
+    crossinline block: {{ .Operation.Name }}OperationSpec.() -> Unit
+): {{ .Operation.Name }}OperationSpec = {{ .Operation.Name }}OperationSpec(Consumer { it.block() })

@@ -20,9 +20,7 @@ import kotlin.reflect.KClass
 /**
 * A specification to construct a client instance.
 */
-open class {{ .Metadata.Name }}FactorySpec<T : Any>(
-    val api: KClass<T>,
-) {
+open class {{ .Metadata.Name }}FactorySpec {
     /**
      * The name of the backend service.
      */
@@ -43,12 +41,19 @@ open class {{ .Metadata.Name }}FactorySpec<T : Any>(
      */
     var insecure: Boolean = false
 
-    /** HTTP Client used for Authentication */
+    /**
+     * User Agent
+     */
+    var userAgent: String = "PrimeCodeGen/{{ .Metadata.Name }}"
+
+    /**
+     * HTTP Client used for Authentication
+     */
     var authHttpClient: HttpClient = HttpClient()
 
     /**
-    * The list of authentication methods to apply to requests.
-    */
+     * The list of authentication methods to apply to requests.
+     */
     var authMethods: MutableList<AuthMethod> = mutableListOf()
 
     /**
@@ -92,20 +97,5 @@ open class {{ .Metadata.Name }}FactorySpec<T : Any>(
     open fun validate() {
         require(baseUrl.isNotBlank()) { "baseUrl must not be blank" }
         require(logLevel.isNotBlank()) { "logLevel must not be blank" }
-    }
-
-    /**
-     * Creates a copy of this spec with a different API type.
-     */
-    @ApiStatus.Internal
-    fun <R : Any> copyTo(newApi: KClass<R>): {{ .Metadata.Name }}FactorySpec<R> {
-        return {{ .Metadata.Name }}FactorySpec(newApi).also {
-            it.backendName = this.backendName
-            it.baseUrl = this.baseUrl
-            it.logLevel = this.logLevel
-            it.insecure = this.insecure
-            it.authHttpClient = this.authHttpClient
-            it.authMethods = this.authMethods
-        }
     }
 }

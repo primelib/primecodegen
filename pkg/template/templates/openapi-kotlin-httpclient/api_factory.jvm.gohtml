@@ -20,21 +20,26 @@ import io.ktor.client.request.header
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.serialization.kotlinx.xml.*
 import io.ktor.http.HttpHeaders
+
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
+
 import io.opentelemetry.instrumentation.ktor.v3_0.KtorClientTelemetry
 
 object {{ .Metadata.Name }}Factory {
-    fun <T : Any> create(api: KClass<T>, block: Jvm{{ .Metadata.Name }}FactorySpec<T>.() -> Unit): T = create{{ .Metadata.Name }}(api, block)
+    fun <T : Any> create(api: KClass<T>, block: Jvm{{ .Metadata.Name }}FactorySpec.() -> Unit): T = create{{ .Metadata.Name }}(api, block)
 }
 
-inline fun <T : Any> create{{ .Metadata.Name }}(api: KClass<T>, block: Jvm{{ .Metadata.Name }}FactorySpec<T>.() -> Unit ): T {
-    val spec = Jvm{{ .Metadata.Name }}FactorySpec(api).apply(block)
+inline fun <T : Any> create{{ .Metadata.Name }}(api: KClass<T>, block: Jvm{{ .Metadata.Name }}FactorySpec.() -> Unit ): T {
+    val spec = Jvm{{ .Metadata.Name }}FactorySpec().apply(block)
     spec.validate()
     return buildClient(api, spec)
 }
 
 @Suppress("UNCHECKED_CAST")
-fun <T : Any> buildClient(api: KClass<T>, spec: Jvm{{ .Metadata.Name }}FactorySpec<T>): T {
+fun <T : Any> buildClient(api: KClass<T>, spec: Jvm{{ .Metadata.Name }}FactorySpec): T {
     // create ktor http client
     val httpClient = HttpClient(CIO) {
         // content negotiation
@@ -56,7 +61,7 @@ fun <T : Any> buildClient(api: KClass<T>, spec: Jvm{{ .Metadata.Name }}FactorySp
         // default headers
         install(DefaultRequest) {
             url(spec.baseUrl)
-            header("User-Agent", "${spec.backendName}/PrimeLib-Client")
+            header("User-Agent", spec.userAgent)
         }
 
         // logging
@@ -75,12 +80,12 @@ fun <T : Any> buildClient(api: KClass<T>, spec: Jvm{{ .Metadata.Name }}FactorySp
     }
 
     // find matching constructor
-    val kClass = spec.api
+    val kClass = api
     val ctor = kClass.constructors.find { constructor ->
         val params = constructor.parameters
-        params.size == 2 && {{ .Metadata.Name }}FactorySpec::class.isSuperclassOf(params[0].type.classifier as KClass<*>) && params[1].type.classifier == HttpClient::class
+        params.size == 3 && {{ .Metadata.Name }}FactorySpec::class.isSuperclassOf(params[0].type.classifier as KClass<*>) && params[1].type.classifier == HttpClient::class
     } ?: throw IllegalArgumentException("No matching constructor found for ${kClass.simpleName}. Expected ({{ .Metadata.Name }}FactorySpec, HttpClient)")
 
     // construct the client
-    return ctor.call(spec, httpClient)
+    return ctor.call(spec, httpClient, CoroutineScope(Dispatchers.IO + SupervisorJob()))
 }
