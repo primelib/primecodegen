@@ -36,22 +36,30 @@ open class Jvm{{ .Metadata.Name }}FactorySpec : {{ .Metadata.Name }}FactorySpec(
 
     @JvmName("basicAuthJvm")
     fun basicAuthJava(block: java.util.function.Consumer<BasicAuthMethod>) {
-        basicAuth { block.accept(this) }
+        authMethods.add(BasicAuthMethod {
+            block.accept(this)
+        })
     }
 
-    @JvmName("bearerAuth")
+    @JvmName("bearerAuthJvm")
     fun bearerAuthJava(block: java.util.function.Consumer<BearerAuthMethod>) {
-        bearerAuth { block.accept(this) }
+        authMethods.add(BearerAuthMethod {
+            block.accept(this)
+        })
     }
 
-    @JvmName("oauth2UserAuth")
+    @JvmName("oauth2UserAuthJvm")
     fun oauth2UserAuthJava(block: java.util.function.Consumer<OAuth2UserCredentialAuthMethod>) {
-        oauth2UserAuth { block.accept(this) }
+        authMethods.add(OAuth2UserCredentialAuthMethod(authHttpClient) {
+            block.accept(this)
+        })
     }
 
-    @JvmName("oauth2ClientAuth")
+    @JvmName("oauth2ClientAuthJvm")
     fun oauth2ClientAuthJava(block: java.util.function.Consumer<OAuth2ClientCredentialAuthMethod>) {
-        oauth2ClientAuth { block.accept(this) }
+        authMethods.add(OAuth2ClientCredentialAuthMethod(authHttpClient) {
+            block.accept(this)
+        })
     }
 
     override fun validate() {

@@ -27,11 +27,6 @@ import kotlin.reflect.KClass
  */
 open class {{ .Metadata.Name }}FactorySpec {
     /**
-     * The name of the backend service.
-     */
-    var backendName: String = "{{ .Metadata.Name }}"
-
-    /**
      * The base URL of the service.
      */
     var baseUrl: String = "{{ .Common.Endpoints.DefaultEndpoint }}"
@@ -42,6 +37,16 @@ open class {{ .Metadata.Name }}FactorySpec {
     var logLevel: String = "none"
 
     /**
+     * If true, the client will throw exceptions for non-2xx HTTP responses. If false, it will return the HttpResponse for manual handling.
+     */
+    var expectSuccess: Boolean = false
+
+    /**
+     * The maximum number of concurrent connections. This can be used to limit the number of simultaneous requests made by the client.
+     */
+    var maxConnections: Int = 1000
+
+    /**
      * Set to true to allow insecure connections.
      */
     var insecure: Boolean = false
@@ -49,7 +54,7 @@ open class {{ .Metadata.Name }}FactorySpec {
     /**
      * User Agent
      */
-    var userAgent: String = "PrimeCodeGen/{{ .Metadata.Name }}"
+    var userAgent: String = "{{ .Metadata.Name }}/{{ .Metadata.APISpecVersion }} (PrimeCodeGen/{{ .Metadata.GeneratorVersion }})"
 
     /**
      * The maximum time to establish a connection (TCP handshake).
@@ -147,6 +152,51 @@ open class {{ .Metadata.Name }}FactorySpec {
      */
     fun oauth2ClientAuth(block: OAuth2ClientCredentialAuthMethod.() -> Unit) {
         authMethods.add(OAuth2ClientCredentialAuthMethod(authHttpClient, block))
+    }
+
+    /**
+     * Aggregates headers from all [AuthMethod]s.
+     * If [overrideMethods] is provided, it ignores the local [authMethods] list.
+     */
+    fun aggregateAuthenticationHeaders(overrideMethods: List<AuthMethod>? = null): Map<String, String> {
+        val methods = overrideMethods ?: authMethods
+        if (methods.isEmpty()) return emptyMap()
+
+        val result = mutableMapOf<String, String>()
+        for (method in methods) {
+            method.headerMap()?.let { result.putAll(it) }
+        }
+        return result
+    }
+
+    /**
+     * Aggregates query parameters from all [AuthMethod]s.
+     * If [overrideMethods] is provided, it ignores the local [authMethods] list.
+     */
+    fun aggregateAuthenticationQueryParams(overrideMethods: List<AuthMethod>? = null): Map<String, String> {
+        val methods = overrideMethods ?: authMethods
+        if (methods.isEmpty()) return emptyMap()
+
+        val result = mutableMapOf<String, String>()
+        for (method in methods) {
+            method.queryMap()?.let { result.putAll(it) }
+        }
+        return result
+    }
+
+    /**
+     * Aggregates cookies from all [AuthMethod]s.
+     * If [overrideMethods] is provided, it ignores the local [authMethods] list.
+     */
+    fun aggregateAuthenticationCookies(overrideMethods: List<AuthMethod>? = null): Map<String, String> {
+        val methods = overrideMethods ?: authMethods
+        if (methods.isEmpty()) return emptyMap()
+
+        val result = mutableMapOf<String, String>()
+        for (method in methods) {
+            method.cookieMap()?.let { result.putAll(it) }
+        }
+        return result
     }
 
     /**

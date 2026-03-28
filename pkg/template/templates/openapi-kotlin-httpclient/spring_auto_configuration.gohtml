@@ -31,52 +31,61 @@ class {{ .Metadata.Name }}SpringAutoConfiguration(
     private val openTelemetryClient: OpenTelemetry?,
     private val properties: Properties,
 ) {
-    @Bean
-    @Primary
-    fun {{ .Metadata.Name | toPropertyName }}Api(): {{ .Metadata.Name }}Api {
-        return {{ .Metadata.Name }}Factory.create({{ .Metadata.Name }}Api::class) {
-            baseUrl = properties.url
+    val logger = org.slf4j.LoggerFactory.getLogger({{ .Metadata.Name }}SpringAutoConfiguration::class.java)
 
-            properties.backendName.takeIf { it.isNotBlank() }?.let { backendName = it }
-            properties.logLevel.takeIf { it.isNotBlank() }?.let { logLevel = it }
-            properties.insecure?.let { insecure = it }
+    /**
+     * Log the configuration exactly once when the AutoConfiguration class is instantiated by Spring.
+     */
+    init {
+        logger.info("""
+            Initialized {{ .Metadata.Name }} Client Configuration:
+            |-- Base URL: ${properties.url}
+            |-- Connections: [Max: ${properties.maxConnections}]
+            |-- Log Level: ${properties.logLevel}
+            |-- Timeouts: [Connect: ${properties.connectTimeoutMillis}ms, Socket: ${properties.socketTimeoutMillis}ms, Request: ${properties.requestTimeoutMillis}ms]
+            |-- Retries: [Count: ${properties.retryCount}, Strategy: ${properties.retryStrategy}, Delay: ${properties.retryDelayMillis}ms]
+            |-- Auth Type: ${properties.auth?.type ?: "None"}
+            |-- OpenTelemetry Export: ${openTelemetryClient != null}
+            """.trimIndent())
 
-            retryCount = properties.retryCount
-            retryStrategy = {{ .Metadata.Name }}FactorySpec.RetryStrategy.valueOf(properties.retryStrategy.uppercase())
-            retryDelayMillis = properties.retryDelayMillis
-
-            requestTimeoutMillis = properties.requestTimeoutMillis
-            connectTimeoutMillis = properties.connectTimeoutMillis
-            socketTimeoutMillis = properties.socketTimeoutMillis
-
-            openTelemetryClient?.let { openTelemetry = it }
-
-            configureAuth(this, properties.auth)
+        if (properties.insecure == true) {
+            logger.warn("!!! SECURITY WARNING: {{ .Metadata.Name }} is configured with 'insecure = true'. SSL validation is DISABLED. !!!")
         }
     }
 
     @Bean
     @Primary
-    fun jvm{{ .Metadata.Name | toPropertyName }}Api(): Jvm{{ .Metadata.Name }}Api {
-        return {{ .Metadata.Name }}Factory.create(Jvm{{ .Metadata.Name }}Api::class) {
-            baseUrl = properties.url
-
-            properties.backendName.takeIf { it.isNotBlank() }?.let { backendName = it }
-            properties.logLevel.takeIf { it.isNotBlank() }?.let { logLevel = it }
-            properties.insecure?.let { insecure = it }
-
-            retryCount = properties.retryCount
-            retryStrategy = {{ .Metadata.Name }}FactorySpec.RetryStrategy.valueOf(properties.retryStrategy.uppercase())
-            retryDelayMillis = properties.retryDelayMillis
-
-            requestTimeoutMillis = properties.requestTimeoutMillis
-            connectTimeoutMillis = properties.connectTimeoutMillis
-            socketTimeoutMillis = properties.socketTimeoutMillis
-
-            openTelemetryClient?.let { openTelemetry = it }
-
-            configureAuth(this, properties.auth)
+    fun {{ .Metadata.Name | toPropertyName }}Api(): {{ .Metadata.Name }}Api {
+        return {{ .Metadata.Name }}Factory.create({{ .Metadata.Name }}Api::class) {
+            applyCommonProperties(this)
         }
+    }
+
+    @Bean
+    @Primary
+    fun {{ .Metadata.Name | toPropertyName }}JvmApi(): Jvm{{ .Metadata.Name }}Api {
+        return {{ .Metadata.Name }}Factory.create(Jvm{{ .Metadata.Name }}Api::class) {
+            applyCommonProperties(this)
+        }
+    }
+
+    private fun applyCommonProperties(spec: Jvm{{ .Metadata.Name }}FactorySpec) {
+        spec.baseUrl = properties.url
+        properties.logLevel.takeIf { it.isNotBlank() }?.let { spec.logLevel = it }
+        properties.insecure?.let { spec.insecure = it }
+
+        spec.maxConnections = properties.maxConnections
+        spec.retryCount = properties.retryCount
+        spec.retryStrategy = {{ .Metadata.Name }}FactorySpec.RetryStrategy.valueOf(properties.retryStrategy.uppercase())
+        spec.retryDelayMillis = properties.retryDelayMillis
+
+        spec.requestTimeoutMillis = properties.requestTimeoutMillis
+        spec.connectTimeoutMillis = properties.connectTimeoutMillis
+        spec.socketTimeoutMillis = properties.socketTimeoutMillis
+
+        openTelemetryClient?.let { spec.openTelemetry = it }
+
+        configureAuth(spec, properties.auth)
     }
 
     private fun configureAuth(spec: Jvm{{ .Metadata.Name }}FactorySpec, auth: Properties.Auth?) {
@@ -118,8 +127,8 @@ class {{ .Metadata.Name }}SpringAutoConfiguration(
     @ConfigurationProperties(prefix = "{{ .Metadata.Name | kebabCase }}")
     data class Properties(
         var url: String = "",
-        var backendName: String = "",
         var logLevel: String = "",
+        var maxConnections: Int = 1000,
         var retryCount: Int = 0,
         var retryStrategy: String = "exponential",
         var retryDelayMillis: Long = 1000,

@@ -3,6 +3,8 @@
 
 package {{ .Package }};
 
+import {{ $.Common.Packages.Root }}.auth.AuthMethod
+
 import kotlinx.coroutines.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.future.future
@@ -84,6 +86,39 @@ class {{ .Operation.Name }}OperationSpec {
     /** Adds a single extra query parameter */
     fun extraQueryParam(key: String, value: String): {{ .Operation.Name }}OperationSpec = apply {
         this.extraQueryParams[key] = value
+    }
+
+    /**
+     * Specific authentication methods for this operation.
+     * If null, the global authentication is used.
+     */
+    var overrideAuthMethods: MutableList<AuthMethod>? = null
+        private set
+
+    /**
+    * Sets the auth overrides (overwrites existing overrides).
+    * This will cause the operation to ignore global auth.
+    */
+    fun overrideAuthMethods(methods: List<AuthMethod>): {{ .Operation.Name }}OperationSpec = apply {
+        this.overrideAuthMethods = methods.toMutableList()
+    }
+
+    /**
+     * Adds a single auth method to the override list.
+     * On the first call, this initializes the list and disables global auth for this request.
+     */
+    fun overrideAuthMethod(method: AuthMethod): {{ .Operation.Name }}OperationSpec = apply {
+        if (this.overrideAuthMethods == null) {
+            this.overrideAuthMethods = mutableListOf()
+        }
+        this.overrideAuthMethods?.add(method)
+    }
+
+    /**
+     * Resets the operation to use the global authentication settings.
+     */
+    fun useGlobalAuth(): {{ .Operation.Name }}OperationSpec = apply {
+        this.overrideAuthMethods = null
     }
 
     /**

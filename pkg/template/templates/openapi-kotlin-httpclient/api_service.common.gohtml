@@ -16,6 +16,7 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.json.JsonElement
 
 import {{ $.Common.Packages.Root }}.{{ .Metadata.Name }}FactorySpec
+import {{ $.Common.Packages.Root }}.auth.AuthMethod
 
 import {{ $.Common.Packages.Models }}.*
 import {{ $.Common.Packages.Responses }}.*
@@ -60,6 +61,7 @@ class {{ .Service.Type }}Api(
     {{- end }}
         extraHeaders: Map<String, String> = emptyMap(),
         extraQueryParams: Map<String, String> = emptyMap(),
+        overrideAuthMethods: List<AuthMethod>? = null,
     ): {{ $op.Name }}Response {
         val url = URLBuilder(spec.baseUrl).apply {
             {{- if $op.PathSegments }}
@@ -80,6 +82,9 @@ class {{ .Service.Type }}Api(
             {{ $qp.Name }}{{if not $qp.Required}}?{{end}}.let { parameters.append("{{ $qp.FieldName }}", it.toString()) }
             {{- end }}
             {{- end }}
+            spec.aggregateAuthenticationQueryParams(overrideAuthMethods).forEach { (key, value) ->
+                parameters.append(key, value)
+            }
             extraQueryParams.forEach { (key, value) ->
                 parameters.append(key, value)
             }
@@ -94,8 +99,14 @@ class {{ .Service.Type }}Api(
                 {{ $hp.Name }}?.let { headers.append("{{ $hp.FieldName }}", it.toString()) }
                 {{- end }}
                 {{- end }}
+                spec.aggregateAuthenticationHeaders(overrideAuthMethods).forEach { (key, value) ->
+                    headers.append(key, value)
+                }
                 extraHeaders.forEach { (key, value) ->
                     headers.append(key, value)
+                }
+                spec.aggregateAuthenticationCookies(overrideAuthMethods).forEach { (key, value) ->
+                    cookie(key, value)
                 }
                 {{- if $op.BodyParameter }}
                 setBody({{ $op.BodyParameter.Name }})
