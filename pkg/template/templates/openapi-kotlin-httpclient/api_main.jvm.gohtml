@@ -81,17 +81,8 @@ class Jvm{{ .Metadata.Name }}Api(
     {{- end }}
     fun {{ $op.Name | toFunctionName }}(
         spec: Consumer<{{ $op.Name }}OperationSpec>
-    ): {{ $op.Name }}Response {
-        val request = {{ $op.Name }}OperationSpec(spec)
-        return runBlocking {
-            api.{{ $op.Name | toFunctionName }}(
-                {{- range $param := $op.MutableParameters }}
-                {{ $param.Name }} = request.{{ $param.Name }}{{ if $param.Required }}!!{{ end }},
-                {{- end }}
-                extraHeaders = request.extraHeaders,
-                extraQueryParams = request.extraQueryParams
-            )
-        }
+    ): {{ $op.Name }}Response = runBlocking(scope.coroutineContext) {
+        {{ $op.Name | toFunctionName }}Async(spec).get()
     }
 
     /**
@@ -127,7 +118,8 @@ class Jvm{{ .Metadata.Name }}Api(
                 {{ $param.Name }} = request.{{ $param.Name }}{{ if $param.Required }}!!{{ end }},
                 {{- end }}
                 extraHeaders = request.extraHeaders,
-                extraQueryParams = request.extraQueryParams
+                extraQueryParams = request.extraQueryParams,
+                overrideAuthMethods = request.overrideAuthMethods
             )
         }
     }
