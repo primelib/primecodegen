@@ -223,7 +223,7 @@ func (g *KotlinGenerator) ToCodeType(schema *base.Schema, schemaType openapigene
 
 	// multiple types (e.g., ["string", "null"])
 	if util.CountExcluding(schema.Type, "null") > 1 {
-		return openapigenerator.CodeType{Name: "Any"}, nil
+		return openapigenerator.CodeType{Name: "JsonElement"}, nil
 	}
 
 	switch {
@@ -312,11 +312,11 @@ func (g *KotlinGenerator) ToCodeType(schema *base.Schema, schemaType openapigene
 		} else if schema.AdditionalProperties != nil && schema.AdditionalProperties.IsB() && schema.AdditionalProperties.B {
 			return openapigenerator.NewMapCodeType(
 				openapigenerator.NewSimpleCodeType("String", schema),
-				openapigenerator.NewSimpleCodeType("Any", schema),
+				openapigenerator.NewSimpleCodeType("JsonElement", schema),
 				schema,
 			), nil
 		} else if schema.AdditionalProperties == nil && schema.Properties == nil {
-			return openapigenerator.CodeType{Name: "Any"}, nil
+			return openapigenerator.CodeType{Name: "JsonElement"}, nil
 		} else {
 			if schema.Title == "" {
 				return openapigenerator.DefaultCodeType, fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
@@ -336,7 +336,7 @@ func (g *KotlinGenerator) ToCodeType(schema *base.Schema, schemaType openapigene
 		if openapigenerator.HaveSameCodeTypeName(codeTypes) {
 			return codeTypes[0], nil
 		}
-		return openapigenerator.CodeType{Name: "Any"}, nil
+		return openapigenerator.CodeType{Name: "JsonElement"}, nil
 
 	default:
 		return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)

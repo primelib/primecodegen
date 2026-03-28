@@ -12,14 +12,19 @@ import {{ .Common.Packages.Root }}.auth.OAuth2UserCredentialAuthMethod
 import {{ .Common.Packages.Root }}.auth.OAuth2ClientCredentialAuthMethod
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.client.request.HttpRequest
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.HttpMethod
 
 import org.jetbrains.annotations.ApiStatus
 
 import kotlin.reflect.KClass
 
 /**
-* A specification to construct a client instance.
-*/
+ * A specification to construct a client instance.
+ */
 open class {{ .Metadata.Name }}FactorySpec {
     /**
      * The name of the backend service.
@@ -45,6 +50,59 @@ open class {{ .Metadata.Name }}FactorySpec {
      * User Agent
      */
     var userAgent: String = "PrimeCodeGen/{{ .Metadata.Name }}"
+
+    /**
+     * The maximum time to establish a connection (TCP handshake).
+     */
+    var connectTimeoutMillis: Long = 10_000
+
+    /**
+     * The maximum time between two data packets (inactivity).
+     */
+    var socketTimeoutMillis: Long = 15_000
+
+    /**
+     * The maximum time for the entire request/response cycle.
+     */
+    var requestTimeoutMillis: Long = 30_000
+
+    /**
+     * Maximum number of retries for transient errors (5xx, timeouts).
+     * Set to 0 to disable retries.
+     */
+    var retryCount: Int = 0
+
+    /**
+     * Retry strategy to use when retrying failed requests. Defaults to exponential backoff.
+     */
+    var retryStrategy: RetryStrategy = RetryStrategy.EXPONENTIAL
+
+    /**
+     * Base delay in milliseconds for retries. The actual delay will depend on the retry strategy (exponential, linear, etc.).
+     */
+    var retryDelayMillis: Long = 1000
+
+    /**
+     * Predicate to determine if a response should be retried.
+     * Defaults to retrying all 5xx and 429 (Rate Limit) errors.
+     */
+    var retryIf: (HttpRequest, HttpResponse) -> Boolean = { _, response ->
+        response.status.value == 429 || response.status.value in 500..599
+    }
+
+    /**
+     * Predicate to determine if an exception should trigger a retry.
+     * Defaults to retrying on HttpRequestTimeoutException for idempotent methods (GET, PUT).
+     */
+    var retryOnExceptionIf: (HttpRequestBuilder, Throwable) -> Boolean = { request, cause ->
+        val isIdempotent = request.method == HttpMethod.Get || request.method == HttpMethod.Put
+        isIdempotent && (cause is HttpRequestTimeoutException)
+    }
+
+    /**
+     * Custom headers to be sent with every request.
+     */
+    var defaultHeaders: MutableMap<String, String> = mutableMapOf()
 
     /**
      * HTTP Client used for Authentication
@@ -97,5 +155,9 @@ open class {{ .Metadata.Name }}FactorySpec {
     open fun validate() {
         require(baseUrl.isNotBlank()) { "baseUrl must not be blank" }
         require(logLevel.isNotBlank()) { "logLevel must not be blank" }
+    }
+
+    enum class RetryStrategy {
+        EXPONENTIAL, CONSTANT
     }
 }

@@ -5,6 +5,8 @@ package {{ .Package }};
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+
 import kotlin.time.Instant
 
 import org.jetbrains.annotations.ApiStatus
@@ -32,7 +34,7 @@ data class {{ .Model.Name }}(
      */
     {{- end }}
     @SerialName("{{ $p.FieldName }}")
-    val {{ $p.Name }}: {{ if not $p.Nullable }}{{ $p.Type.Declaration }}? = null{{ else }}{{ $p.Type.Declaration }}{{ end }},
+    val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if not $p.Nullable }}? = null{{ end }},
     {{- end }}
 ){{ if .Model.Parent.Declaration }} : {{ .Model.Parent.Declaration }}(){{ end }} {
 

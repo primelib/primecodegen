@@ -3,15 +3,20 @@
 
 package {{ .Package }};
 
-{{- range .Common.Models }}
-import {{ $.Common.Packages.Models }}.{{ .Name }};
-{{- end }}
+import kotlinx.coroutines.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.future.future
+import kotlinx.serialization.json.JsonElement
 
-import org.jetbrains.annotations.ApiStatus
+import kotlin.collections.toMutableMap
 
 import java.util.function.Consumer
 
-import kotlin.collections.toMutableMap
+import org.jetbrains.annotations.ApiStatus
+
+{{- range .Common.Models }}
+import {{ $.Common.Packages.Models }}.{{ .Name }};
+{{- end }}
 
 /**
  * {{ .Operation.Name }}
