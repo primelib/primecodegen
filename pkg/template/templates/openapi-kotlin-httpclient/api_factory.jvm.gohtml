@@ -14,19 +14,22 @@ import io.ktor.client.plugins.logging.DEFAULT
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.DefaultRequest
+import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.request.header
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.serialization.kotlinx.xml.*
 import io.ktor.http.HttpHeaders
+import io.opentelemetry.instrumentation.ktor.v3_0.KtorClientTelemetry
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 
-import io.opentelemetry.instrumentation.ktor.v3_0.KtorClientTelemetry
+import org.slf4j.LoggerFactory
 
 object {{ .Metadata.Name }}Factory {
     fun <T : Any> create(api: KClass<T>, block: Jvm{{ .Metadata.Name }}FactorySpec.() -> Unit): T = create{{ .Metadata.Name }}(api, block)
@@ -40,6 +43,8 @@ inline fun <T : Any> create{{ .Metadata.Name }}(api: KClass<T>, block: Jvm{{ .Me
 
 @Suppress("UNCHECKED_CAST")
 fun <T : Any> buildClient(api: KClass<T>, spec: Jvm{{ .Metadata.Name }}FactorySpec): T {
+    val log = LoggerFactory.getLogger(api.simpleName)
+
     // create ktor http client
     val httpClient = HttpClient(CIO) {
         // content negotiation
@@ -52,21 +57,51 @@ fun <T : Any> buildClient(api: KClass<T>, spec: Jvm{{ .Metadata.Name }}FactorySp
             xml()
         }
 
-        // retry policy, timeouts, etc.
-        install(HttpTimeout) {
-            requestTimeoutMillis = 30_000
-            connectTimeoutMillis = 10_000
+        // retry policy
+        if (spec.retryCount > 0) {
+            install(HttpRequestRetry) {
+                maxRetries = spec.retryCount
+                when (spec.retryStrategy) {
+                    {{ .Metadata.Name }}FactorySpec.RetryStrategy.EXPONENTIAL -> exponentialDelay(baseDelayMs = spec.retryDelayMillis)
+                    {{ .Metadata.Name }}FactorySpec.RetryStrategy.CONSTANT -> constantDelay(millis = spec.retryDelayMillis)
+                }
+                retryIf { call, response ->
+                    spec.retryIf(call, response)
+                }
+                retryOnExceptionIf { request, cause ->
+                    spec.retryOnExceptionIf(request, cause)
+                }
+            }
         }
 
-        // default headers
+        // timeouts
+        install(HttpTimeout) {
+            requestTimeoutMillis = spec.requestTimeoutMillis
+            connectTimeoutMillis = spec.connectTimeoutMillis
+            socketTimeoutMillis = spec.socketTimeoutMillis
+        }
+
+        // base url and default headers
         install(DefaultRequest) {
             url(spec.baseUrl)
-            header("User-Agent", spec.userAgent)
+
+            // user agent and default header parameters
+            header(HttpHeaders.UserAgent, spec.userAgent)
+            spec.defaultHeaders.forEach { (key, value) ->
+                header(key, value)
+            }
         }
 
         // logging
         install(Logging) {
-            logger = Logger.DEFAULT
+            level = when (spec.logLevel.lowercase()) {
+                "all" -> LogLevel.ALL
+                "headers" -> LogLevel.HEADERS
+                "body" -> LogLevel.BODY
+                "info" -> LogLevel.INFO
+                else -> LogLevel.NONE
+            }
+            sanitizeHeader { header -> header == HttpHeaders.Authorization }
         }
 
         // open-telemetry
@@ -75,6 +110,21 @@ fun <T : Any> buildClient(api: KClass<T>, spec: Jvm{{ .Metadata.Name }}FactorySp
                 setOpenTelemetry(otlp)
                 capturedRequestHeaders(HttpHeaders.UserAgent)
                 capturedResponseHeaders(HttpHeaders.ContentType)
+            }
+        }
+
+        // handle insecure connections
+        engine {
+            https {
+                if (spec.insecure) {
+                    log.warn("Insecure mode enabled for {}. SSL/TLS verification is disabled.", api.simpleName)
+
+                    trustManager = object : javax.net.ssl.X509TrustManager {
+                        override fun checkClientTrusted(chain: Array<out java.security.cert.X509Certificate>?, authType: String?) {}
+                        override fun checkServerTrusted(chain: Array<out java.security.cert.X509Certificate>?, authType: String?) {}
+                        override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
+                    }
+                }
             }
         }
     }

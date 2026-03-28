@@ -10,8 +10,12 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
 import io.ktor.util.url
-import kotlinx.coroutines.*
 import kotlin.time.Instant
+
+import kotlinx.coroutines.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.future.future
+import kotlinx.serialization.json.JsonElement
 
 import {{ $.Common.Packages.Root }}.Jvm{{ .Metadata.Name }}FactorySpec
 
@@ -20,9 +24,6 @@ import {{ $.Common.Packages.Responses }}.*
 import {{ $.Common.Packages.Operations }}.*
 
 import org.jetbrains.annotations.ApiStatus;
-
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.future.future
 
 import java.util.function.Consumer
 import java.util.concurrent.CompletableFuture

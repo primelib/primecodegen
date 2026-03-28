@@ -4,14 +4,11 @@
 package {{ .Common.Packages.Root }}.spring
 
 import {{ .Common.Packages.Root }}.{{ .Metadata.Name }}Factory
+import {{ .Common.Packages.Root }}.{{ .Metadata.Name }}FactorySpec
 import {{ .Common.Packages.Root }}.Jvm{{ .Metadata.Name }}FactorySpec
 
 import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}Api
 import {{ .Common.Packages.Client }}.Jvm{{ .Metadata.Name }}Api
-{{- range $service := .Common.Services }}
-import {{ $.Common.Packages.Client }}.{{ $service.Type }}Api
-import {{ $.Common.Packages.Client }}.Jvm{{ $service.Type }}Api
-{{- end }}
 
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.autoconfigure.AutoConfiguration
@@ -40,11 +37,19 @@ class {{ .Metadata.Name }}SpringAutoConfiguration(
         return {{ .Metadata.Name }}Factory.create({{ .Metadata.Name }}Api::class) {
             baseUrl = properties.url
 
-            openTelemetryClient?.let { openTelemetry = it }
-
             properties.backendName.takeIf { it.isNotBlank() }?.let { backendName = it }
             properties.logLevel.takeIf { it.isNotBlank() }?.let { logLevel = it }
             properties.insecure?.let { insecure = it }
+
+            retryCount = properties.retryCount
+            retryStrategy = {{ .Metadata.Name }}FactorySpec.RetryStrategy.valueOf(properties.retryStrategy.uppercase())
+            retryDelayMillis = properties.retryDelayMillis
+
+            requestTimeoutMillis = properties.requestTimeoutMillis
+            connectTimeoutMillis = properties.connectTimeoutMillis
+            socketTimeoutMillis = properties.socketTimeoutMillis
+
+            openTelemetryClient?.let { openTelemetry = it }
 
             configureAuth(this, properties.auth)
         }
@@ -56,11 +61,19 @@ class {{ .Metadata.Name }}SpringAutoConfiguration(
         return {{ .Metadata.Name }}Factory.create(Jvm{{ .Metadata.Name }}Api::class) {
             baseUrl = properties.url
 
-            openTelemetryClient?.let { openTelemetry = it }
-
             properties.backendName.takeIf { it.isNotBlank() }?.let { backendName = it }
             properties.logLevel.takeIf { it.isNotBlank() }?.let { logLevel = it }
             properties.insecure?.let { insecure = it }
+
+            retryCount = properties.retryCount
+            retryStrategy = {{ .Metadata.Name }}FactorySpec.RetryStrategy.valueOf(properties.retryStrategy.uppercase())
+            retryDelayMillis = properties.retryDelayMillis
+
+            requestTimeoutMillis = properties.requestTimeoutMillis
+            connectTimeoutMillis = properties.connectTimeoutMillis
+            socketTimeoutMillis = properties.socketTimeoutMillis
+
+            openTelemetryClient?.let { openTelemetry = it }
 
             configureAuth(this, properties.auth)
         }
@@ -83,21 +96,22 @@ class {{ .Metadata.Name }}SpringAutoConfiguration(
                 authConfig.tokenValueTemplate?.takeIf { it.isNotBlank() }?.let { valueTemplate = it }
                 token = authConfig.token
             }
-
-            /*
-            "oauth2-user" -> spec.authMethods.add(OAuth2UserCredentialsAuthMethod {
-            tokenEndpoint = authConfig.tokenEndpoint
-            clientId = authConfig.clientId
-            clientSecret = authConfig.clientSecret
-            username = authConfig.username
-            password = authConfig.password
-            })
-            "oauth2-client" -> spec.authMethods.add(OAuth2ClientCredentialsAuthMethod {
-            tokenEndpoint = authConfig.tokenEndpoint
-            clientId = authConfig.clientId
-            clientSecret = authConfig.clientSecret
-            })
-            */
+            "oauth2-user" -> spec.oauth2UserAuth {
+                tokenEndpoint = authConfig.tokenEndpoint
+                clientId = authConfig.clientId
+                clientSecret = authConfig.clientSecret
+                username = authConfig.username
+                password = authConfig.password
+            }
+            "oauth2-client" -> spec.oauth2ClientAuth {
+                tokenEndpoint = authConfig.tokenEndpoint
+                clientId = authConfig.clientId
+                clientSecret = authConfig.clientSecret
+            }
+            else -> {
+                val message = "Unknown authentication type '${authConfig.type}'. Supported types are: api-key, basic, bearer, oauth2-user, oauth2-client."
+                throw IllegalArgumentException(message)
+            }
         }
     }
 
@@ -106,11 +120,17 @@ class {{ .Metadata.Name }}SpringAutoConfiguration(
         var url: String = "",
         var backendName: String = "",
         var logLevel: String = "",
+        var retryCount: Int = 0,
+        var retryStrategy: String = "exponential",
+        var retryDelayMillis: Long = 1000,
+        var requestTimeoutMillis: Long = 30_000,
+        var connectTimeoutMillis: Long = 10_000,
+        var socketTimeoutMillis: Long = 15_000,
         var insecure: Boolean? = false,
         var auth: Auth? = null
     ) {
         data class Auth(
-            // Types of authentication, supported are: "oauth2-user", "oauth2-client", "bearer", "basic".
+            // Authentication Type: "api-key", "basic", "bearer", "oauth2-user", "oauth2-client"
             var type: String? = null,
             var tokenEndpoint: String? = null,
             var clientId: String? = null,
