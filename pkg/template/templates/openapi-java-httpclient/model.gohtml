@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -56,6 +57,14 @@ import java.util.function.Consumer;
 {{- end }}
 @Generated(value = "io.github.primelib.primecodegen")
 public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Parent.Declaration}}{{end}} {
+{{- range $a := .Model.AllOf }}
+    /**
+    * Properties inherited from {{ $a.Name }}
+    */
+    @JsonUnwrapped
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    protected {{ $a.Name | toClassName }} {{ $a.Name | toPropertyName }};
+{{ end }}
 {{ range $p := .Model.Properties }}
 {{- if $p.Description }}
     /**
@@ -84,6 +93,7 @@ public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Pa
     protected {{.Model.Name}}() {
     }
 
+{{- if len .Model.Properties }}
     /**
      * Constructs a validated instance of {@link {{.Model.Name}}}.
      * <p>
@@ -98,6 +108,7 @@ public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Pa
         this.{{$p.Name}} = {{$p.Name}};
         {{- end }}
     }
+{{- end }}
 
 {{ range $p := $.Model.Properties }}
     /**

@@ -2,11 +2,15 @@ package openapidocument
 
 import (
 	"fmt"
+	"log/slog"
+	"reflect"
 	"slices"
+	"strings"
 
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/pb33f/libopenapi/orderedmap"
-	"github.com/primelib/primecodegen/pkg/logging"
+	"github.com/primelib/primecodegen/pkg/util"
+	"go.yaml.in/yaml/v4"
 )
 
 func MergeSchemaProxy(baseSP *base.SchemaProxy, overwriteSP *base.SchemaProxy) (*base.Schema, error) {
@@ -155,15 +159,20 @@ func MergeSchema(result *base.Schema, override *base.Schema) (*base.Schema, erro
 		}
 	}
 	if override.Properties != nil {
-		for op := override.Properties.Oldest(); op != nil; op = op.Next() {
-			bytes, _ := op.Value.Render()
-			logging.Trace("Properties: ", "key", op.Key, "value", string(bytes))
-		}
 		if result.Properties == nil {
 			result.Properties = orderedmap.New[string, *base.SchemaProxy]()
 		}
+
 		for op := override.Properties.Oldest(); op != nil; op = op.Next() {
-			result.Properties.Set(op.Key, op.Value)
+			propertyName := op.Key
+			newProperty := op.Value
+
+			if existingProperty, exists := result.Properties.Get(propertyName); exists {
+				resolvedProperty := resolvePropertyConflict(existingProperty, newProperty)
+				result.Properties.Set(propertyName, resolvedProperty)
+			} else {
+				result.Properties.Set(propertyName, newProperty)
+			}
 		}
 	}
 	if override.Title != "" {
@@ -233,9 +242,9 @@ func MergeSchema(result *base.Schema, override *base.Schema) (*base.Schema, erro
 	}
 	if len(override.Required) > 0 {
 		if result.Required == nil {
-			result.Required = override.Required
+			result.Required = append([]string(nil), override.Required...)
 		} else {
-			result.Required = append(result.Required, override.Required...)
+			result.Required = util.AppendUnique(result.Required, override.Required)
 		}
 	}
 	if len(override.Enum) > 0 {
@@ -254,7 +263,9 @@ func MergeSchema(result *base.Schema, override *base.Schema) (*base.Schema, erro
 		if result.Description == "" {
 			result.Description = override.Description
 		} else {
-			result.Description = result.Description + "\n" + override.Description
+			if !strings.Contains(result.Description, override.Description) {
+				result.Description = result.Description + "\n" + override.Description
+			}
 		}
 	}
 	if override.Default != nil {
@@ -302,8 +313,54 @@ func MergeSchema(result *base.Schema, override *base.Schema) (*base.Schema, erro
 			result.Deprecated = override.Deprecated
 		}
 	}
-	// TODO: Extensions
-	// Skip: low, ParentProxy
+	if override.Extensions != nil {
+		if result.Extensions == nil {
+			result.Extensions = orderedmap.New[string, *yaml.Node]()
+		}
+
+		for ext := override.Extensions.Oldest(); ext != nil; ext = ext.Next() {
+			result.Extensions.Set(ext.Key, ext.Value)
+		}
+	}
 
 	return result, nil
+}
+
+func resolvePropertyConflict(existing, override *base.SchemaProxy) *base.SchemaProxy {
+	existingSchema := existing.Schema()
+	overrideSchema := override.Schema()
+
+	if existingSchema == nil || overrideSchema == nil {
+		return existing
+	}
+
+	// match
+	if reflect.DeepEqual(existingSchema.Type, overrideSchema.Type) {
+		return existing
+	}
+
+	// array for content conflict
+	itemSchema := &base.Schema{
+		Type:        []string{"object"},
+		Description: "Generic object created due to item type conflict",
+	}
+	if slices.Contains(existingSchema.Type, "array") && slices.Contains(overrideSchema.Type, "array") {
+		slog.Debug("Array type match but items diverge, creating array of objects", "property", existingSchema.Title)
+
+		arrayObject := &base.Schema{
+			Type: []string{"array"},
+			Items: &base.DynamicValue[*base.SchemaProxy, bool]{
+				N: 0,
+				A: base.CreateSchemaProxy(itemSchema),
+			},
+		}
+		arrayObject.Extensions = orderedmap.New[string, *yaml.Node]()
+		arrayObject.Extensions.Set("x-primecodegen-conflict", &yaml.Node{Value: "Array items diverged; defaulted to List<Object>"})
+		return base.CreateSchemaProxy(arrayObject)
+	}
+
+	// total conflict
+	itemSchema.Extensions = orderedmap.New[string, *yaml.Node]()
+	itemSchema.Extensions.Set("x-primecodegen-conflict", &yaml.Node{Value: "Types diverged on merge; defaulted to object"})
+	return base.CreateSchemaProxy(itemSchema)
 }

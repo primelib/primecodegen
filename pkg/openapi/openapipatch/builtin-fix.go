@@ -218,44 +218,63 @@ func FixRemoveCommonOperationIdPrefix(doc *libopenapi.DocumentModel[v3.Document]
 var FixMissingOneOfFromDiscriminatorPatch = BuiltInPatcher{
 	Type:                "builtin",
 	ID:                  "fix-missing-oneof-from-discriminator",
-	Description:         "Adds missing oneOf entries based on discriminator.mapping when discriminator is present but oneOf is missing.",
+	Description:         "Recursively populates missing oneOf lists using discriminator mapping entries across the entire document",
 	PatchV3DocumentFunc: FixMissingOneOfFromDiscriminator,
 }
 
 func FixMissingOneOfFromDiscriminator(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
-	walkedDoc := openapidocument.WalkDocument(doc)
-	if len(walkedDoc.Schemas) == 0 {
-		return nil
-	}
-
-	for _, schema := range openapidocument.CollectSchemas(doc) {
-		if schema == nil {
+	for schemaRef, schema := range openapidocument.CollectSchemas(doc) {
+		if schema == nil || schema.Discriminator == nil {
 			continue
 		}
 
-		// check if discriminator is missing or oneOf is already present
-		if schema.Discriminator == nil || len(schema.OneOf) > 0 {
+		// only fix if oneOf AND anyOf are missing.
+		if len(schema.OneOf) > 0 || len(schema.AnyOf) > 0 {
 			continue
 		}
 
-		// discriminator without mapping is too ambiguous to recover
-		if schema.Discriminator.Mapping == nil || schema.Discriminator.Mapping.Len() == 0 {
-			slog.Warn("discriminator present without oneOf and without mapping; cannot infer variants")
+		// if discriminator is present without oneOf and without mapping, we cannot infer variants
+		mapping := schema.Discriminator.Mapping
+		if mapping == nil || mapping.Len() == 0 {
+			slog.Warn("Discriminator present without composition and without mapping; cannot infer variants")
 			continue
 		}
 
-		// Build oneOf from mapping values
-		for entry := schema.Discriminator.Mapping.Oldest(); entry != nil; entry = entry.Next() {
-			if entry.Value == "" {
+		// if there is only one mapping entry, and it points to the same schema, skip to prevent circular oneOf
+		if mapping.Len() == 1 {
+			entry := mapping.Oldest()
+			val := entry.Value
+			if !strings.HasPrefix(val, "#") {
+				val = "#/components/schemas/" + val
+			}
+
+			if val == schemaRef {
+				slog.Debug("Skipping self-only discriminator mapping to prevent circular oneOf", "schema", schemaRef)
+				schema.Discriminator = nil
+				continue
+			}
+		}
+
+		// track unique refs
+		seenRefs := make(map[string]bool)
+		if schema.OneOf == nil {
+			schema.OneOf = make([]*base.SchemaProxy, 0)
+		}
+		for entry := mapping.Oldest(); entry != nil; entry = entry.Next() {
+			refPath := entry.Value
+			if refPath == "" || seenRefs[refPath] {
 				continue
 			}
 
-			slog.With("discriminatorKey", entry.Key).With("schemaRef", entry.Value).Info("adding missing oneOf entry from discriminator mapping")
-			if schema.OneOf == nil {
-				schema.OneOf = make([]*base.SchemaProxy, 0)
+			// normalize local references
+			if !strings.HasPrefix(refPath, "#") {
+				refPath = "#/components/schemas/" + refPath
+				entry.Value = refPath
 			}
-			schema.OneOf = append(schema.OneOf, base.CreateSchemaProxyRef(entry.Value))
-			slog.With("current oneOf", schema.OneOf).Warn("added oneOf entry to discriminator mapping")
+
+			slog.Info("Synthesizing missing oneOf entry", "discriminatorValue", entry.Key, "targetRef", refPath)
+			schema.OneOf = append(schema.OneOf, base.CreateSchemaProxyRef(refPath))
+			seenRefs[refPath] = true
 		}
 	}
 

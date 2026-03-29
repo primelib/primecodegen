@@ -439,45 +439,48 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 		}
 
 		add := Model{
-			Name:        gen.ToClassName(s.Title),
-			Description: s.Description,
+			Name:            gen.ToClassName(s.Title),
+			Description:     s.Description,
+			SchemaReference: "#/components/schemas/" + schema.Key,
 		}
-		if slices.Contains(s.Type, "object") && s.Properties != nil {
+		if slices.Contains(s.Type, "object") && (s.Properties != nil || s.OneOf != nil || s.AnyOf != nil || s.AllOf != nil) {
 			var addedProperties []string
 
-			for p := s.Properties.Oldest(); p != nil; p = p.Next() {
-				if slices.Contains(addedProperties, gen.ToPropertyName(p.Key)) {
-					continue
-				}
+			if s.Properties != nil {
+				for p := s.Properties.Oldest(); p != nil; p = p.Next() {
+					if slices.Contains(addedProperties, gen.ToPropertyName(p.Key)) {
+						continue
+					}
 
-				pSchema, pErr := p.Value.BuildSchema()
-				if pErr != nil {
-					return models, fmt.Errorf("error building property schema: %w", err)
-				}
+					pSchema, pErr := p.Value.BuildSchema()
+					if pErr != nil {
+						return models, fmt.Errorf("error building property schema: %w", err)
+					}
 
-				pType, err := gen.ToCodeType(pSchema, CodeTypeSchemaProperty, false)
-				if err != nil {
-					return models, fmt.Errorf("error converting type of [%s:object:%s]: %w", schema.Key, p.Key, err)
-				}
-				pType = gen.PostProcessType(pType)
+					pType, err := gen.ToCodeType(pSchema, CodeTypeSchemaProperty, false)
+					if err != nil {
+						return models, fmt.Errorf("error converting type of [%s:object:%s]: %w", schema.Key, p.Key, err)
+					}
+					pType = gen.PostProcessType(pType)
 
-				allowedValues, err := openapidocument.EnumToAllowedValues(pSchema)
-				if err != nil {
-					return models, fmt.Errorf("error processing enum definitions: %w", err)
-				}
-				add.Properties = append(add.Properties, Property{
-					Name:            gen.ToPropertyName(p.Key),
-					FieldName:       p.Key,
-					Description:     pSchema.Description,
-					Title:           pSchema.Title,
-					Type:            pType,
-					IsPrimitiveType: gen.IsPrimitiveType(pType.Name),
-					Nullable:        openapiutil.IsSchemaNullable(pSchema),
-					AllowedValues:   allowedValues,
-				})
-				add.Imports = append(add.Imports, gen.TypeToImport(pType))
+					allowedValues, err := openapidocument.EnumToAllowedValues(pSchema)
+					if err != nil {
+						return models, fmt.Errorf("error processing enum definitions: %w", err)
+					}
+					add.Properties = append(add.Properties, Property{
+						Name:            gen.ToPropertyName(p.Key),
+						FieldName:       p.Key,
+						Description:     pSchema.Description,
+						Title:           pSchema.Title,
+						Type:            pType,
+						IsPrimitiveType: gen.IsPrimitiveType(pType.Name),
+						Nullable:        openapiutil.IsSchemaNullable(pSchema),
+						AllowedValues:   allowedValues,
+					})
+					add.Imports = append(add.Imports, gen.TypeToImport(pType))
 
-				addedProperties = append(addedProperties, gen.ToPropertyName(p.Key))
+					addedProperties = append(addedProperties, gen.ToPropertyName(p.Key))
+				}
 			}
 		} else if slices.Contains(s.Type, "array") {
 			mParent, err := gen.ToCodeType(s, CodeTypeSchemaArray, false)
@@ -499,6 +502,51 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 		}
 		if len(add.Properties) == 0 && (add.Parent.Name != "" || add.Parent.IsArray || add.Parent.IsList || add.Parent.IsMap) {
 			add.IsTypeAlias = true
+		}
+
+		// polymorphism
+		if s.Discriminator != nil {
+			add.DiscriminatorProperty = s.Discriminator.PropertyName
+		}
+		if s.OneOf != nil {
+			for _, ps := range s.OneOf {
+				pss := ps.Schema()
+				pssRefPath := ps.GetReference()
+
+				discriminatorValue := ""
+				if s.Discriminator != nil {
+					for entry := s.Discriminator.Mapping.Oldest(); entry != nil; entry = entry.Next() {
+						if entry.Value == pssRefPath {
+							discriminatorValue = entry.Key
+							break
+						}
+					}
+				}
+
+				add.OneOf = append(add.OneOf, Model{
+					Name:               gen.ToClassName(pss.Title),
+					Description:        pss.Description,
+					DiscriminatorValue: discriminatorValue,
+				})
+			}
+		}
+		if s.AllOf != nil {
+			for _, ps := range s.AllOf {
+				pss := ps.Schema()
+				add.AllOf = append(add.AllOf, Model{
+					Name:        gen.ToClassName(pss.Title),
+					Description: pss.Description,
+				})
+			}
+		}
+		if s.AnyOf != nil {
+			for _, ps := range s.AnyOf {
+				pss := ps.Schema()
+				add.AnyOf = append(add.AnyOf, Model{
+					Name:        gen.ToClassName(pss.Title),
+					Description: pss.Description,
+				})
+			}
 		}
 
 		add.Imports = uniqueSortImports(add.Imports)
