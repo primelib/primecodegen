@@ -44,6 +44,12 @@ kotlin {
             // ktor jvm engine
             api(libs.ktor.client.cio)
 
+            // serialization
+            api(libs.ktor.serialization.jackson)
+            api(project.dependencies.platform(libs.jackson.bom))
+            api(libs.jackson.dataformat.xml)
+            api(libs.jackson.dataformat.yaml)
+
             // logging and tracing
             api(libs.opentelemetry.ktor)
 
