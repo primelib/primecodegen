@@ -89,7 +89,7 @@ var Template = templateapi.Config{
 		},
 		// core - model
 		{
-			SourceTemplate:  "model.gohtml",
+			SourceTemplate:  "model.common.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
 			TargetDirectory: "core/src/commonMain/kotlin/{{ .Common.Packages.Models | toFilePath }}",
 			TargetFileName:  "{{ .Name }}.kt",
@@ -97,13 +97,32 @@ var Template = templateapi.Config{
 			Kind:            templateapi.KindModel,
 		},
 		{
-			SourceTemplate:  "enum.gohtml",
+			SourceTemplate:  "enum.common.gohtml",
 			Snippets:        templateapi.DefaultSnippets,
 			TargetDirectory: "core/src/commonMain/kotlin/{{ .Common.Packages.Enums | toFilePath }}",
 			TargetFileName:  "{{ .Name }}.kt",
 			Type:            templateapi.TypeEnumEach,
 			Kind:            templateapi.KindModel,
 		},
+		// core - model - jvm
+		/*
+			{
+				SourceTemplate:  "model.jvm.gohtml",
+				Snippets:        templateapi.DefaultSnippets,
+				TargetDirectory: "core/src/jvmMain/kotlin/{{ .Common.Packages.Models | toFilePath }}/jvm",
+				TargetFileName:  "{{ .Name }}.kt",
+				Type:            templateapi.TypeModelEach,
+				Kind:            templateapi.KindModel,
+			},
+			{
+				SourceTemplate:  "enum.jvm.gohtml",
+				Snippets:        templateapi.DefaultSnippets,
+				TargetDirectory: "core/src/jvmMain/kotlin/{{ .Common.Packages.Enums | toFilePath }}/jvm",
+				TargetFileName:  "{{ .Name }}.kt",
+				Type:            templateapi.TypeEnumEach,
+				Kind:            templateapi.KindModel,
+			},
+		*/
 		// core - operation response models
 		{
 			SourceTemplate:  "response.gohtml",

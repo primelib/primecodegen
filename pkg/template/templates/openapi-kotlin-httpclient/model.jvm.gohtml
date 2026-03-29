@@ -1,11 +1,11 @@
 {{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.ModelEachTemplate*/ -}}
 {{- template "header-singleline" }}
 
-package {{ .Package }};
+package {{ .Package }}.jvm;
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonElement
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 import kotlin.time.Instant
 
@@ -23,9 +23,10 @@ import org.jetbrains.annotations.ApiStatus
 {{- end }}
  */
 {{- if .Model.Deprecated }}
-@Deprecated
+@Deprecated("{{ .Model.DeprecatedReason | escapeJavadoc }}")
 {{- end }}
-@Serializable
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class {{ .Model.Name }}(
     {{- range $i, $p := .Model.Properties }}
     {{- if $p.Description }}
@@ -33,7 +34,7 @@ data class {{ .Model.Name }}(
      * {{ $p.Description | escapeJavadoc | commentMultiLine "     * " }}
      */
     {{- end }}
-    @SerialName("{{ $p.FieldName }}")
+    @JsonProperty("{{ $p.FieldName }}")
     val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if not $p.Nullable }}? = null{{ end }},
     {{- end }}
 ){{ if .Model.Parent.Declaration }} : {{ .Model.Parent.Declaration }}(){{ end }} {

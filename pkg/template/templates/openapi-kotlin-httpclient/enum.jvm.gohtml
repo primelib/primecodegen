@@ -1,0 +1,44 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.EnumEachTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Package }}.jvm;
+
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonValue
+
+import kotlin.time.Instant
+
+import org.jetbrains.annotations.ApiStatus;
+
+/**
+ * {{ .Enum.Name }}
+{{- if .Enum.Description }}
+ *
+ * {{ .Enum.Description | commentMultiLine " * " | escapeJavadoc }}
+{{- end }}
+ */
+{{- if .Enum.Deprecated }}
+@Deprecated(message = "{{ if .Enum.DeprecatedReason }}{{ .Enum.DeprecatedReason }}{{ else }}This enum is deprecated{{ end }}")
+{{- end }}
+enum class {{ .Enum.Name }}(
+    @get:JsonValue
+    val value: {{ .Enum.ValueType }}
+) {
+    {{- range $i, $p := .Enum.AllowedValues }}
+    {{- if $p.Description }}
+    /**
+     * {{ $p.Description | commentSingleLine }}
+     */
+    {{- end }}
+    {{ $p.Name }}({{ if eq $.Enum.ValueType.Type "String" }}"{{ $p.Value }}"{{ else }}{{ $p.Value }}{{ end }}),
+    {{- end }}
+    ;
+
+    companion object {
+        @JvmStatic
+        @JsonCreator
+        fun fromValue(value: {{ $.Enum.ValueType }}): {{ $.Enum.Name }} =
+            entries.find { it.value == value }
+                ?: throw IllegalArgumentException("Unknown {{ $.Enum.Name }} value: $value")
+    }
+}
