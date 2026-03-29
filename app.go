@@ -5,10 +5,11 @@ import (
 	"os"
 
 	"github.com/primelib/primecodegen/pkg/cmd"
+	"github.com/primelib/primecodegen/pkg/constants"
 )
 
 var (
-	version = "dev"
+	version = constants.Version
 	commit  = "none"
 	date    = "unknown"
 	status  = "clean"
@@ -16,11 +17,11 @@ var (
 
 // Init Hook
 func init() {
-	// pass version info the version cmd
-	cmd.Version = version
-	cmd.CommitHash = commit
-	cmd.BuildAt = date
-	cmd.RepositoryStatus = status
+	// Set Version Information
+	constants.Version = version
+	constants.CommitHash = commit
+	constants.BuildAt = date
+	constants.RepositoryStatus = status
 }
 
 // CLI Main Entrypoint

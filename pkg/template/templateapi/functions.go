@@ -28,6 +28,38 @@ var TemplateFunctions = template.FuncMap{
 	"hasSuffix": func(s, suffix string) bool {
 		return strings.HasSuffix(s, suffix)
 	},
+	"contains": func(container interface{}, item interface{}) bool {
+		v := reflect.ValueOf(container)
+		if !v.IsValid() {
+			return false
+		}
+
+		switch v.Kind() {
+		// string contains string
+		case reflect.String:
+			itemStr, ok := item.(string)
+			if !ok {
+				return false
+			}
+			return strings.Contains(v.String(), itemStr)
+
+		// slice or array contains item
+		case reflect.Slice, reflect.Array:
+			for i := 0; i < v.Len(); i++ {
+				if reflect.DeepEqual(v.Index(i).Interface(), item) {
+					return true
+				}
+			}
+
+		// map contains key
+		case reflect.Map:
+			return v.MapIndex(reflect.ValueOf(item)).IsValid()
+		default:
+			return false
+		}
+
+		return false
+	},
 	"firstNonEmpty": func(values ...string) string {
 		return util.FirstNonEmptyString(values...)
 	},

@@ -9,6 +9,7 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/primelib/primecodegen/pkg/constants"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 	"github.com/primelib/primecodegen/pkg/openapi/openapiutil"
 	"github.com/primelib/primecodegen/pkg/util"
@@ -31,7 +32,7 @@ func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator Cod
 		Title:            specTitle,
 		Description:      doc.Model.Info.Description,
 		APISpecVersion:   doc.Model.Info.Version,
-		GeneratorVersion: "1.0.0", // TODO: introduce version constants
+		GeneratorVersion: constants.Version,
 		Endpoints:        BuildEndpoints(doc),
 		Auth:             BuildAuth(doc),
 		Packages:         packageConfig,
