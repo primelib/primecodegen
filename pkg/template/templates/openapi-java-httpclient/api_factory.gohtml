@@ -11,20 +11,17 @@ import {{ $.Common.Packages.Client }}.{{ $service.Type }}Api;
 import {{ $.Common.Packages.Client }}.{{ $service.Type }}ConsumerApi;
 {{- end }}
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.DeserializationFeature;
 
 import feign.Feign;
 import feign.form.FormEncoder;
 import feign.Logger;
-import feign.jackson.JacksonDecoder;
-import feign.jackson.JacksonEncoder;
+import feign.jackson3.Jackson3Decoder;
+import feign.jackson3.Jackson3Encoder;
 import feign.micrometer.MicrometerCapability;
 import feign.okhttp.OkHttpClient;
 import feign.reactive.ReactorFeign;
@@ -163,27 +160,26 @@ public class {{ .Metadata.Name }}Factory {
         // objectMapper
         JsonMapper.Builder objectMapperBuilder = JsonMapper.builder()
                 .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-                .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE)
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false) // do not fail on new fields
                 .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
                 .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
                 {{- if .Common.GeneratorProperties.jacksonIncludeNonNull }}
                 // condition: jsonIncludeNonNull
                 // .serializationInclusion(JsonInclude.Include.NON_NULL)
                 {{- end }}
-                .addModule(new JavaTimeModule());
-        config.extensions().forEach(extension -> extension.customizeObjectMapper(objectMapperBuilder));
-        ObjectMapper objectMapper = objectMapperBuilder.build();
+                ;
+        //config.extensions().forEach(extension -> extension.customizeObjectMapper(objectMapperBuilder));
+        JsonMapper objectMapper = objectMapperBuilder.build();
 
         // builder
         return Feign.builder()
                 .client(new OkHttpClient(clientBuilder.build()))
                 {{- if .Common.HasParametersWithType "form" }}
-                //.encoder(new FormEncoder(new JacksonEncoder(objectMapper)))
+                //.encoder(new FormEncoder(new Jackson3Encoder(objectMapper)))
                 {{- else }}
-                .encoder(new JacksonEncoder(objectMapper))
+                .encoder(new Jackson3Encoder(objectMapper))
                 {{- end }}
-                .decoder(new JacksonDecoder(objectMapper))
+                .decoder(new Jackson3Decoder(objectMapper))
                 .logger(new Slf4jLogger())
                 .logLevel(Logger.Level.valueOf(config.logLevel().toUpperCase()))
                 .addCapability(new MicrometerCapability(config.meterRegistry()))

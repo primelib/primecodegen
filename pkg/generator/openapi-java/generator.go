@@ -521,6 +521,7 @@ func NewGenerator() *JavaGenerator {
 			"volatile",
 			"while",
 			"tostring",
+			"consumer",
 		},
 		reservedRunes: []rune{
 			'$',  // dollar sign

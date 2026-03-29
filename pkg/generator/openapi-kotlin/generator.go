@@ -518,6 +518,7 @@ func NewGenerator() *KotlinGenerator {
 			"void",
 			"volatile",
 			"while",
+			"consumer",
 		},
 		reservedRunes: []rune{
 			'$',  // dollar sign

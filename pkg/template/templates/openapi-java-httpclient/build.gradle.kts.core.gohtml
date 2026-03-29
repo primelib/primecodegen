@@ -27,7 +27,7 @@ dependencies {
 
     // feign
     implementation("io.github.openfeign:feign-core")
-    implementation("io.github.openfeign:feign-jackson")
+    implementation("io.github.openfeign:feign-jackson3")
     implementation("io.github.openfeign:feign-slf4j")
     implementation("io.github.openfeign:feign-okhttp")
     implementation("io.github.openfeign:feign-micrometer")
@@ -45,8 +45,7 @@ dependencies {
     api("io.github.primelib.primecodegenlib.java:feign-common")
 
     // jackson
-    implementation("com.fasterxml.jackson.core:jackson-databind")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+    implementation("tools.jackson.core:jackson-databind")
 
     // metrics
     api("io.micrometer:micrometer-core")
