@@ -273,17 +273,20 @@ type Parameter struct {
 }
 
 type Model struct {
-	Name             string     `yaml:"name"`
-	Description      string     `yaml:"description,omitempty"`
-	Parent           CodeType   `yaml:"parent,omitempty"`
-	Properties       []Property `yaml:"properties,omitempty"`
-	AnyOf            []Model    `yaml:"anyOf,omitempty"`
-	AllOf            []Model    `yaml:"allOf,omitempty"`
-	OneOf            []Model    `yaml:"oneOf,omitempty"`
-	Imports          []string   `yaml:"imports,omitempty"`
-	Deprecated       bool       `yaml:"deprecated,omitempty"`
-	DeprecatedReason string     `yaml:"deprecatedReason,omitempty"`
-	IsTypeAlias      bool       `yaml:"isTypeAlias,omitempty"`
+	Name                  string     `yaml:"name"`
+	Description           string     `yaml:"description,omitempty"`
+	Parent                CodeType   `yaml:"parent,omitempty"`
+	Properties            []Property `yaml:"properties,omitempty"`
+	AnyOf                 []Model    `yaml:"anyOf,omitempty"`
+	AllOf                 []Model    `yaml:"allOf,omitempty"`
+	OneOf                 []Model    `yaml:"oneOf,omitempty"`
+	DiscriminatorProperty string     `yaml:"discriminatorProperty,omitempty"` // DiscriminatorProperty is the name of the discriminator property
+	DiscriminatorValue    string     `yaml:"discriminatorValue,omitempty"`    // DiscriminatorValue is the value of the discriminator property for this model
+	Imports               []string   `yaml:"imports,omitempty"`
+	Deprecated            bool       `yaml:"deprecated,omitempty"`
+	DeprecatedReason      string     `yaml:"deprecatedReason,omitempty"`
+	IsTypeAlias           bool       `yaml:"isTypeAlias,omitempty"`
+	SchemaReference       string     `yaml:"schemaReference,omitempty"` // SchemaReference points to the schema in the spec this model is based on
 }
 
 type Enum struct {

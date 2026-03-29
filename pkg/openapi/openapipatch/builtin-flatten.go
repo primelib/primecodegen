@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
@@ -78,19 +79,6 @@ func flattenRequestParameters(doc *libopenapi.DocumentModel[v3.Document]) error 
 				if param.Schema.IsReference() { // skip references
 					continue
 				}
-
-				// TODO: filter to only replace non-primitive types
-
-				// move schema to components and replace with reference
-				/*
-					key := util.ToPascalCase(op.Value.OperationId) + "P" + param.Name
-					logging.Trace("moving request parameter schema to components: " + key)
-					if ref, err := moveSchemaIntoComponents(doc, key, param.Schema); err != nil {
-						return fmt.Errorf("error moving schema to components: %w", err)
-					} else if ref != nil {
-						param.Schema = ref
-					}
-				*/
 			}
 		}
 	}
@@ -283,6 +271,11 @@ func flattenInnerSchemaObject(doc *libopenapi.DocumentModel[v3.Document], parent
 		return nil
 	}
 
+	// Compositions
+	if err := flattenComposedSchemas(doc, parentKey, valueSchema); err != nil {
+		return err
+	}
+
 	// Top-level array of objects
 	if slices.Contains(valueSchema.Type, "array") && valueSchema.Items != nil {
 		itemSchema := valueSchema.Items.A.Schema()
@@ -403,6 +396,62 @@ func flattenWebhooks(doc *libopenapi.DocumentModel[v3.Document]) error {
 	return nil
 }
 
+func flattenComposedSchemas(doc *libopenapi.DocumentModel[v3.Document], parentKey string, valueSchema *base.Schema) error {
+	if valueSchema == nil {
+		return nil
+	}
+
+	compositions := []struct {
+		name string
+		list []*base.SchemaProxy
+	}{
+		{"AnyOf", valueSchema.AnyOf},
+		{"AllOf", valueSchema.AllOf},
+		{"OneOf", valueSchema.OneOf},
+	}
+
+	for _, comp := range compositions {
+		for i, subSchemaProxy := range comp.list {
+			if subSchemaProxy == nil || subSchemaProxy.IsReference() {
+				continue
+			}
+
+			subSchema := subSchemaProxy.Schema()
+			if subSchema == nil {
+				continue
+			}
+
+			if isObjectSchema(subSchema) {
+				subName := getDiscriminatorName(valueSchema, subSchemaProxy, i, comp.name)
+				if subName == comp.name+fmt.Sprint(i) && subSchema.Title != "" {
+					subName = subSchema.Title
+				}
+				key := util.ToPascalCase(parentKey) + util.ToPascalCase(subName)
+
+				logging.Trace(fmt.Sprintf("moving %s sub-schema to components: %s", comp.name, key))
+				if ref, err := moveSchemaIntoComponents(doc, key, subSchemaProxy); err != nil {
+					return fmt.Errorf("error moving %s schema to components: %w", comp.name, err)
+				} else if ref != nil {
+					comp.list[i] = ref
+				}
+			}
+		}
+	}
+
+	if valueSchema.Not != nil && !valueSchema.Not.IsReference() {
+		if isObjectSchema(valueSchema.Not.Schema()) {
+			key := util.ToPascalCase(parentKey) + "Not"
+			if ref, err := moveSchemaIntoComponents(doc, key, valueSchema.Not); err != nil {
+				return err
+			} else if ref != nil {
+				valueSchema.Not = ref
+			}
+		}
+	}
+
+	return nil
+}
+
 // processRequestBody processes the request body of an operation
 func processRequestBody(doc *libopenapi.DocumentModel[v3.Document], operation *v3.Operation, requestBody *v3.RequestBody, schemaKeyTemplate string, location string) error {
 	for rb := requestBody.Content.Oldest(); rb != nil; rb = rb.Next() {
@@ -426,4 +475,26 @@ func processRequestBody(doc *libopenapi.DocumentModel[v3.Document], operation *v
 	}
 
 	return nil
+}
+
+// getDiscriminatorName attempts to find a logical name for a composed sub-schema based on the discriminator mapping, falls back to a generated name if no mapping is found
+func getDiscriminatorName(parentSchema *base.Schema, subSchemaProxy *base.SchemaProxy, index int, compositionType string) string {
+	if parentSchema.Discriminator == nil || parentSchema.Discriminator.Mapping == nil {
+		return fmt.Sprintf("%s%d", compositionType, index)
+	}
+
+	for dm := parentSchema.Discriminator.Mapping.Oldest(); dm != nil; dm = dm.Next() {
+		logicalName := dm.Key
+		refPath := dm.Value
+
+		if subSchemaProxy.GetReference() == refPath {
+			return util.ToPascalCase(logicalName)
+		}
+
+		if strings.HasSuffix(refPath, "/"+util.ToPascalCase(logicalName)) {
+
+		}
+	}
+
+	return fmt.Sprintf("%s%d", compositionType, index)
 }

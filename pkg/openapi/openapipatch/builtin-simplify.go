@@ -2,7 +2,6 @@ package openapipatch
 
 import (
 	"github.com/pb33f/libopenapi"
-	"github.com/pb33f/libopenapi/datamodel/high/base"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/primelib/primecodegen/pkg/logging"
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
@@ -17,10 +16,19 @@ var MergePolymorphicSchemasPatch = BuiltInPatcher{
 
 // MergePolymorphicSchemas merges polymorphic schemas (anyOf, oneOf, allOf) into a single flat schema
 func MergePolymorphicSchemas(v3Model *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
-	// Remember derived schemata (key) to be replaced by their base schemata (value)
-	derivedSchemaReplacementMap := make(map[string]string)
+	for _, schemaProxy := range openapidocument.CollectSchemas(v3Model) {
+		// simplify allOf
+		if err := mergeAllOfSchema(schemaProxy, false); err != nil {
+			return err
+		}
+		// simplify anyOf
+		if err := mergeAnyOfSchema(schemaProxy); err != nil {
+			return err
+		}
+	}
 
 	// component schemas
+	derivedSchemaReplacementMap := make(map[string]string)
 	if v3Model != nil && v3Model.Model.Components != nil {
 		for schema := v3Model.Model.Components.Schemas.Oldest(); schema != nil; schema = schema.Next() {
 			var err error
@@ -30,11 +38,6 @@ func MergePolymorphicSchemas(v3Model *libopenapi.DocumentModel[v3.Document], con
 			}
 		}
 	}
-
-	// TODO: Handle polymorphic responses, request bodies, parameter definitions
-
-	// Delete empty schemas
-	// deleteEmptySchemas(v3Model, derivedSchemaReplacementMap)
 
 	return nil
 }
@@ -110,77 +113,6 @@ func SimplifyPolymorphicBooleans(doc *libopenapi.DocumentModel[v3.Document], con
 				schema.Enum = nil
 				schema.Format = ""
 				logging.Trace("Simplified polymorphic boolean schema to plain boolean", "schema", schema.Title)
-			}
-		}
-	}
-
-	return nil
-}
-
-var SimplifyAllOfPatch = BuiltInPatcher{
-	Type:                "builtin",
-	ID:                  "simplify-all-of",
-	Description:         "Merges allOf subschemas into the parent schema",
-	PatchV3DocumentFunc: SimplifyAllOf,
-}
-
-// SimplifyAllOf merges allOf subschemas into the parent schema
-func SimplifyAllOf(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
-	walkedDoc := openapidocument.WalkDocument(doc)
-	if len(walkedDoc.Schemas) == 0 {
-		return nil
-	}
-
-	for _, schema := range walkedDoc.Schemas {
-		if schema == nil || len(schema.AllOf) == 0 {
-			continue
-		}
-
-		err := simplifyAllOfRecursive(schema)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func simplifyAllOfRecursive(schema *base.Schema) error {
-	if schema == nil {
-		return nil
-	}
-
-	if len(schema.AllOf) > 0 {
-		for _, sub := range schema.AllOf {
-			subSchema := sub.Schema()
-			if subSchema == nil {
-				continue
-			}
-
-			if subSchema.AllOf != nil {
-				err := simplifyAllOfRecursive(subSchema)
-				if err != nil {
-					return err
-				}
-			}
-
-			_, err := openapidocument.MergeSchema(schema, subSchema)
-			if err != nil {
-				return err
-			}
-		}
-		schema.AllOf = nil
-	}
-
-	if schema.Properties != nil {
-		for p := schema.Properties.Oldest(); p != nil; p = p.Next() {
-			if p.Value == nil {
-				continue
-			}
-
-			err := simplifyAllOfRecursive(p.Value.Schema())
-			if err != nil {
-				return err
 			}
 		}
 	}

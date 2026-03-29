@@ -22,3 +22,24 @@ func SliceToMapWithKeyFunc[T any, K comparable](items []T, keyFunc func(T) K) ma
 	}
 	return m
 }
+
+// AppendUnique appends elements from the source slice to the target slice, ensuring that only unique elements are added.
+func AppendUnique(target []string, source []string) []string {
+	if len(source) == 0 {
+		return target
+	}
+
+	// Build a lookup set for the target
+	exists := make(map[string]struct{}, len(target))
+	for _, item := range target {
+		exists[item] = struct{}{}
+	}
+
+	for _, item := range source {
+		if _, ok := exists[item]; !ok {
+			target = append(target, item)
+			exists[item] = struct{}{} // Prevent duplicates within the source itself
+		}
+	}
+	return target
+}

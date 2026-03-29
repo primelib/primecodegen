@@ -47,6 +47,8 @@ var EmbeddedPatchers = []BuiltInPatcher{
 	SimplifyPolymorphicBooleansPatch,
 	MergePolymorphicPropertiesPatch,
 	SimplifyAllOfPatch,
+	SimplifyInlineAllOfPatch,
+	SimplifyAnyOfPatch,
 	// - pruning
 	PruneInvalidPathsPatch,
 	PruneUnusualPathsPatch,

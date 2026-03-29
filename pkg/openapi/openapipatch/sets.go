@@ -27,6 +27,18 @@ var allPatchSets = map[string]PatchPreset{
 			FixCommonPatch.ToSpecPatch(),
 		},
 	},
+	"code-generation-polymorphic": {
+		Id: "code-generation-polymorphic",
+		Patches: []sharedpatch.SpecPatch{
+			PrunePathPrefixPatch.ToSpecPatch(),
+			GenerateOperationIdsPatch.ToSpecPatch(),
+			FixMissingOneOfFromDiscriminatorPatch.ToSpecPatch(),
+			SimplifyInlineAllOfPatch.ToSpecPatch(),
+			FlattenComponentsPatch.ToSpecPatch(),
+			FixMissingSchemaTitlePatch.ToSpecPatch(),
+			FixCommonPatch.ToSpecPatch(),
+		},
+	},
 }
 
 func ResolvePatchSets(patchSets []PatchSet) []sharedpatch.SpecPatch {
