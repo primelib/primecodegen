@@ -21,15 +21,24 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.request.header
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.serialization.kotlinx.xml.*
-import io.ktor.http.HttpHeaders
+import io.ktor.serialization.jackson3.JacksonConverter
+import io.ktor.serialization.jackson3.jackson
+
 import io.opentelemetry.instrumentation.ktor.v3_0.KtorClientTelemetry
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
+
+import tools.jackson.databind.DeserializationFeature
+import tools.jackson.databind.SerializationFeature
+import tools.jackson.module.kotlin.KotlinModule
+import tools.jackson.dataformat.xml.XmlMapper
 
 import org.slf4j.LoggerFactory
 
@@ -54,12 +63,31 @@ fun <T : Any> buildClient(api: KClass<T>, spec: Jvm{{ .Metadata.Name }}FactorySp
 
         // content negotiation
         install(ContentNegotiation) {
+            /*
             json(Json {
                 prettyPrint = true
                 isLenient = true
                 ignoreUnknownKeys = true
             })
             xml()
+            */
+
+            jackson {
+                enable(SerializationFeature.INDENT_OUTPUT)
+                configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false) // do not fail on new fields
+                configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true) // allow single values to be read as array
+                configure(DeserializationFeature.FAIL_ON_INVALID_SUBTYPE, false) // do not fail on invalid polymorphic sub types
+                addModule(KotlinModule.Builder().build()) // kotlin support
+            }
+            register(
+                ContentType.Application.Xml, JacksonConverter(
+                    XmlMapper.builder()
+                        .enable(SerializationFeature.INDENT_OUTPUT)
+                        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false) // do not fail on new fields
+                        .addModule(KotlinModule.Builder().build()) // kotlin support
+                    .build()
+                )
+            )
         }
 
         // retry policy

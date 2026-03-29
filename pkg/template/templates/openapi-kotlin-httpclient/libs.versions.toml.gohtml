@@ -2,7 +2,8 @@
 {{- template "header-hash" }}
 
 [versions]
-ktor-version = "3.4.1"
+jackson-version = "3.1.1"
+ktor-version = "3.4.2"
 ktor-metrics-micrometer-version = "1.6.8"
 kotlin-version = "2.3.20"
 kotlinx-coroutines-version = "1.10.2"
@@ -12,9 +13,9 @@ opentelemetry-ktor-version = "2.26.1-alpha"
 jetbrains-annotations-version = "26.1.0"
 
 [libraries]
-openfeign-bom = { module = "io.github.openfeign:feign-bom", version = "13.6" }
-resilience4j-bom = { module = "io.github.resilience4j:resilience4j-bom", version = "2.3.0" }
-jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version = "2.20.0" }
+jackson-bom = { module = "tools.jackson:jackson-bom", version.ref = "jackson-version" }
+jackson-dataformat-xml = { module = "tools.jackson.dataformat:jackson-dataformat-xml" }
+jackson-dataformat-yaml = { module = "tools.jackson.dataformat:jackson-dataformat-yaml" }
 micrometer-bom = { module = "io.micrometer:micrometer-bom", version = "1.15.5" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
 slf4j-bom = { module = "org.slf4j:slf4j-bom", version = "2.0.17" }
@@ -30,6 +31,7 @@ ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor-ve
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor-version" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor-version" }
 ktor-serialization-kotlinx-xml = { module = "io.ktor:ktor-serialization-kotlinx-xml", version.ref = "ktor-version" }
+ktor-serialization-jackson = { module = "io.ktor:ktor-serialization-jackson3", version.ref = "ktor-version" }
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor-version" }
 ktor-client-tracing = { module = "io.ktor:ktor-client-tracing", version.ref = "ktor-version" }
 ktor-client-observer = { module = "io.ktor:ktor-client-observer", version.ref = "ktor-version" }
