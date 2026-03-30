@@ -32,6 +32,8 @@ var (
 	modelArrayOfMap []byte
 	//go:embed specs/model-array-oneof.yaml
 	modelArrayOfOneOf []byte
+	//go:embed specs/model-uuid.yaml
+	modelUUID []byte
 	//go:embed specs/callback-basic.yaml
 	callbackBasic []byte
 	//go:embed specs/webhook-basic.yaml
@@ -125,7 +127,23 @@ func TestArrayOfOneOf(t *testing.T) {
 	assert.Len(t, templateData.Models, 1)
 	assert.Equal(t, "BookDto", templateData.Models[0].Name)
 	assert.Equal(t, true, templateData.Models[0].IsTypeAlias)
-	assert.Equal(t, "List<Object>", templateData.Models[0].Parent.QualifiedType)
+	assert.Equal(t, "List<String>", templateData.Models[0].Parent.QualifiedType)
+}
+
+func TestModelUUIDFormat(t *testing.T) {
+	// arrange
+	v3doc := openapidocument.OpenV3DocumentForTest(modelUUID)
+
+	// act
+	templateData, err := openapigenerator.BuildTemplateData(v3doc, NewGenerator(), commonPackages)
+	assert.NoError(t, err)
+	assert.NotNil(t, templateData)
+
+	// assert
+	assert.Len(t, templateData.Models, 1)
+	assert.Equal(t, "BookDto", templateData.Models[0].Name)
+	assert.Equal(t, "id", templateData.Models[0].Properties[0].Name)
+	assert.Equal(t, "java.util.UUID", templateData.Models[0].Properties[0].Type.QualifiedType)
 }
 
 func TestCallbackBasic(t *testing.T) {

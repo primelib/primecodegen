@@ -1,0 +1,58 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Auth }};
+
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+
+public class ApiKeyAuthMethod implements AuthMethod {
+    private String propertyLocation = "header";
+    private String propertyKey = "x-api-key";
+    private String apiKey;
+
+    public ApiKeyAuthMethod() {
+    }
+
+    public ApiKeyAuthMethod(Consumer<ApiKeyAuthMethod> spec) {
+        spec.accept(this);
+        validate();
+    }
+
+    public ApiKeyAuthMethod propertyLocation(String propertyLocation) {
+        this.propertyLocation = propertyLocation;
+        return this;
+    }
+
+    public ApiKeyAuthMethod propertyKey(String propertyKey) {
+        this.propertyKey = propertyKey;
+        return this;
+    }
+
+    public ApiKeyAuthMethod apiKey(String apiKey) {
+        this.apiKey = apiKey;
+        return this;
+    }
+
+    public void validate() {
+        Objects.requireNonNull(apiKey, "apiKey is required");
+        Objects.requireNonNull(propertyKey, "propertyKey is required");
+        Objects.requireNonNull(propertyLocation, "propertyLocation is required");
+    }
+
+    @Override
+    public Map<String, String> headerMap() {
+        return "header".equalsIgnoreCase(propertyLocation) ? Map.of(propertyKey, apiKey) : null;
+    }
+
+    @Override
+    public Map<String, String> queryMap() {
+        return "query".equalsIgnoreCase(propertyLocation) ? Map.of(propertyKey, apiKey) : null;
+    }
+
+    @Override
+    public Map<String, String> cookieMap() {
+        return "cookie".equalsIgnoreCase(propertyLocation) ? Map.of(propertyKey, apiKey) : null;
+    }
+}

@@ -1,0 +1,127 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.OperationEachTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ $.Common.Packages.Responses }};
+
+{{- range .Common.Models }}
+import {{ $.Common.Packages.Models }}.{{ .Name }};
+{{- end }}
+
+import org.jspecify.annotations.Nullable;
+
+import javax.annotation.processing.Generated;
+
+/**
+ * {{ .Operation.Name }}Response
+{{- if .Operation.Description }}
+ * <p>
+ * {{ .Operation.Description | commentMultiLine " * " | escapeJavadoc }}
+{{- end }}
+ */
+{{- if .Operation.Deprecated }}
+@Deprecated
+{{- end }}
+@Generated(value = "io.github.primelib.primecodegen")
+public abstract class {{ .Operation.Name }}Response {
+    private {{ .Operation.Name }}Response() {
+    }
+
+{{- if index .Operation.ReturnTypeByCode "200" }}
+    public static final class Ok extends {{ .Operation.Name }}Response {
+        private final {{ (index .Operation.ReturnTypeByCode "200").QualifiedType }} data;
+
+        public Ok({{ (index .Operation.ReturnTypeByCode "200").QualifiedType }} data) {
+            this.data = data;
+        }
+
+        public {{ (index .Operation.ReturnTypeByCode "200").QualifiedType }} getData() {
+            return data;
+        }
+    }
+{{- end }}
+
+{{- if index .Operation.ReturnTypeByCode "201" }}
+    public static final class Created extends {{ .Operation.Name }}Response {
+        private final {{ (index .Operation.ReturnTypeByCode "201").QualifiedType }} data;
+
+        public Created({{ (index .Operation.ReturnTypeByCode "201").QualifiedType }} data) {
+            this.data = data;
+        }
+
+        public {{ (index .Operation.ReturnTypeByCode "201").QualifiedType }} getData() {
+            return data;
+        }
+    }
+{{- end }}
+
+{{- if index .Operation.ReturnTypeByCode "204" }}
+    public static final class NoContent extends {{ .Operation.Name }}Response {
+        public static final NoContent INSTANCE = new NoContent();
+
+        private NoContent() {
+        }
+    }
+{{- end }}
+
+{{- if index .Operation.ReturnTypeByCode "400" }}
+    public static final class BadRequest extends {{ .Operation.Name }}Response {
+        private final {{ (index .Operation.ReturnTypeByCode "400").QualifiedType }} data;
+
+        public BadRequest({{ (index .Operation.ReturnTypeByCode "400").QualifiedType }} data) {
+            this.data = data;
+        }
+
+        public {{ (index .Operation.ReturnTypeByCode "400").QualifiedType }} getData() {
+            return data;
+        }
+    }
+{{- end }}
+
+{{- if index .Operation.ReturnTypeByCode "404" }}
+    public static final class NotFound extends {{ .Operation.Name }}Response {
+        private final {{ (index .Operation.ReturnTypeByCode "404").QualifiedType }} data;
+
+        public NotFound({{ (index .Operation.ReturnTypeByCode "404").QualifiedType }} data) {
+            this.data = data;
+        }
+
+        public {{ (index .Operation.ReturnTypeByCode "404").QualifiedType }} getData() {
+            return data;
+        }
+    }
+{{- end }}
+
+{{- if index .Operation.ReturnTypeByCode "default" }}
+    public static final class Default extends {{ .Operation.Name }}Response {
+        private final {{ (index .Operation.ReturnTypeByCode "default").QualifiedType }} data;
+
+        public Default({{ (index .Operation.ReturnTypeByCode "default").QualifiedType }} data) {
+            this.data = data;
+        }
+
+        public {{ (index .Operation.ReturnTypeByCode "default").QualifiedType }} getData() {
+            return data;
+        }
+    }
+{{- end }}
+
+    public static final class Unknown extends {{ .Operation.Name }}Response {
+        private final int status;
+        @Nullable
+        private final String rawBody;
+
+        public Unknown(int status, @Nullable String rawBody) {
+            this.status = status;
+            this.rawBody = rawBody;
+        }
+
+        public int getStatus() {
+            return status;
+        }
+
+        @Nullable
+        public String getRawBody() {
+            return rawBody;
+        }
+    }
+}

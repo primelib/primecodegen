@@ -1,0 +1,25 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Auth }};
+
+import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
+
+public interface AuthMethod {
+    @Nullable
+    default Map<String, String> headerMap() {
+        return null;
+    }
+
+    @Nullable
+    default Map<String, String> queryMap() {
+        return null;
+    }
+
+    @Nullable
+    default Map<String, String> cookieMap() {
+        return null;
+    }
+}

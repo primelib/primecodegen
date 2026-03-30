@@ -1,0 +1,60 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Auth }};
+
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+
+public class BasicAuthMethod implements AuthMethod {
+    private String propertyKey = "Authorization";
+    private String valueTemplate = "Basic {base64}";
+    private String username;
+    private String password;
+
+    public BasicAuthMethod() {
+    }
+
+    public BasicAuthMethod(Consumer<BasicAuthMethod> spec) {
+        spec.accept(this);
+        validate();
+    }
+
+    public BasicAuthMethod propertyKey(String propertyKey) {
+        this.propertyKey = propertyKey;
+        return this;
+    }
+
+    public BasicAuthMethod valueTemplate(String valueTemplate) {
+        this.valueTemplate = valueTemplate;
+        return this;
+    }
+
+    public BasicAuthMethod username(String username) {
+        this.username = username;
+        return this;
+    }
+
+    public BasicAuthMethod password(String password) {
+        this.password = password;
+        return this;
+    }
+
+    public void validate() {
+        Objects.requireNonNull(propertyKey, "propertyKey is required");
+        Objects.requireNonNull(valueTemplate, "valueTemplate is required");
+        if (username == null && password == null) {
+            throw new IllegalArgumentException("username or password are required");
+        }
+    }
+
+    @Override
+    public Map<String, String> headerMap() {
+        String credentials = (username == null ? "" : username) + ":" + (password == null ? "" : password);
+        String encoded = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+        return Map.of(propertyKey, valueTemplate.replace("{base64}", encoded));
+    }
+}

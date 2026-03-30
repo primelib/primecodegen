@@ -1,0 +1,394 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Client }};
+
+import {{ .Common.Packages.Root }}.{{ .Metadata.Name }}FactorySpec;
+import {{ .Common.Packages.Auth }}.AuthMethod;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.dataformat.xml.XmlMapper;
+import tools.jackson.dataformat.yaml.YamlMapper;
+
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okio.BufferedSink;
+
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+abstract class Abstract{{ .Metadata.Name }}ApiClient {
+    private static final MediaType DEFAULT_JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
+    private static final MediaType DEFAULT_XML_MEDIA_TYPE = MediaType.get("application/xml; charset=utf-8");
+    private static final MediaType DEFAULT_FORM_MEDIA_TYPE = MediaType.get("application/x-www-form-urlencoded; charset=utf-8");
+    private static final MediaType DEFAULT_TEXT_MEDIA_TYPE = MediaType.get("text/plain; charset=utf-8");
+    private static final MediaType DEFAULT_BINARY_MEDIA_TYPE = MediaType.get("application/octet-stream");
+    private static final RequestBody EMPTY_BODY = new RequestBody() {
+        @Override
+        public MediaType contentType() {
+            return null;
+        }
+
+        @Override
+        public void writeTo(BufferedSink sink) {
+        }
+    };
+
+    protected final {{ .Metadata.Name }}FactorySpec<?> spec;
+    protected final OkHttpClient httpClient;
+    protected final JsonMapper jsonMapper;
+    protected final XmlMapper xmlMapper;
+
+    protected Abstract{{ .Metadata.Name }}ApiClient({{ .Metadata.Name }}FactorySpec<?> spec, OkHttpClient httpClient, JsonMapper jsonMapper, XmlMapper xmlMapper) {
+        this.spec = spec;
+        this.httpClient = httpClient;
+        this.jsonMapper = jsonMapper;
+        this.xmlMapper = xmlMapper;
+    }
+
+    protected Map<String, List<String>> newQueryParams() {
+        return new LinkedHashMap<>();
+    }
+
+    protected void addQueryParam(Map<String, List<String>> queryParams, String key, Object value) {
+        if (value == null) {
+            return;
+        }
+
+        if (value instanceof Iterable<?> values) {
+            for (Object item : values) {
+                addQueryParam(queryParams, key, item);
+            }
+            return;
+        }
+
+        if (value.getClass().isArray()) {
+            int length = Array.getLength(value);
+            for (int i = 0; i < length; i++) {
+                addQueryParam(queryParams, key, Array.get(value, i));
+            }
+            return;
+        }
+
+        queryParams.computeIfAbsent(key, ignored -> new ArrayList<>()).add(String.valueOf(value));
+    }
+
+    protected void setQueryParam(Map<String, List<String>> queryParams, String key, Object value) {
+        if (value == null) {
+            queryParams.remove(key);
+            return;
+        }
+        List<String> values = new ArrayList<>();
+        values.add(String.valueOf(value));
+        queryParams.put(key, values);
+    }
+
+    protected void addQueryParams(Map<String, List<String>> queryParams, String key, Iterable<?> values) {
+        if (values == null) {
+            return;
+        }
+        for (Object value : values) {
+            addQueryParam(queryParams, key, value);
+        }
+    }
+
+    protected void addQueryParamJoined(Map<String, List<String>> queryParams, String key, Iterable<?> values, String delimiter) {
+        if (values == null) {
+            return;
+        }
+        List<String> collectedValues = new ArrayList<>();
+        for (Object value : values) {
+            if (value != null) {
+                collectedValues.add(String.valueOf(value));
+            }
+        }
+        if (collectedValues.isEmpty()) {
+            return;
+        }
+        String joined = collectedValues.stream().collect(Collectors.joining(delimiter));
+        setQueryParam(queryParams, key, joined);
+    }
+
+    protected void addAuthQueryParams(Map<String, List<String>> queryParams, List<AuthMethod> overrideAuthMethods) {
+        spec.aggregateAuthenticationQueryParams(overrideAuthMethods).forEach((key, value) -> setQueryParam(queryParams, key, value));
+    }
+
+    protected void putHeader(Map<String, String> headers, String key, String value) {
+        if (key == null || key.isBlank() || value == null) {
+            return;
+        }
+        removeHeader(headers, key);
+        headers.put(key, value);
+    }
+
+    protected void putHeaderIfPresent(Map<String, String> headers, String key, Object value) {
+        if (value != null) {
+            putHeader(headers, key, String.valueOf(value));
+        }
+    }
+
+    protected String getHeader(Map<String, String> headers, String key) {
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(key)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    protected boolean hasHeader(Map<String, String> headers, String key) {
+        return getHeader(headers, key) != null;
+    }
+
+    private void removeHeader(Map<String, String> headers, String key) {
+        String existingKey = null;
+        for (String currentKey : headers.keySet()) {
+            if (currentKey.equalsIgnoreCase(key)) {
+                existingKey = currentKey;
+                break;
+            }
+        }
+        if (existingKey != null) {
+            headers.remove(existingKey);
+        }
+    }
+
+    protected URI buildUri(String path, Map<String, List<String>> queryParams) {
+        String baseUrl = Objects.requireNonNull(spec.getBaseUrl(), "baseUrl must not be null");
+        String normalizedBase = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        String normalizedPath = path.startsWith("/") ? path : "/" + path;
+
+        StringBuilder uriBuilder = new StringBuilder(normalizedBase).append(normalizedPath);
+        boolean first = true;
+        for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
+            for (String value : entry.getValue()) {
+                uriBuilder.append(first ? '?' : '&');
+                first = false;
+                uriBuilder.append(urlEncode(entry.getKey()));
+                uriBuilder.append('=');
+                uriBuilder.append(urlEncode(value));
+            }
+        }
+
+        return URI.create(uriBuilder.toString());
+    }
+
+    protected Request.Builder newRequestBuilder(
+        URI uri,
+        Map<String, String> operationHeaders,
+        Map<String, String> extraHeaders,
+        List<AuthMethod> overrideAuthMethods,
+        boolean hasBody
+    ) {
+        Request.Builder builder = new Request.Builder().url(uri.toString());
+
+        Map<String, String> headers = new LinkedHashMap<>();
+
+        if (spec.getUserAgent() != null && !spec.getUserAgent().isBlank()) {
+            putHeader(headers, "User-Agent", spec.getUserAgent());
+        }
+
+        spec.getDefaultHeaders().forEach((key, value) -> putHeader(headers, key, value));
+        spec.aggregateAuthenticationHeaders(overrideAuthMethods).forEach((key, value) -> putHeader(headers, key, value));
+        if (operationHeaders != null) {
+            operationHeaders.forEach((key, value) -> putHeader(headers, key, value));
+        }
+
+        if (!hasHeader(headers, "Accept")) {
+            putHeader(headers, "Accept", "application/json");
+        }
+        if (hasBody && !hasHeader(headers, "Content-Type")) {
+            putHeader(headers, "Content-Type", "application/json");
+        }
+
+        if (extraHeaders != null && !extraHeaders.isEmpty()) {
+            extraHeaders.forEach((key, value) -> putHeader(headers, key, value));
+        }
+
+        Map<String, String> authCookies = spec.aggregateAuthenticationCookies(overrideAuthMethods);
+        if (!authCookies.isEmpty() && !hasHeader(headers, "Cookie")) {
+            String cookieHeader = authCookies.entrySet()
+                .stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .collect(Collectors.joining("; "));
+            putHeader(headers, "Cookie", cookieHeader);
+        }
+
+        headers.forEach(builder::header);
+        return builder;
+    }
+
+    protected RequestBody buildRequestBody(Object value, String contentType) {
+        if (value == null) {
+            return EMPTY_BODY;
+        }
+
+        String normalizedContentType = contentType == null ? "" : contentType.toLowerCase(Locale.ROOT);
+
+        if (isJsonContentType(normalizedContentType)) {
+            return RequestBody.create(serializeJsonBody(value), mediaTypeOrDefault(contentType, DEFAULT_JSON_MEDIA_TYPE));
+        }
+
+        if (isXmlContentType(normalizedContentType)) {
+            return RequestBody.create(serializeXmlBody(value), mediaTypeOrDefault(contentType, DEFAULT_XML_MEDIA_TYPE));
+        }
+
+        if (normalizedContentType.contains("x-www-form-urlencoded")) {
+            return RequestBody.create(serializeFormBody(value), mediaTypeOrDefault(contentType, DEFAULT_FORM_MEDIA_TYPE));
+        }
+
+        return buildRawRequestBody(value, contentType);
+    }
+
+    protected RequestBody bodyForMethodWithoutPayload(String method) {
+        if (method == null) {
+            return null;
+        }
+
+        return switch (method.toUpperCase(Locale.ROOT)) {
+            case "POST", "PUT", "PATCH", "PROPPATCH", "REPORT" -> EMPTY_BODY;
+            default -> null;
+        };
+    }
+
+    private boolean isJsonContentType(String normalizedContentType) {
+        return normalizedContentType.equals("application/json") || normalizedContentType.contains("+json");
+    }
+
+    private boolean isXmlContentType(String normalizedContentType) {
+        return normalizedContentType.equals("application/xml")
+            || normalizedContentType.equals("text/xml")
+            || normalizedContentType.contains("+xml");
+    }
+
+    private RequestBody buildRawRequestBody(Object value, String contentType) {
+        if (value instanceof String bodyValue) {
+            return RequestBody.create(bodyValue, mediaTypeOrDefault(contentType, DEFAULT_TEXT_MEDIA_TYPE));
+        }
+
+        if (value instanceof byte[] bodyValue) {
+            return RequestBody.create(bodyValue, mediaTypeOrDefault(contentType, DEFAULT_BINARY_MEDIA_TYPE));
+        }
+
+        String typeInfo = contentType == null || contentType.isBlank()
+            ? "unspecified content type"
+            : "content type '" + contentType + "'";
+        throw new ApiClientException(
+            "Unsupported request body type " + value.getClass().getName() + " for " + typeInfo,
+            null
+        );
+    }
+
+    private MediaType mediaTypeOrDefault(String contentType, MediaType defaultMediaType) {
+        if (contentType == null || contentType.isBlank()) {
+            return defaultMediaType;
+        }
+
+        try {
+            return MediaType.get(contentType);
+        } catch (IllegalArgumentException ex) {
+            throw new ApiClientException("Invalid content type: " + contentType, ex);
+        }
+    }
+
+    private String serializeJsonBody(Object value) {
+        try {
+            return jsonMapper.writeValueAsString(value);
+        } catch (JacksonException e) {
+            throw new ApiClientException("Failed to serialize request body", e);
+        }
+    }
+
+    private String serializeFormBody(Object value) {
+        if (value instanceof String bodyValue) {
+            return bodyValue;
+        }
+
+        if (value instanceof Map<?, ?> bodyMap) {
+            return bodyMap.entrySet().stream()
+                .filter(entry -> entry.getKey() != null && entry.getValue() != null)
+                .map(entry -> urlEncode(String.valueOf(entry.getKey())) + "=" + urlEncode(String.valueOf(entry.getValue())))
+                .collect(Collectors.joining("&"));
+        }
+
+        throw new ApiClientException(
+            "Unsupported body type for application/x-www-form-urlencoded: " + value.getClass().getName(),
+            null
+        );
+    }
+
+    private String serializeXmlBody(Object value) {
+        try {
+            return xmlMapper.writeValueAsString(value);
+        } catch (JacksonException e) {
+            throw new ApiClientException("Failed to serialize request body", e);
+        }
+    }
+
+    protected <T> T execute(Request request, TypeReference<T> typeReference) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            int statusCode = response.code();
+            String body = response.body().string();
+
+            if (statusCode < 200 || statusCode >= 300) {
+                throw new ApiResponseException(statusCode, body);
+            }
+
+            if (typeReference == null) {
+                return null;
+            }
+
+            if (body.isBlank()) {
+                return null;
+            }
+
+            return jsonMapper.readValue(body, typeReference);
+        } catch (IOException e) {
+            throw new ApiClientException("HTTP request failed", e);
+        }
+    }
+
+    protected String urlEncode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    public static class ApiClientException extends RuntimeException {
+        public ApiClientException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public static class ApiResponseException extends RuntimeException {
+        private final int statusCode;
+        private final String responseBody;
+
+        public ApiResponseException(int statusCode, String responseBody) {
+            super("Request failed with status " + statusCode);
+            this.statusCode = statusCode;
+            this.responseBody = responseBody;
+        }
+
+        public int getStatusCode() {
+            return statusCode;
+        }
+
+        public String getResponseBody() {
+            return responseBody;
+        }
+    }
+}
