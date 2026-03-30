@@ -3,166 +3,271 @@
 
 package {{ .Common.Packages.Root }};
 
-import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}Api;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.Accessors;
+import {{ .Common.Packages.Auth }}.AuthMethod;
+import {{ .Common.Packages.Auth }}.ApiKeyAuthMethod;
+import {{ .Common.Packages.Auth }}.BasicAuthMethod;
+import {{ .Common.Packages.Auth }}.BearerAuthMethod;
+import {{ .Common.Packages.Auth }}.OAuth2ClientCredentialAuthMethod;
+import {{ .Common.Packages.Auth }}.OAuth2UserCredentialAuthMethod;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
-
-import io.github.primelib.primecodegenlib.java.feign.common.api.AuthMethod;
-import io.github.primelib.primecodegenlib.java.feign.common.auth.ApiKeyAuthSpec;
-import io.github.primelib.primecodegenlib.java.feign.common.auth.BasicAuthSpec;
-import io.github.primelib.primecodegenlib.java.feign.common.auth.BearerAuthSpec;
-import io.github.primelib.primecodegenlib.java.feign.common.auth.OAuth2ClientCredentialsAuthSpec;
-import io.github.primelib.primecodegenlib.java.feign.common.auth.OAuth2UserCredentialsAuthSpec;
-import io.github.primelib.primecodegenlib.java.feign.common.config.FeignModuleSpec;
-import io.github.primelib.primecodegenlib.java.feign.common.config.ProxySpec;
+import okhttp3.OkHttpClient;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import javax.annotation.processing.Generated;
-
-/**
- * A specification to construct a client instance.
- */
-@Data
-@EqualsAndHashCode(callSuper = true)
-@Accessors(fluent = true)
-@NoArgsConstructor(access = AccessLevel.PRIVATE, force = true)
-@Generated(value = "io.github.primelib.primecodegen")
-public final class {{ .Metadata.Name }}FactorySpec<T> extends FeignModuleSpec<{{ .Metadata.Name }}FactorySpec<T>> {
-
-    /**
-     * The name of the backend to use
-     */
-    @NotNull
-    private String backendName = "{{ .Metadata.Name }}";
-
-    /**
-     * The API interface to use
-     */
-    @NotNull
+public final class {{ .Metadata.Name }}FactorySpec<T> {
     private Class<T> api;
-
-    /**
-     * The api base URL
-     */
-    @NotNull
     private String baseUrl = "{{ .Common.Endpoints.DefaultEndpoint }}";
-
-    /**
-     * The authentication methods to use
-     */
-    @Nullable
-    private List<AuthMethod> auth = new ArrayList<>(5);
-
-    /**
-     * MeterRegistry to use for metrics
-     */
-    @NotNull
-    private MeterRegistry meterRegistry = new CompositeMeterRegistry();
-
-    /**
-     * the feign log level
-     * <p>
-     * Defaults to {@code none}.
-     * Allowed values are: {@code none}, {@code basic}, {@code headers}, {@code full}
-     */
-    @NotNull
-    private String logLevel = "none";
-
-    /**
-     * insecure disables SSL verification
-     */
-    @NotNull
     private boolean insecure = false;
+    private String userAgent = "{{ .Metadata.Name }}/{{ .Metadata.APISpecVersion }} (PrimeCodeGen/{{ .Metadata.GeneratorVersion }})";
+    private LogLevel logLevel = LogLevel.NONE;
+    private long connectTimeoutMillis = 10_000;
+    private long requestTimeoutMillis = 30_000;
+    private final Map<String, String> defaultHeaders = new LinkedHashMap<>();
+    private final List<AuthMethod> authMethods = new ArrayList<>();
 
-    /**
-     * Constructs a validated implementation of the specification.
-     *
-     * @param spec the specification to process
-     */
-    @NotNull
-    public {{ .Metadata.Name }}FactorySpec(@NotNull Consumer<{{ .Metadata.Name }}FactorySpec<T>> spec) {
+    private OkHttpClient authHttpClient = new OkHttpClient.Builder().connectTimeout(connectTimeoutMillis, TimeUnit.MILLISECONDS).build();
+    private JsonMapper authObjectMapper = JsonMapper.builder().build();
+
+    public {{ .Metadata.Name }}FactorySpec() {
+    }
+
+    public {{ .Metadata.Name }}FactorySpec(Consumer<{{ .Metadata.Name }}FactorySpec<T>> spec) {
         spec.accept(this);
         validate();
     }
 
-    /**
-     * Ensures the configured specification is valid.
-     *
-     * @throws NullPointerException
-     */
     public void validate() {
-        Objects.requireNonNull(backendName, "backendName must not be null");
         Objects.requireNonNull(api, "api must not be null");
         Objects.requireNonNull(baseUrl, "baseUrl must not be null");
-        if (baseUrl.isEmpty()) {
-            throw new IllegalArgumentException("baseUrl must not be empty");
-        }
         Objects.requireNonNull(logLevel, "logLevel must not be null");
+        if (baseUrl.isBlank()) {
+            throw new IllegalArgumentException("baseUrl must not be blank");
+        }
     }
 
-{{- if .Common.Auth.HasAuthScheme "apikey" }}
-    public ApiKeyAuthSpec apiKeyAuth(Consumer<ApiKeyAuthSpec> spec) {
-        ApiKeyAuthSpec method = new ApiKeyAuthSpec(spec);
-        auth.add(method);
+    public Class<T> getApi() {
+        return api;
+    }
+
+    public {{ .Metadata.Name }}FactorySpec<T> api(Class<T> api) {
+        this.api = api;
+        return this;
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public {{ .Metadata.Name }}FactorySpec<T> baseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
+        return this;
+    }
+
+    public boolean isInsecure() {
+        return insecure;
+    }
+
+    public {{ .Metadata.Name }}FactorySpec<T> insecure(boolean insecure) {
+        this.insecure = insecure;
+        return this;
+    }
+
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    public {{ .Metadata.Name }}FactorySpec<T> userAgent(String userAgent) {
+        this.userAgent = userAgent;
+        return this;
+    }
+
+    public LogLevel getLogLevel() {
+        return logLevel;
+    }
+
+    public {{ .Metadata.Name }}FactorySpec<T> logLevel(LogLevel logLevel) {
+        this.logLevel = Objects.requireNonNull(logLevel, "logLevel must not be null");
+        return this;
+    }
+
+    public {{ .Metadata.Name }}FactorySpec<T> logLevel(String logLevel) {
+        this.logLevel = LogLevel.fromValue(logLevel);
+        return this;
+    }
+
+    public long getConnectTimeoutMillis() {
+        return connectTimeoutMillis;
+    }
+
+    public {{ .Metadata.Name }}FactorySpec<T> connectTimeoutMillis(long connectTimeoutMillis) {
+        this.connectTimeoutMillis = connectTimeoutMillis;
+        return this;
+    }
+
+    public long getRequestTimeoutMillis() {
+        return requestTimeoutMillis;
+    }
+
+    public {{ .Metadata.Name }}FactorySpec<T> requestTimeoutMillis(long requestTimeoutMillis) {
+        this.requestTimeoutMillis = requestTimeoutMillis;
+        return this;
+    }
+
+    public Map<String, String> getDefaultHeaders() {
+        return defaultHeaders;
+    }
+
+    public {{ .Metadata.Name }}FactorySpec<T> defaultHeader(String key, String value) {
+        defaultHeaders.put(key, value);
+        return this;
+    }
+
+    public List<AuthMethod> getAuthMethods() {
+        return authMethods;
+    }
+
+    public {{ .Metadata.Name }}FactorySpec<T> authMethods(List<AuthMethod> authMethods) {
+        this.authMethods.clear();
+        if (authMethods != null) {
+            this.authMethods.addAll(authMethods);
+        }
+        return this;
+    }
+
+    public OkHttpClient getAuthHttpClient() {
+        return authHttpClient;
+    }
+
+    public {{ .Metadata.Name }}FactorySpec<T> authHttpClient(OkHttpClient authHttpClient) {
+        this.authHttpClient = authHttpClient;
+        return this;
+    }
+
+    public JsonMapper getAuthObjectMapper() {
+        return authObjectMapper;
+    }
+
+    public {{ .Metadata.Name }}FactorySpec<T> authObjectMapper(JsonMapper authObjectMapper) {
+        this.authObjectMapper = authObjectMapper;
+        return this;
+    }
+
+    public ApiKeyAuthMethod apiKeyAuth(Consumer<ApiKeyAuthMethod> spec) {
+        ApiKeyAuthMethod method = new ApiKeyAuthMethod(spec);
+        authMethods.add(method);
         return method;
     }
 
-{{- end }}
-{{- if .Common.Auth.HasAuthScheme "basic" }}
-    public BasicAuthSpec basicAuth(Consumer<BasicAuthSpec> spec) {
-        BasicAuthSpec method = new BasicAuthSpec(spec);
-        auth.add(method);
+    public BasicAuthMethod basicAuth(Consumer<BasicAuthMethod> spec) {
+        BasicAuthMethod method = new BasicAuthMethod(spec);
+        authMethods.add(method);
         return method;
     }
 
-{{- end }}
-{{- if or (.Common.Auth.HasAuthScheme "bearer") (.Common.Auth.HasAuthType "oauth2") }}
-    public BearerAuthSpec bearerAuth(Consumer<BearerAuthSpec> spec) {
-        BearerAuthSpec method = new BearerAuthSpec(spec);
-        auth.add(method);
+    public BearerAuthMethod bearerAuth(Consumer<BearerAuthMethod> spec) {
+        BearerAuthMethod method = new BearerAuthMethod(spec);
+        authMethods.add(method);
         return method;
     }
 
-{{- end }}
-{{- if .Common.Auth.HasAuthVariant "oauth2ClientCredentialAuth" }}
-    public OAuth2ClientCredentialsAuthSpec oauth2ClientCredentialAuth(Consumer<OAuth2ClientCredentialsAuthSpec> spec) {
-        OAuth2ClientCredentialsAuthSpec method = new OAuth2ClientCredentialsAuthSpec(spec);
-        auth.add(method);
+    public OAuth2ClientCredentialAuthMethod oauth2ClientAuth(Consumer<OAuth2ClientCredentialAuthMethod> spec) {
+        OAuth2ClientCredentialAuthMethod method = new OAuth2ClientCredentialAuthMethod(authHttpClient, authObjectMapper, spec);
+        authMethods.add(method);
         return method;
     }
 
-{{- end }}
-{{- if .Common.Auth.HasAuthVariant "oauth2PasswordAuth" }}
-    public OAuth2UserCredentialsAuthSpec oauth2PasswordAuth(Consumer<OAuth2UserCredentialsAuthSpec> spec) {
-        OAuth2UserCredentialsAuthSpec method = new OAuth2UserCredentialsAuthSpec(spec);
-        auth.add(method);
+    public OAuth2UserCredentialAuthMethod oauth2UserAuth(Consumer<OAuth2UserCredentialAuthMethod> spec) {
+        OAuth2UserCredentialAuthMethod method = new OAuth2UserCredentialAuthMethod(authHttpClient, authObjectMapper, spec);
+        authMethods.add(method);
         return method;
     }
 
-{{- end }}
+    public Map<String, String> aggregateAuthenticationHeaders() {
+        return aggregateAuthenticationHeaders(null);
+    }
 
-    @ApiStatus.Internal
-    public void applySpec({{ .Metadata.Name }}FactorySpec<?> spec) {
-        backendName(spec.backendName());
-        baseUrl(spec.baseUrl());
-        auth(spec.auth());
-        proxy = spec.proxy();
-        meterRegistry(spec.meterRegistry());
-        logLevel(spec.logLevel());
+    public Map<String, String> aggregateAuthenticationHeaders(List<AuthMethod> overrideMethods) {
+        List<AuthMethod> methods = overrideMethods != null ? overrideMethods : authMethods;
+        Map<String, String> result = new LinkedHashMap<>();
+        for (AuthMethod method : methods) {
+            if (method.headerMap() != null) {
+                result.putAll(method.headerMap());
+            }
+        }
+        return result;
+    }
+
+    public Map<String, String> aggregateAuthenticationQueryParams() {
+        return aggregateAuthenticationQueryParams(null);
+    }
+
+    public Map<String, String> aggregateAuthenticationQueryParams(List<AuthMethod> overrideMethods) {
+        List<AuthMethod> methods = overrideMethods != null ? overrideMethods : authMethods;
+        Map<String, String> result = new LinkedHashMap<>();
+        for (AuthMethod method : methods) {
+            if (method.queryMap() != null) {
+                result.putAll(method.queryMap());
+            }
+        }
+        return result;
+    }
+
+    public Map<String, String> aggregateAuthenticationCookies() {
+        return aggregateAuthenticationCookies(null);
+    }
+
+    public Map<String, String> aggregateAuthenticationCookies(List<AuthMethod> overrideMethods) {
+        List<AuthMethod> methods = overrideMethods != null ? overrideMethods : authMethods;
+        Map<String, String> result = new LinkedHashMap<>();
+        for (AuthMethod method : methods) {
+            if (method.cookieMap() != null) {
+                result.putAll(method.cookieMap());
+            }
+        }
+        return result;
+    }
+
+    public void applySpec({{ .Metadata.Name }}FactorySpec<?> other) {
+        this.baseUrl = other.getBaseUrl();
+        this.insecure = other.isInsecure();
+        this.userAgent = other.getUserAgent();
+        this.logLevel = other.getLogLevel();
+        this.connectTimeoutMillis = other.getConnectTimeoutMillis();
+        this.requestTimeoutMillis = other.getRequestTimeoutMillis();
+        this.defaultHeaders.clear();
+        this.defaultHeaders.putAll(other.getDefaultHeaders());
+        this.authMethods.clear();
+        this.authMethods.addAll(other.getAuthMethods());
+        this.authHttpClient = other.getAuthHttpClient();
+        this.authObjectMapper = other.getAuthObjectMapper();
+    }
+
+    public enum LogLevel {
+        NONE,
+        BASIC,
+        HEADERS,
+        FULL;
+
+        public static LogLevel fromValue(String value) {
+            if (value == null || value.isBlank()) {
+                return NONE;
+            }
+
+            return switch (value.trim().toUpperCase(Locale.ROOT)) {
+                case "NONE" -> NONE;
+                case "BASIC", "INFO" -> BASIC;
+                case "HEADERS" -> HEADERS;
+                case "FULL", "BODY", "ALL" -> FULL;
+                default -> throw new IllegalArgumentException("Unsupported logLevel: " + value + ". Supported values: NONE, BASIC, HEADERS, FULL");
+            };
+        }
     }
 }

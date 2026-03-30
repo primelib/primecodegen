@@ -3,14 +3,12 @@
 
 package {{ .Package }};
 
-import lombok.AccessLevel;
-import lombok.Builder;
+import {{ $.Common.Packages.Auth }}.AuthMethod;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import lombok.experimental.Accessors;
 
 {{- range .Common.Models }}
@@ -23,6 +21,8 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -76,6 +76,21 @@ public class {{ .Operation.Name }}OperationSpec {
     private {{ $param.Type.Declaration }} {{ $param.Name }};
     {{- end }}
 
+    /** Extra headers to include in the request */
+    @NonNull
+    private Map<String, String> extraHeaders = new LinkedHashMap<>();
+
+    /** Extra query parameters to include in the request */
+    @NonNull
+    private Map<String, String> extraQueryParams = new LinkedHashMap<>();
+
+    /**
+     * Specific authentication methods for this operation.
+     * If null, the global authentication is used.
+     */
+    @Nullable
+    private List<AuthMethod> overrideAuthMethods;
+
     /**
      * Constructs a validated instance of {@link {{.Operation.Name}}OperationSpec}.
      *
@@ -99,5 +114,32 @@ public class {{ .Operation.Name }}OperationSpec {
         Objects.requireNonNull({{ $param.Name }}, "{{ $param.Name }} is a required parameter!");
         {{- end }}
         {{- end }}
+    }
+
+    /** Adds a single extra header */
+    public {{ .Operation.Name }}OperationSpec extraHeader(String key, String value) {
+        this.extraHeaders.put(key, value);
+        return this;
+    }
+
+    /** Adds a single extra query parameter */
+    public {{ .Operation.Name }}OperationSpec extraQueryParam(String key, String value) {
+        this.extraQueryParams.put(key, value);
+        return this;
+    }
+
+    /** Adds a single auth method to the override list. */
+    public {{ .Operation.Name }}OperationSpec overrideAuthMethod(AuthMethod method) {
+        if (this.overrideAuthMethods == null) {
+            this.overrideAuthMethods = new ArrayList<>();
+        }
+        this.overrideAuthMethods.add(method);
+        return this;
+    }
+
+    /** Resets this operation to use global authentication settings. */
+    public {{ .Operation.Name }}OperationSpec useGlobalAuth() {
+        this.overrideAuthMethods = null;
+        return this;
     }
 }

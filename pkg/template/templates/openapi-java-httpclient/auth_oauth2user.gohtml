@@ -1,0 +1,170 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Auth }};
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import tools.jackson.databind.json.JsonMapper;
+
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+
+public class OAuth2UserCredentialAuthMethod implements AuthMethod {
+    private static final MediaType FORM_MEDIA_TYPE = MediaType.get("application/x-www-form-urlencoded; charset=utf-8");
+
+    private final OkHttpClient httpClient;
+    private final JsonMapper objectMapper;
+
+    private String tokenEndpoint;
+    private String clientId;
+    private String clientSecret;
+    private String username;
+    private String password;
+    private String scope;
+
+    private String propertyKey = "Authorization";
+    private String valueTemplate = "Bearer {token}";
+
+    private volatile String accessToken;
+    private volatile Instant expiresAt;
+
+    public OAuth2UserCredentialAuthMethod(OkHttpClient httpClient, JsonMapper objectMapper) {
+        this.httpClient = httpClient;
+        this.objectMapper = objectMapper;
+    }
+
+    public OAuth2UserCredentialAuthMethod(OkHttpClient httpClient, JsonMapper objectMapper, Consumer<OAuth2UserCredentialAuthMethod> spec) {
+        this(httpClient, objectMapper);
+        spec.accept(this);
+        validate();
+    }
+
+    public OAuth2UserCredentialAuthMethod tokenEndpoint(String tokenEndpoint) {
+        this.tokenEndpoint = tokenEndpoint;
+        return this;
+    }
+
+    public OAuth2UserCredentialAuthMethod clientId(String clientId) {
+        this.clientId = clientId;
+        return this;
+    }
+
+    public OAuth2UserCredentialAuthMethod clientSecret(String clientSecret) {
+        this.clientSecret = clientSecret;
+        return this;
+    }
+
+    public OAuth2UserCredentialAuthMethod username(String username) {
+        this.username = username;
+        return this;
+    }
+
+    public OAuth2UserCredentialAuthMethod password(String password) {
+        this.password = password;
+        return this;
+    }
+
+    public OAuth2UserCredentialAuthMethod scope(String scope) {
+        this.scope = scope;
+        return this;
+    }
+
+    public OAuth2UserCredentialAuthMethod propertyKey(String propertyKey) {
+        this.propertyKey = propertyKey;
+        return this;
+    }
+
+    public OAuth2UserCredentialAuthMethod valueTemplate(String valueTemplate) {
+        this.valueTemplate = valueTemplate;
+        return this;
+    }
+
+    public void validate() {
+        Objects.requireNonNull(tokenEndpoint, "tokenEndpoint is required");
+        Objects.requireNonNull(clientId, "clientId is required");
+        Objects.requireNonNull(username, "username is required");
+        Objects.requireNonNull(password, "password is required");
+    }
+
+    @Override
+    public Map<String, String> headerMap() {
+        String token = getOrRefreshToken();
+        return Map.of(propertyKey, valueTemplate.replace("{token}", token));
+    }
+
+    private String getOrRefreshToken() {
+        Instant now = Instant.now();
+        if (accessToken == null || (expiresAt != null && !now.isBefore(expiresAt))) {
+            synchronized (this) {
+                now = Instant.now();
+                if (accessToken == null || (expiresAt != null && !now.isBefore(expiresAt))) {
+                    refresh();
+                }
+            }
+        }
+        return accessToken;
+    }
+
+    private void refresh() {
+        try {
+            StringBuilder form = new StringBuilder();
+            appendFormValue(form, "grant_type", "password");
+            appendFormValue(form, "client_id", clientId);
+            if (clientSecret != null && !clientSecret.isBlank()) {
+                appendFormValue(form, "client_secret", clientSecret);
+            }
+            appendFormValue(form, "username", username);
+            appendFormValue(form, "password", password);
+            if (scope != null && !scope.isBlank()) {
+                appendFormValue(form, "scope", scope);
+            }
+
+            Request request = new Request.Builder()
+                .url(tokenEndpoint)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .post(RequestBody.create(form.toString(), FORM_MEDIA_TYPE))
+                .build();
+
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new RuntimeException("OAuth2 token request failed with status " + response.code());
+                }
+
+                TokenResponse tokenResponse = objectMapper.readValue(response.body().string(), TokenResponse.class);
+                accessToken = tokenResponse.accessToken;
+                long ttl = tokenResponse.expiresIn > 10 ? tokenResponse.expiresIn - 10 : tokenResponse.expiresIn;
+                expiresAt = Instant.now().plusSeconds(Math.max(ttl, 1));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to parse OAuth2 token response", e);
+        }
+    }
+
+    private static void appendFormValue(StringBuilder sb, String key, String value) {
+        if (!sb.isEmpty()) {
+            sb.append('&');
+        }
+        sb.append(URLEncoder.encode(key, StandardCharsets.UTF_8));
+        sb.append('=');
+        sb.append(URLEncoder.encode(value, StandardCharsets.UTF_8));
+    }
+
+    private static class TokenResponse {
+        @JsonProperty("access_token")
+        public String accessToken;
+
+        @JsonProperty("expires_in")
+        public long expiresIn = 3600;
+    }
+}

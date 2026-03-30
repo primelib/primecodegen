@@ -1,0 +1,48 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Auth }};
+
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+
+public class BearerAuthMethod implements AuthMethod {
+    private String propertyKey = "Authorization";
+    private String valueTemplate = "Bearer {token}";
+    private String token;
+
+    public BearerAuthMethod() {
+    }
+
+    public BearerAuthMethod(Consumer<BearerAuthMethod> spec) {
+        spec.accept(this);
+        validate();
+    }
+
+    public BearerAuthMethod propertyKey(String propertyKey) {
+        this.propertyKey = propertyKey;
+        return this;
+    }
+
+    public BearerAuthMethod valueTemplate(String valueTemplate) {
+        this.valueTemplate = valueTemplate;
+        return this;
+    }
+
+    public BearerAuthMethod token(String token) {
+        this.token = token;
+        return this;
+    }
+
+    public void validate() {
+        Objects.requireNonNull(token, "token is required");
+        Objects.requireNonNull(propertyKey, "propertyKey is required");
+        Objects.requireNonNull(valueTemplate, "valueTemplate is required");
+    }
+
+    @Override
+    public Map<String, String> headerMap() {
+        return Map.of(propertyKey, valueTemplate.replace("{token}", token));
+    }
+}

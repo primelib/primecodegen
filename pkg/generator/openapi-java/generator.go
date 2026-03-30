@@ -230,6 +230,21 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 
 	// normal types
 	switch {
+	case len(schema.Type) == 0 && len(schema.OneOf) > 0:
+		codeTypes := make([]openapigenerator.CodeType, 0, len(schema.OneOf))
+		for _, oneOfSchema := range schema.OneOf {
+			codeType, err := g.ToCodeType(oneOfSchema.Schema(), schemaType, true)
+			if err != nil {
+				return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled oneOf type. schema: %s, format: %s", schema.Type, schema.Format), err)
+			}
+			codeTypes = append(codeTypes, codeType)
+		}
+
+		if openapigenerator.HaveSameCodeTypeName(codeTypes) {
+			return codeTypes[0], nil
+		} else {
+			return openapigenerator.CodeType{Name: "Object"}, nil
+		}
 	case slices.Contains(schema.Type, "string"):
 		switch schema.Format {
 		case "uri":
@@ -238,7 +253,7 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 			return openapigenerator.CodeType{TypeArgs: []openapigenerator.CodeType{openapigenerator.NewSimpleCodeType(g.BoxType("byte", isNullable), schema)}, IsArray: true}, nil
 		case "date", "date-time":
 			return openapigenerator.CodeType{Name: "Instant", ImportPath: "java.time"}, nil
-		case "uuid:":
+		case "uuid":
 			return openapigenerator.CodeType{Name: "UUID", ImportPath: "java.util"}, nil
 		default:
 			return openapigenerator.CodeType{Name: "String"}, nil
@@ -260,7 +275,7 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 		case "uint64":
 			return openapigenerator.CodeType{Name: "BigInteger", ImportPath: "java.math"}, nil
 		default:
-			return openapigenerator.NewSimpleCodeType("long", schema), nil
+			return openapigenerator.NewSimpleCodeType(g.BoxType("long", isNullable), schema), nil
 		}
 	case slices.Contains(schema.Type, "number"):
 		switch schema.Format {
@@ -272,14 +287,12 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 			return openapigenerator.NewSimpleCodeType(g.BoxType("double", isNullable), schema), nil
 		}
 	case slices.Contains(schema.Type, "array"):
+		if schema.Items == nil || schema.Items.A == nil {
+			return openapigenerator.DefaultCodeType, fmt.Errorf("array schema missing items definition")
+		}
 		arrayType, err := g.ToCodeType(schema.Items.A.Schema(), schemaType, true)
 		if err != nil {
 			return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled array type. schema: %s, format: %s", schema.Type, schema.Format), err)
-		}
-
-		isArrayTypeNullable := openapiutil.IsSchemaNullable(schema.Items.A.Schema())
-		if isArrayTypeNullable {
-			return openapigenerator.NewListCodeType(arrayType, schema), nil
 		}
 		return openapigenerator.NewListCodeType(arrayType, schema), nil // NewArrayCodeType
 	case slices.Contains(schema.Type, "object") || schema.Type == nil:
@@ -312,21 +325,6 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 				return openapigenerator.DefaultCodeType, fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
 			}
 			return openapigenerator.CodeType{Name: g.ToClassName(schema.Title)}, nil // TODO: import path
-		}
-	case len(schema.Type) == 0 && len(schema.OneOf) > 0:
-		codeTypes := make([]openapigenerator.CodeType, 0, len(schema.OneOf))
-		for _, oneOfSchema := range schema.OneOf {
-			codeType, err := g.ToCodeType(oneOfSchema.Schema(), schemaType, true)
-			if err != nil {
-				return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled oneOf type. schema: %s, format: %s", schema.Type, schema.Format), err)
-			}
-			codeTypes = append(codeTypes, codeType)
-		}
-
-		if openapigenerator.HaveSameCodeTypeName(codeTypes) {
-			return codeTypes[0], nil
-		} else {
-			return openapigenerator.CodeType{Name: "Object"}, nil
 		}
 	default:
 		return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)

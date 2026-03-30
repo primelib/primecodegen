@@ -11,49 +11,47 @@ A java http client library for {{ .Metadata.DisplayName }}.
 implementation("{{ .Metadata.ArtifactGroupId }}:{{ .Metadata.ArtifactId }}:<version>")
 ```
 
-**Create client instances using the factory, you can choose different interfaces by changing the `api` parameter.**
+**Create a consumer-first client instance using the factory.**
 
 ```java
 {{ .Metadata.Name }}Api client = {{ .Metadata.Name }}Factory.create(spec -> {
     spec.api({{ .Metadata.Name }}Api.class);
     spec.baseUrl("{{ .Common.Endpoints.DefaultEndpoint }}");
-{{- if .Common.Auth.HasAuthScheme "apikey" }}
     spec.apiKeyAuth(auth -> {
         auth.propertyKey("x-api-key");
         auth.apiKey("<apiKey>");
     });
-{{- end }}
-{{- if .Common.Auth.HasAuthScheme "basic" }}
     spec.basicAuth(auth -> {
         auth.username("<admin>");
         auth.password("<password>");
     });
-{{- end }}
-{{- if .Common.Auth.HasAuthScheme "bearer" }}
     spec.bearerAuth(auth -> {
         auth.valueTemplate("Bearer {token}"); // optional, default is "Bearer {token}"
         auth.token("<token>");
     });
-{{- end }}
-{{- if .Common.Auth.HasAuthVariant "oauth2ClientCredentialAuth" }}
-    spec.oauth2ClientCredentialAuth(auth -> {
+    spec.oauth2ClientAuth(auth -> {
         auth.tokenEndpoint("<tokenEndpoint>");
         auth.clientId("<clientId>");
         auth.clientSecret("<clientSecret>");
     });
-{{- end }}
-{{- if .Common.Auth.HasAuthVariant "oauth2PasswordAuth" }}
-    spec.oauth2PasswordAuth(auth -> {
+    spec.oauth2UserAuth(auth -> {
         auth.tokenEndpoint("<tokenEndpoint>");
         auth.clientId("<clientId>");
         auth.clientSecret("<clientSecret>");
         auth.username("<username>");
         auth.password("<password>");
     });
-{{- end }}
-    //spec.meterRegistry(meterRegistry);
-    //spec.logLevel("FULL");
+    //spec.logLevel({{ .Metadata.Name }}FactorySpec.LogLevel.FULL);
+    //spec.userAgent("custom-user-agent");
+    //spec.requestTimeoutMillis(60_000);
 });
+
+client.someOperation(op -> op
+    // operation params ...
+    .extraHeader("X-Correlation-Id", "req-123")
+    .extraQueryParam("debug", "true")
+    .overrideAuthMethod(new BearerAuthMethod(auth -> auth.token("per-request-token")))
+);
 ```
 
 ## Spring Boot Starter
@@ -69,16 +67,19 @@ implementation("{{ .Metadata.ArtifactGroupId }}:{{ .Metadata.ArtifactId }}-sprin
 | Property                                                   | Description                      | Default Value    | Allowed Values                     |
 |------------------------------------------------------------|----------------------------------|------------------|------------------------------------|
 | {{ .Metadata.Name | kebabCase }}.url                       | Base URL of the API              | ""               |                                    |
-| {{ .Metadata.Name | kebabCase }}.backend-name              | Backend name for metrics tagging | ""               |                                    |
-| {{ .Metadata.Name | kebabCase }}.log-level                 | Log level for HTTP client        | ""               | none, full                         |
 | {{ .Metadata.Name | kebabCase }}.insecure                  | Disable SSL verification         | false            | false, true                        |
-| {{ .Metadata.Name | kebabCase }}.auth.type                 | Type of authentication           | ""               | oauth2-client, oauth2-user, bearer |
+| {{ .Metadata.Name | kebabCase }}.user-agent                | User agent header value          | generated value  |                                    |
+| {{ .Metadata.Name | kebabCase }}.log-level                 | HTTP log level                   | ""               | none, basic, headers, full         |
+| {{ .Metadata.Name | kebabCase }}.connect-timeout-millis    | TCP connect timeout              | 10000            | > 0                                |
+| {{ .Metadata.Name | kebabCase }}.request-timeout-millis    | Full request timeout             | 30000            | > 0                                |
+| {{ .Metadata.Name | kebabCase }}.auth.type                 | Type of authentication           | ""               | apikey, basic, bearer, oauth2-client, oauth2-user |
 | {{ .Metadata.Name | kebabCase }}.auth.token-endpoint       | Full token endpoint URL          | ""               | oauth2 token endpoint              |
 | {{ .Metadata.Name | kebabCase }}.auth.client-id            | Client ID for authentication     | ""               | oauth2 client id                   |
 | {{ .Metadata.Name | kebabCase }}.auth.client-secret        | Client secret for authentication | ""               | oauth2 client secret               |
 | {{ .Metadata.Name | kebabCase }}.auth.username             | Username for authentication      | ""               | oauth2 username (oauth2-user)      |
 | {{ .Metadata.Name | kebabCase }}.auth.password             | Password for authentication      | ""               | oauth2 password (oauth2-password)  |
 | {{ .Metadata.Name | kebabCase }}.auth.token                | Token / API Key                  | ""               |                                    |
+| {{ .Metadata.Name | kebabCase }}.auth.token-property-location | API key placement              | "header"         | header, query, cookie              |
 | {{ .Metadata.Name | kebabCase }}.auth.token-property-key   | Header key to pass the token in  | "Authorization"  |                                    |
 | {{ .Metadata.Name | kebabCase }}.auth.token-value-template | Template to generate token value | "Bearer {token}" |                                    |
 

@@ -4,188 +4,136 @@
 package {{ .Common.Packages.Root }};
 
 import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}Api;
-import {{ .Common.Packages.Client }}.{{ .Metadata.Name }}ConsumerApi;
 
 {{- range $service := .Common.Services }}
 import {{ $.Common.Packages.Client }}.{{ $service.Type }}Api;
-import {{ $.Common.Packages.Client }}.{{ $service.Type }}ConsumerApi;
 {{- end }}
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
-import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.dataformat.xml.XmlMapper;
+import tools.jackson.dataformat.yaml.YamlMapper;
 
-import feign.Feign;
-import feign.form.FormEncoder;
-import feign.Logger;
-import feign.jackson3.Jackson3Decoder;
-import feign.jackson3.Jackson3Encoder;
-import feign.micrometer.MicrometerCapability;
-import feign.okhttp.OkHttpClient;
-import feign.reactive.ReactorFeign;
-import feign.reactive.RxJavaFeign;
-import feign.slf4j.Slf4jLogger;
-import okhttp3.Credentials;
-
-import io.github.primelib.primecodegenlib.java.feign.common.api.AuthMethod;
-import io.github.primelib.primecodegenlib.java.feign.common.api.PrimeExtension;
-import io.github.primelib.primecodegenlib.java.feign.common.interceptor.AuthInterceptor;
-import io.github.primelib.primecodegenlib.java.feign.common.capabilities.PrimeCapability;
-
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
-{{- if .Common.Endpoints.HasEndpointWithType "socket" }}
-import org.newsclub.net.unix.AFSocketFactory;
-import org.newsclub.net.unix.AFUNIXSocketAddress;
-{{- end }}
-
-import java.io.File;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.lang.reflect.Method;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.util.function.Consumer;
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import java.security.cert.X509Certificate;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+public final class {{ .Metadata.Name }}Factory {
+    private {{ .Metadata.Name }}Factory() {
+    }
 
-import javax.annotation.processing.Generated;
-
-@NoArgsConstructor(access = AccessLevel.PRIVATE, force = true)
-@Slf4j
-@Generated(value = "io.github.primelib.primecodegen")
-public class {{ .Metadata.Name }}Factory {
     public static <T> T create(Consumer<{{ .Metadata.Name }}FactorySpec<T>> spec) {
         {{ .Metadata.Name }}FactorySpec<T> config = new {{ .Metadata.Name }}FactorySpec<>(spec);
-
-        if (config.api().isInterface()) {
-            return buildClient(spec);
-        }
-        if (config.api() == {{ .Metadata.Name }}ConsumerApi.class) {
-            return (T) {{ .Metadata.Name }}Factory.buildConsumerClient({{ .Metadata.Name }}ConsumerApi.class, {{ .Metadata.Name }}Api.class, ({{ .Metadata.Name }}FactorySpec<{{ .Metadata.Name }}ConsumerApi>) config);
-        }
-{{- range $service := .Common.Services }}
-        if (config.api() == {{ $service.Type }}ConsumerApi.class) {
-            return (T) {{ $.Metadata.Name }}Factory.buildConsumerClient({{ $service.Type }}ConsumerApi.class, {{ $service.Type }}Api.class, ({{ $.Metadata.Name }}FactorySpec<{{ $service.Type }}ConsumerApi>) config);
-        }
-{{- end }}
-
-        throw new IllegalArgumentException("api must be an compatible interface or consumer class");
+        return createFromSpec(config);
     }
 
     public static {{ .Metadata.Name }}Api create() {
         return create(spec -> spec.api({{ .Metadata.Name }}Api.class));
     }
 
-    private static <T, U> T buildConsumerClient(Class<T> consumerApiClass, Class<U> apiClass, {{ .Metadata.Name }}FactorySpec<T> config) {
-        try {
-            U api = buildClient(s -> {
-                s.api(apiClass);
-                s.applySpec(config);
-            });
-            return consumerApiClass.getConstructor(apiClass).newInstance(api);
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("API must have a constructor with one parameter of type " + apiClass.getSimpleName(), ex);
+    @SuppressWarnings("unchecked")
+    private static <T> T createFromSpec({{ .Metadata.Name }}FactorySpec<T> config) {
+        OkHttpClient httpClient = buildHttpClient(config);
+        JsonMapper jsonMapper = buildObjectMapper();
+        XmlMapper xmlMapper = buildXmlMapper();
+
+        if (config.getApi() == {{ .Metadata.Name }}Api.class) {
+            return (T) new {{ .Metadata.Name }}Api(config, httpClient, jsonMapper, xmlMapper);
         }
+{{- range $service := .Common.Services }}
+        if (config.getApi() == {{ $service.Type }}Api.class) {
+            return (T) new {{ $service.Type }}Api(config, httpClient, jsonMapper, xmlMapper);
+        }
+{{- end }}
+
+        throw new IllegalArgumentException("Unsupported API type: " + config.getApi());
     }
 
-    private static <T> T buildClient(Consumer<{{ .Metadata.Name }}FactorySpec<T>> spec) {
-        {{ .Metadata.Name }}FactorySpec<T> config = new {{ .Metadata.Name }}FactorySpec<>(spec);
+    private static OkHttpClient buildHttpClient({{ .Metadata.Name }}FactorySpec<?> config) {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
+            .connectTimeout(config.getConnectTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(config.getRequestTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .writeTimeout(config.getRequestTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .callTimeout(config.getRequestTimeoutMillis(), TimeUnit.MILLISECONDS)
+            .followRedirects(true)
+            .followSslRedirects(true);
 
-        // http client
-        okhttp3.OkHttpClient.Builder clientBuilder = new okhttp3.OkHttpClient.Builder();
-        if (config.proxy() != null && config.proxy().type() != Proxy.Type.DIRECT) {
-            clientBuilder.proxy(new Proxy(config.proxy().type(), new InetSocketAddress(config.proxy().host(), config.proxy().port())));
-            if (config.proxy().username() != null || config.proxy().password() != null) {
-                clientBuilder.proxyAuthenticator((route, response) -> {
-                    return response.request().newBuilder()
-                            .header("Proxy-Authorization", Credentials.basic(config.proxy().username(), new String(config.proxy().password())))
-                            .build();
-                });
-            }
+        HttpLoggingInterceptor loggingInterceptor = buildLoggingInterceptor(config.getLogLevel());
+        if (loggingInterceptor != null) {
+            builder.addInterceptor(loggingInterceptor);
         }
 
-        // insecure
-        if (config.insecure()) {
+        if (config.isInsecure()) {
             try {
-                TrustManager[] trustAllCerts = new TrustManager[]{
-                    new X509TrustManager() {
-                        @Override
-                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {}
+                X509TrustManager trustAllManager = new X509TrustManager() {
+                    @Override
+                    public void checkClientTrusted(X509Certificate[] chain, String authType) {
+                    }
 
-                        @Override
-                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {}
+                    @Override
+                    public void checkServerTrusted(X509Certificate[] chain, String authType) {
+                    }
 
-                        @Override
-                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                            return new java.security.cert.X509Certificate[]{};
-                        }
+                    @Override
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[0];
                     }
                 };
+                TrustManager[] trustAll = new TrustManager[]{trustAllManager};
 
-                SSLContext sslContext = SSLContext.getInstance("SSL");
-                sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-
-                clientBuilder.hostnameVerifier((hostname, session) -> true);
-                clientBuilder.sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustAllCerts[0]);
+                SSLContext sslContext = SSLContext.getInstance("TLS");
+                sslContext.init(null, trustAll, new java.security.SecureRandom());
+                builder.sslSocketFactory(sslContext.getSocketFactory(), trustAllManager);
+                builder.hostnameVerifier((hostname, session) -> true);
             } catch (Exception ex) {
-                throw new RuntimeException("failed to configure insecure mode", ex);
+                throw new RuntimeException("Failed to configure insecure HTTP client", ex);
             }
         }
 
-        {{- if .Common.Endpoints.HasEndpointWithType "socket" }}
-        // unix socket
-        if (config.baseUrl().startsWith("unix:")) {
-            try {
-                File socketFile = new File(config.baseUrl().substring(5));
-                AFUNIXSocketAddress socketAddress = new AFUNIXSocketAddress(socketFile);
-                clientBuilder.proxy(Proxy.NO_PROXY);
-                clientBuilder.socketFactory(new AFSocketFactory.FixedAddressSocketFactory(socketAddress));
-            } catch (Exception ex) {
-                throw new IllegalArgumentException("invalid unix socket path: " + config.baseUrl(), ex);
-            }
+        return builder.build();
+    }
+
+    private static HttpLoggingInterceptor buildLoggingInterceptor({{ .Metadata.Name }}FactorySpec.LogLevel logLevel) {
+        if (logLevel == null || logLevel == {{ .Metadata.Name }}FactorySpec.LogLevel.NONE) {
+            return null;
         }
-        {{- end }}
 
-        // objectMapper
-        JsonMapper.Builder objectMapperBuilder = JsonMapper.builder()
-                .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false) // do not fail on new fields
-                .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
-                .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
-                {{- if .Common.GeneratorProperties.jacksonIncludeNonNull }}
-                // condition: jsonIncludeNonNull
-                // .serializationInclusion(JsonInclude.Include.NON_NULL)
-                {{- end }}
-                ;
-        //config.extensions().forEach(extension -> extension.customizeObjectMapper(objectMapperBuilder));
-        JsonMapper objectMapper = objectMapperBuilder.build();
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(switch (logLevel) {
+            case BASIC -> HttpLoggingInterceptor.Level.BASIC;
+            case HEADERS -> HttpLoggingInterceptor.Level.HEADERS;
+            case FULL -> HttpLoggingInterceptor.Level.BODY;
+            default -> HttpLoggingInterceptor.Level.NONE;
+        });
+        interceptor.redactHeader("Authorization");
+        interceptor.redactHeader("Cookie");
+        return interceptor;
+    }
 
-        // builder
-        return Feign.builder()
-                .client(new OkHttpClient(clientBuilder.build()))
-                {{- if .Common.HasParametersWithType "form" }}
-                //.encoder(new FormEncoder(new Jackson3Encoder(objectMapper)))
-                {{- else }}
-                .encoder(new Jackson3Encoder(objectMapper))
-                {{- end }}
-                .decoder(new Jackson3Decoder(objectMapper))
-                .logger(new Slf4jLogger())
-                .logLevel(Logger.Level.valueOf(config.logLevel().toUpperCase()))
-                .addCapability(new MicrometerCapability(config.meterRegistry()))
-                .addCapability(new PrimeCapability(config.backendName(), config.extensions()))
-                .requestInterceptor(new AuthInterceptor(config.auth()))
-                .decodeVoid()
-                .target(config.api(), config.baseUrl());
+    private static JsonMapper buildObjectMapper() {
+        return JsonMapper.builder()
+            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
+            .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+            .build();
+    }
+
+    private static XmlMapper buildXmlMapper() {
+        return XmlMapper.builder()
+            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
+            .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+            .build();
     }
 }
