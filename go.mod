@@ -5,20 +5,20 @@ go 1.25.0
 require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/bluekeyes/go-gitdiff v0.8.1
-	github.com/cidverse/cidverseutils/core v0.0.0-20260225205012-7328c766ce81
+	github.com/cidverse/cidverseutils/core v0.0.0-20260412111520-e49b3b0108cf
 	github.com/cidverse/cidverseutils/filesystem v0.1.2-0.20250627221305-78405635788a
 	github.com/cidverse/cidverseutils/zerologconfig v0.1.2-0.20260225205012-7328c766ce81
 	github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf
-	github.com/cidverse/go-vcsapp v0.0.0-20260317150524-c44a1a5b1e91
+	github.com/cidverse/go-vcsapp v0.0.0-20260410233606-a1005ab0a364
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/gosimple/slug v1.15.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/jarcoal/httpmock v1.4.1
-	github.com/pb33f/doctor v0.0.49
-	github.com/pb33f/libopenapi v0.34.3
+	github.com/pb33f/doctor v0.0.50
+	github.com/pb33f/libopenapi v0.36.0
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/shomali11/parallelizer v0.0.0-20220717173222-a6776fbf40a9
-	github.com/speakeasy-api/openapi v1.22.0
+	github.com/speakeasy-api/openapi v1.23.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	go.yaml.in/yaml/v4 v4.0.0-rc.4
@@ -34,7 +34,7 @@ require (
 	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charlievieth/fastwalk v1.0.14 // indirect
-	github.com/cidverse/go-vcs v0.0.0-20260225231920-72e2575db148 // indirect
+	github.com/cidverse/go-vcs v0.0.0-20260331215627-210979a80271 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -42,7 +42,7 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.8.0 // indirect
-	github.com/go-git/go-git/v5 v5.17.0 // indirect
+	github.com/go-git/go-git/v5 v5.17.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/go-github/v84 v84.0.0 // indirect
@@ -56,14 +56,14 @@ require (
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-isatty v0.0.21 // indirect
 	github.com/pb33f/jsonpath v0.8.2 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
 	github.com/pjbgf/sha1cd v0.5.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/rs/zerolog v1.34.0 // indirect
+	github.com/rs/zerolog v1.35.0 // indirect
 	github.com/samber/lo v1.53.0 // indirect
-	github.com/samber/slog-common v0.21.0 // indirect
+	github.com/samber/slog-common v0.22.0 // indirect
 	github.com/samber/slog-zerolog/v2 v2.9.2 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
@@ -72,13 +72,13 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	gitlab.com/gitlab-org/api/client-go/v2 v2.7.0 // indirect
-	golang.org/x/crypto v0.49.0 // indirect
-	golang.org/x/net v0.52.0 // indirect
+	gitlab.com/gitlab-org/api/client-go/v2 v2.17.0 // indirect
+	golang.org/x/crypto v0.50.0 // indirect
+	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/text v0.35.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/text v0.36.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

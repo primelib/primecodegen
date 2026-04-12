@@ -238,16 +238,14 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
             return EMPTY_BODY;
         }
 
-        String normalizedContentType = contentType == null ? "" : contentType.toLowerCase(Locale.ROOT);
+        String normalizedContentType = contentType == null ? "" : contentType.toLowerCase(Locale.ROOT).split(";")[0].trim();
 
         if (isJsonContentType(normalizedContentType)) {
             return RequestBody.create(serializeJsonBody(value), mediaTypeOrDefault(contentType, DEFAULT_JSON_MEDIA_TYPE));
         }
-
         if (isXmlContentType(normalizedContentType)) {
             return RequestBody.create(serializeXmlBody(value), mediaTypeOrDefault(contentType, DEFAULT_XML_MEDIA_TYPE));
         }
-
         if (normalizedContentType.contains("x-www-form-urlencoded")) {
             return RequestBody.create(serializeFormBody(value), mediaTypeOrDefault(contentType, DEFAULT_FORM_MEDIA_TYPE));
         }
@@ -266,14 +264,14 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
         };
     }
 
-    private boolean isJsonContentType(String normalizedContentType) {
-        return normalizedContentType.equals("application/json") || normalizedContentType.contains("+json");
+    private boolean isJsonContentType(String contentType) {
+        return contentType.equals("application/json") || contentType.contains("+json");
     }
 
-    private boolean isXmlContentType(String normalizedContentType) {
-        return normalizedContentType.equals("application/xml")
-            || normalizedContentType.equals("text/xml")
-            || normalizedContentType.contains("+xml");
+    private boolean isXmlContentType(String contentType) {
+        return contentType.equals("application/xml")
+        || contentType.equals("text/xml")
+        || contentType.contains("+xml");
     }
 
     private RequestBody buildRawRequestBody(Object value, String contentType) {
