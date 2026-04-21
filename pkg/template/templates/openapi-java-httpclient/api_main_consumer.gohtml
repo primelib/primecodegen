@@ -62,6 +62,7 @@ public class {{ .Metadata.Name }}Api extends Abstract{{ .Metadata.Name }}ApiClie
      *   <li>{{ $param.Name }}: {{ $param.Description | commentSingleLine | escapeJavadoc }}</li>
     {{- end }}
     {{- end }}
+     *   <li>failOnError: throws a exception if the response has a status code of 4xx or 5xx</li>
      *   <li>extraHeaders: additional HTTP headers to include in this request</li>
      *   <li>extraQueryParams: additional query parameters to include in this request</li>
      *   <li>overrideAuthMethods / overrideAuthMethod: per-request authentication override</li>
@@ -111,9 +112,8 @@ public class {{ .Metadata.Name }}Api extends Abstract{{ .Metadata.Name }}ApiClie
         {{- end }}
 
         addAuthQueryParams(queryParams, r.overrideAuthMethods());
-        r.extraQueryParams().forEach((key, value) -> setQueryParam(queryParams, key, value));
 
-        Map<String, String> operationHeaders = new LinkedHashMap<>();
+        Map<String, List<String>> operationHeaders = newHeaderParams();
 
         {{- range $hp := $op.HeaderParameters }}
         {{- if $hp.StaticValue }}
@@ -127,7 +127,7 @@ public class {{ .Metadata.Name }}Api extends Abstract{{ .Metadata.Name }}ApiClie
         {{- end }}
         {{- end }}
 
-        URI uri = buildUri(pathBuilder.toString(), queryParams);
+        URI uri = buildUri(pathBuilder.toString(), queryParams, r.extraQueryParams());
         Request.Builder requestBuilder = newRequestBuilder(uri, operationHeaders, r.extraHeaders(), r.overrideAuthMethods(), {{ if $op.BodyParameter }}true{{ else }}false{{ end }});
 
         {{- if $op.BodyParameter }}

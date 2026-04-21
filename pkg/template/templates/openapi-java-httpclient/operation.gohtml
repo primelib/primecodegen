@@ -76,13 +76,17 @@ public class {{ .Operation.Name }}OperationSpec {
     private {{ $param.Type.Declaration }} {{ $param.Name }};
     {{- end }}
 
+    /** Throws an exception if the request is not successful. */
+    @NonNull
+    private Boolean failOnError = true;
+
     /** Extra headers to include in the request */
     @NonNull
-    private Map<String, String> extraHeaders = new LinkedHashMap<>();
+    private Map<String, List<String>> extraHeaders = new LinkedHashMap<>();
 
     /** Extra query parameters to include in the request */
     @NonNull
-    private Map<String, String> extraQueryParams = new LinkedHashMap<>();
+    private Map<String, List<String>> extraQueryParams = new LinkedHashMap<>();
 
     /**
      * Specific authentication methods for this operation.
@@ -116,14 +120,26 @@ public class {{ .Operation.Name }}OperationSpec {
         {{- end }}
     }
 
-    /** Adds a single extra header */
+    /** Adds a single header */
     public {{ .Operation.Name }}OperationSpec extraHeader(String key, String value) {
-        this.extraHeaders.put(key, value);
+        this.extraHeaders.put(key, List.of(value));
         return this;
     }
 
-    /** Adds a single extra query parameter */
+    /** Adds a multi-value header */
+    public {{ .Operation.Name }}OperationSpec extraHeader(String key, List<String> value) {
+    this.extraHeaders.put(key, value);
+    return this;
+    }
+
+    /** Adds a single query parameter */
     public {{ .Operation.Name }}OperationSpec extraQueryParam(String key, String value) {
+        this.extraQueryParams.put(key, List.of(value));
+        return this;
+    }
+
+    /** Adds a multi-value query parameter */
+    public {{ .Operation.Name }}OperationSpec extraQueryParam(String key, List<String> value) {
         this.extraQueryParams.put(key, value);
         return this;
     }
