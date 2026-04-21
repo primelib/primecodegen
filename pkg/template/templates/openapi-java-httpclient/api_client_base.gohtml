@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 abstract class Abstract{{ .Metadata.Name }}ApiClient {
@@ -128,50 +129,75 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
         spec.aggregateAuthenticationQueryParams(overrideAuthMethods).forEach((key, value) -> setQueryParam(queryParams, key, value));
     }
 
-    protected void putHeader(Map<String, String> headers, String key, String value) {
+    protected Map<String, List<String>> newHeaderParams() {
+        return new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    }
+
+    protected void addHeader(Map<String, List<String>> headers, String key, Object value) {
         if (key == null || key.isBlank() || value == null) {
             return;
         }
-        removeHeader(headers, key);
-        headers.put(key, value);
+
+        if (value instanceof Iterable<?> values) {
+            for (Object item : values) {
+                addHeader(headers, key, item);
+            }
+            return;
+        }
+
+        if (value.getClass().isArray()) {
+            int length = java.lang.reflect.Array.getLength(value);
+            for (int i = 0; i < length; i++) {
+                addHeader(headers, key, java.lang.reflect.Array.get(value, i));
+            }
+            return;
+        }
+
+        String actualKey = headers.keySet().stream()
+            .filter(k -> k.equalsIgnoreCase(key))
+            .findFirst()
+            .orElse(key);
+
+        headers.computeIfAbsent(actualKey, k -> new ArrayList<>()).add(String.valueOf(value));
     }
 
-    protected void putHeaderIfPresent(Map<String, String> headers, String key, Object value) {
+    protected void putHeader(Map<String, List<String>> headers, String key, Object value) {
+        if (key == null || key.isBlank()) {
+            return;
+        }
+        removeHeader(headers, key);
+        addHeader(headers, key, value);
+    }
+
+    protected void putHeaderIfPresent(Map<String, List<String>> headers, String key, Object value) {
         if (value != null) {
             putHeader(headers, key, String.valueOf(value));
         }
     }
 
-    protected String getHeader(Map<String, String> headers, String key) {
-        for (Map.Entry<String, String> entry : headers.entrySet()) {
-            if (entry.getKey().equalsIgnoreCase(key)) {
-                return entry.getValue();
-            }
-        }
-        return null;
+    protected String getHeader(Map<String, List<String>> headers, String key) {
+        return headers.entrySet().stream()
+        .filter(e -> e.getKey().equalsIgnoreCase(key))
+        .map(Map.Entry::getValue)
+        .findFirst()
+        .map(values -> values.isEmpty() ? null : values.get(0))
+        .orElse(null);
     }
 
-    protected boolean hasHeader(Map<String, String> headers, String key) {
+    protected boolean hasHeader(Map<String, List<String>> headers, String key) {
         return getHeader(headers, key) != null;
     }
 
-    private void removeHeader(Map<String, String> headers, String key) {
-        String existingKey = null;
-        for (String currentKey : headers.keySet()) {
-            if (currentKey.equalsIgnoreCase(key)) {
-                existingKey = currentKey;
-                break;
-            }
-        }
-        if (existingKey != null) {
-            headers.remove(existingKey);
-        }
+    private void removeHeader(Map<String, List<String>> headers, String key) {
+        headers.remove(key);
     }
 
-    protected URI buildUri(String path, Map<String, List<String>> queryParams) {
+    protected URI buildUri(String path, Map<String, List<String>> queryParams, Map<String, List<String>> extraQueryParams) {
         String baseUrl = Objects.requireNonNull(spec.getBaseUrl(), "baseUrl must not be null");
         String normalizedBase = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         String normalizedPath = path.startsWith("/") ? path : "/" + path;
+
+        extraQueryParams.forEach((key, value) -> setQueryParam(queryParams, key, value));
 
         StringBuilder uriBuilder = new StringBuilder(normalizedBase).append(normalizedPath);
         boolean first = true;
@@ -190,32 +216,28 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
 
     protected Request.Builder newRequestBuilder(
         URI uri,
-        Map<String, String> operationHeaders,
-        Map<String, String> extraHeaders,
+        Map<String, List<String>> operationHeaders,
+        Map<String, List<String>> extraHeaders,
         List<AuthMethod> overrideAuthMethods,
         boolean hasBody
     ) {
         Request.Builder builder = new Request.Builder().url(uri.toString());
 
-        Map<String, String> headers = new LinkedHashMap<>();
-
+        Map<String, List<String>> headers = newHeaderParams();
         if (spec.getUserAgent() != null && !spec.getUserAgent().isBlank()) {
             putHeader(headers, "User-Agent", spec.getUserAgent());
         }
-
         spec.getDefaultHeaders().forEach((key, value) -> putHeader(headers, key, value));
         spec.aggregateAuthenticationHeaders(overrideAuthMethods).forEach((key, value) -> putHeader(headers, key, value));
         if (operationHeaders != null) {
             operationHeaders.forEach((key, value) -> putHeader(headers, key, value));
         }
-
         if (!hasHeader(headers, "Accept")) {
             putHeader(headers, "Accept", "application/json");
         }
         if (hasBody && !hasHeader(headers, "Content-Type")) {
             putHeader(headers, "Content-Type", "application/json");
         }
-
         if (extraHeaders != null && !extraHeaders.isEmpty()) {
             extraHeaders.forEach((key, value) -> putHeader(headers, key, value));
         }
@@ -229,7 +251,14 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
             putHeader(headers, "Cookie", cookieHeader);
         }
 
-        headers.forEach(builder::header);
+        headers.forEach((key, values) -> {
+            if (values != null) {
+                for (String value : values) {
+                    builder.addHeader(key, value);
+                }
+            }
+        });
+
         return builder;
     }
 
