@@ -3,19 +3,19 @@ module github.com/primelib/primecodegen
 go 1.25.0
 
 require (
-	github.com/Masterminds/semver/v3 v3.4.0
+	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/bluekeyes/go-gitdiff v0.8.1
-	github.com/cidverse/cidverseutils/core v0.0.0-20260421163043-9ae0e0ed42b0
+	github.com/cidverse/cidverseutils/core v0.0.0-20260501011017-285bf67ee5aa
 	github.com/cidverse/cidverseutils/filesystem v0.1.2-0.20250627221305-78405635788a
 	github.com/cidverse/cidverseutils/zerologconfig v0.1.2-0.20260225205012-7328c766ce81
 	github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf
-	github.com/cidverse/go-vcsapp v0.0.0-20260421163430-5a6d9da90815
+	github.com/cidverse/go-vcsapp v0.0.0-20260524184155-1f6222299d95
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/gosimple/slug v1.15.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/jarcoal/httpmock v1.4.1
-	github.com/pb33f/doctor v0.0.58
-	github.com/pb33f/libopenapi v0.36.1
+	github.com/pb33f/doctor v0.0.67
+	github.com/pb33f/libopenapi v0.36.6
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/shomali11/parallelizer v0.0.0-20220717173222-a6776fbf40a9
 	github.com/speakeasy-api/openapi v1.23.0
@@ -31,22 +31,22 @@ require (
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/bradleyfalzon/ghinstallation/v2 v2.18.0 // indirect
-	github.com/buger/jsonparser v1.1.2 // indirect
+	github.com/buger/jsonparser v1.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charlievieth/fastwalk v1.0.14 // indirect
-	github.com/cidverse/go-vcs v0.0.0-20260421163420-915deee2457b // indirect
+	github.com/cidverse/go-vcs v0.0.0-20260519220358-81ec25a7ed93 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dprotaso/go-yit v0.0.0-20260209000607-dfb86291624d // indirect
+	github.com/dprotaso/go-yit v0.0.0-20260505203253-b1e9c41b42c9 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
-	github.com/go-git/go-billy/v5 v5.8.0 // indirect
-	github.com/go-git/go-git/v5 v5.18.0 // indirect
+	github.com/go-git/go-billy/v5 v5.9.0 // indirect
+	github.com/go-git/go-git/v5 v5.19.1 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/go-github/v84 v84.0.0 // indirect
-	github.com/google/go-github/v85 v85.0.0 // indirect
+	github.com/google/go-github/v88 v88.0.0 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
@@ -57,10 +57,10 @@ require (
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.21 // indirect
+	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/pb33f/jsonpath v0.8.2 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
-	github.com/pjbgf/sha1cd v0.5.0 // indirect
+	github.com/pjbgf/sha1cd v0.6.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/zerolog v1.35.1 // indirect
 	github.com/samber/lo v1.53.0 // indirect
@@ -73,13 +73,13 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	gitlab.com/gitlab-org/api/client-go/v2 v2.20.1 // indirect
-	golang.org/x/crypto v0.50.0 // indirect
-	golang.org/x/net v0.53.0 // indirect
+	gitlab.com/gitlab-org/api/client-go/v2 v2.32.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.43.0 // indirect
-	golang.org/x/text v0.36.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
