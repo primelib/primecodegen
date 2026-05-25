@@ -61,6 +61,21 @@ func Generators(specFile string, conf appconf.Configuration) []generator.Generat
 		Opts:        conf.Presets.Typescript,
 	})
 
+	generators = addGeneratorIfEnabled(generators, conf.Presets.PrintingPress.Enabled, &PrintingPressGenerator{
+		APISpec:     specFile,
+		Repository:  conf.Repository,
+		Maintainers: conf.Maintainers,
+		Provider:    conf.Provider,
+		Opts:        conf.Presets.PrintingPress,
+	})
+	generators = addGeneratorIfEnabled(generators, conf.Presets.LLMs.Enabled, &LLMSGenerator{
+		APISpec:     specFile,
+		Repository:  conf.Repository,
+		Maintainers: conf.Maintainers,
+		Provider:    conf.Provider,
+		Opts:        conf.Presets.PrintingPress,
+	})
+
 	// custom generators
 	for _, g := range conf.Generators {
 		var gen generator.Generator
@@ -101,6 +116,19 @@ func Generators(specFile string, conf appconf.Configuration) []generator.Generat
 				Config: generator.SpeakEasyGeneratorConfig{
 					TemplateLanguage: util.GetMapString(g.Config, "templateLanguage", ""),
 					Repository:       conf.Repository,
+				},
+			}
+		case appconf.GeneratorTypePrintingPress:
+			gen = &generator.PrintingPressGenerator{
+				OutputName: g.Name,
+				APISpec:    specFile,
+				Args:       g.Arguments,
+				Config: generator.PrintingPressGeneratorConfig{
+					NoJson:   util.GetMapBool(g.Config, "no-json", false),
+					NoHtml:   util.GetMapBool(g.Config, "no-html", false),
+					NoLlm:    util.GetMapBool(g.Config, "no-llm", false),
+					NoLogo:   util.GetMapBool(g.Config, "no-logo", true),
+					NoFooter: util.GetMapBool(g.Config, "no-footer", true),
 				},
 			}
 		default:

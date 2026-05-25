@@ -9,4 +9,5 @@ const (
 	GeneratorTypeOpenApiGenerator GeneratorType = "openapi-generator"
 	GeneratorTypePrimeCodeGen     GeneratorType = "primecodegen"
 	GeneratorTypeSpeakEasy        GeneratorType = "speakeasy"
+	GeneratorTypePrintingPress    GeneratorType = "printing-press"
 )
