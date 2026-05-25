@@ -78,17 +78,23 @@ type GeneratorConf struct {
 
 // PresetConf are pre-configured generators for specific languages
 type PresetConf struct {
-	Scaffolding ScaffoldingOptions        `yaml:"scaffolding"`
-	Go          GoLanguageOptions         `yaml:"go"`
-	Java        JavaLanguageOptions       `yaml:"java"`
-	Kotlin      KotlinLanguageOptions     `yaml:"kotlin"`
-	Python      PythonLanguageOptions     `yaml:"python"`
-	CSharp      CSharpLanguageOptions     `yaml:"csharp"`
-	Typescript  TypescriptLanguageOptions `yaml:"typescript"`
+	Scaffolding   ScaffoldingOptions        `yaml:"scaffolding"`
+	Go            GoLanguageOptions         `yaml:"go"`
+	Java          JavaLanguageOptions       `yaml:"java"`
+	Kotlin        KotlinLanguageOptions     `yaml:"kotlin"`
+	Python        PythonLanguageOptions     `yaml:"python"`
+	CSharp        CSharpLanguageOptions     `yaml:"csharp"`
+	Typescript    TypescriptLanguageOptions `yaml:"typescript"`
+	PrintingPress PrintingPressOptions      `yaml:"printingpress"`
+	LLMs          LLMsOptions               `yaml:"llms"`
 }
 
 func (c PresetConf) EnabledCount() int {
 	enabledCount := 0
+
+	if c.Scaffolding.Enabled {
+		enabledCount++
+	}
 
 	if c.Go.Enabled {
 		enabledCount++
@@ -103,6 +109,13 @@ func (c PresetConf) EnabledCount() int {
 		enabledCount++
 	}
 	if c.Typescript.Enabled {
+		enabledCount++
+	}
+
+	if c.PrintingPress.Enabled {
+		enabledCount++
+	}
+	if c.LLMs.Enabled {
 		enabledCount++
 	}
 
@@ -165,6 +178,16 @@ type TypescriptLanguageOptions struct {
 
 	NpmOrg  string `yaml:"npmOrg"`
 	NpmName string `yaml:"npmName"`
+}
+
+type PrintingPressOptions struct {
+	Enabled     bool     `yaml:"enabled"`
+	IgnoreFiles []string `yaml:"ignoreFiles"`
+}
+
+type LLMsOptions struct {
+	Enabled     bool     `yaml:"enabled"`
+	IgnoreFiles []string `yaml:"ignoreFiles"`
 }
 
 type Spec struct {
