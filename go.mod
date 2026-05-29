@@ -9,7 +9,7 @@ require (
 	github.com/cidverse/cidverseutils/filesystem v0.1.2-0.20250627221305-78405635788a
 	github.com/cidverse/cidverseutils/zerologconfig v0.1.2-0.20260225205012-7328c766ce81
 	github.com/cidverse/go-ptr v0.0.0-20240331160646-489e694bebbf
-	github.com/cidverse/go-vcsapp v0.0.0-20260524184155-1f6222299d95
+	github.com/cidverse/go-vcsapp v0.0.0-20260529145719-f9f7a9ad977b
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/gosimple/slug v1.15.0
 	github.com/iancoleman/strcase v0.3.0
@@ -73,7 +73,7 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	gitlab.com/gitlab-org/api/client-go/v2 v2.32.0 // indirect
+	gitlab.com/gitlab-org/api/client-go/v2 v2.36.0 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
