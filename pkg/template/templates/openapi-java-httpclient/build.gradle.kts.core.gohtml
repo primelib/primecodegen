@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.configuration)
 }
 
-projectConfiguration {
+{{ index .Common.GeneratorProperties "gradle.projectConfiguration.blockName" }} {
 {{- if .Metadata.ArtifactId }}
     artifactId.set("{{ .Metadata.ArtifactId }}")
 {{- end }}

@@ -11,7 +11,6 @@ import (
 	"github.com/primelib/primecodegen/pkg/template"
 	"github.com/primelib/primecodegen/pkg/template/templateapi"
 	"github.com/primelib/primecodegen/pkg/util"
-	"github.com/shomali11/parallelizer"
 	"gopkg.in/yaml.v3"
 )
 
@@ -36,9 +35,17 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 		fmt.Print(string(bytes))
 	}
 
+	properties := map[string]string{}
+	for key, value := range renderOpts.Properties {
+		properties[key] = value
+	}
+	for key, value := range generatorOpts.TemplateProperties {
+		properties[key] = value
+	}
+
 	// global template data
 	common := GlobalTemplate{
-		GeneratorProperties: renderOpts.Properties,
+		GeneratorProperties: properties,
 		Endpoints:           templateData.Endpoints,
 		Auth:                templateData.Auth,
 		Packages:            templateData.Packages,
@@ -116,11 +123,18 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 
 	// render files
 	slog.Debug("rendering template files", "templateId", templateId, "outputDir", outputDir, "files", len(data))
-	group := parallelizer.NewGroup(parallelizer.WithPoolSize(6))
-	defer group.Close()
+	var waitGroup sync.WaitGroup
+	sem := make(chan struct{}, 6)
+	errCh := make(chan error, 1)
 
 	for _, d := range data {
-		group.Add(func() error {
+		d := d
+		waitGroup.Add(1)
+		go func() {
+			defer waitGroup.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
 			var renderedFiles map[string]templateapi.RenderedFile
 			var renderErr error
 
@@ -140,7 +154,11 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 			}
 
 			if renderErr != nil {
-				return fmt.Errorf("failed to render template: %w", renderErr)
+				select {
+				case errCh <- fmt.Errorf("failed to render template: %w", renderErr):
+				default:
+				}
+				return
 			}
 
 			filesMutex.Lock()
@@ -148,14 +166,14 @@ func GenerateFiles(templateId string, outputDir string, templateData DocumentMod
 				files[k] = v
 			}
 			filesMutex.Unlock()
-
-			return nil
-		})
+		}()
 	}
 
-	err := group.Wait()
-	if err != nil {
+	waitGroup.Wait()
+	select {
+	case err := <-errCh:
 		return nil, fmt.Errorf("failed to render template: %w", err)
+	default:
 	}
 
 	return files, nil

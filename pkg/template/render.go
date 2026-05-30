@@ -15,7 +15,6 @@ import (
 	"github.com/primelib/primecodegen/pkg/template/templateapi"
 	"github.com/primelib/primecodegen/pkg/util"
 	"log/slog"
-	"github.com/shomali11/parallelizer"
 )
 
 //go:embed templates/*
@@ -51,42 +50,73 @@ func RenderTemplate(config templateapi.Config, outputDir string, templateType te
 	}
 
 	// render templates
-	group := parallelizer.NewGroup(parallelizer.WithPoolSize(6))
-	defer group.Close()
+	var waitGroup sync.WaitGroup
+	sem := make(chan struct{}, 6)
+	errCh := make(chan error, 1)
 	for _, file := range templateFiles {
-		err := group.Add(func() error {
+		file := file
+		waitGroup.Add(1)
+		go func() {
+			defer waitGroup.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
 			var renderedContent bytes.Buffer
 			if file.SourceTemplate != "" {
 				t := tmpl[file.SourceTemplate]
 
 				err := t.Execute(&renderedContent, data)
 				if err != nil {
-					return errors.Join(templateapi.ErrFailedToRenderTemplate, fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err))
+					select {
+					case errCh <- errors.Join(templateapi.ErrFailedToRenderTemplate, fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err)):
+					default:
+					}
+					return
 				}
 			} else if file.SourceFile != "" {
 				content, err := readTemplateFile([]string{config.ID, "_global"}, file.SourceFile)
 				if err != nil {
-					return errors.Join(templateapi.ErrFailedToCopyTemplateFile, fmt.Errorf("failed to read template file %s: %w", file.SourceFile, err))
+					select {
+					case errCh <- errors.Join(templateapi.ErrFailedToCopyTemplateFile, fmt.Errorf("failed to read template file %s: %w", file.SourceFile, err)):
+					default:
+					}
+					return
 				}
 				renderedContent.Write([]byte(content))
 			} else if file.SourceUrl != "" {
 				out, err := util.DownloadBytes(file.SourceUrl)
 				if err != nil {
-					return errors.Join(templateapi.ErrFailedToDownloadTemplateFile, fmt.Errorf("failed to download template from %s: %w", file.SourceUrl, err))
+					select {
+					case errCh <- errors.Join(templateapi.ErrFailedToDownloadTemplateFile, fmt.Errorf("failed to download template from %s: %w", file.SourceUrl, err)):
+					default:
+					}
+					return
 				}
 				renderedContent.Write(out)
 			} else {
-				return errors.Join(templateapi.ErrTemplateFileOrUrlIsRequired, errors.New("template id: "+file.TargetDirectory+"/"+file.TargetFileName))
+				select {
+				case errCh <- errors.Join(templateapi.ErrTemplateFileOrUrlIsRequired, errors.New("template id: "+file.TargetDirectory+"/"+file.TargetFileName)):
+				default:
+				}
+				return
 			}
 
 			// variables in dir or name
 			resolvedDir, err := resolveName(file.TargetDirectory, data)
 			if err != nil {
-				return fmt.Errorf("failed to resolve directory name: %w", err)
+				select {
+				case errCh <- fmt.Errorf("failed to resolve directory name: %w", err):
+				default:
+				}
+				return
 			}
 			resolvedFile, err := resolveName(file.TargetFileName, data)
 			if err != nil {
-				return fmt.Errorf("failed to resolve file name: %w", err)
+				select {
+				case errCh <- fmt.Errorf("failed to resolve file name: %w", err):
+				default:
+				}
+				return
 			}
 
 			// write to file
@@ -110,12 +140,20 @@ func RenderTemplate(config templateapi.Config, outputDir string, templateType te
 			} else {
 				err = os.MkdirAll(targetDir, 0755)
 				if err != nil {
-					return fmt.Errorf("failed to create directory %s: %w", targetDir, err)
+					select {
+					case errCh <- fmt.Errorf("failed to create directory %s: %w", targetDir, err):
+					default:
+					}
+					return
 				}
 
 				err = os.WriteFile(targetFile, output, 0644)
 				if err != nil {
-					return fmt.Errorf("failed to write rendered file %s: %w", targetFile, err)
+					select {
+					case errCh <- fmt.Errorf("failed to write rendered file %s: %w", targetFile, err):
+					default:
+					}
+					return
 				}
 				state = templateapi.FileRendered
 			}
@@ -124,17 +162,14 @@ func RenderTemplate(config templateapi.Config, outputDir string, templateType te
 			filesMutex.Lock()
 			files[targetFile] = templateapi.RenderedFile{File: targetFile, TemplateFile: file.SourceTemplate, State: state}
 			filesMutex.Unlock()
-
-			return nil
-		})
-		if err != nil {
-			return nil, fmt.Errorf("template in %s, file %s: %w", config.ID, file.SourceTemplate, err)
-		}
+		}()
 	}
 
-	err := group.Wait()
-	if err != nil {
+	waitGroup.Wait()
+	select {
+	case err := <-errCh:
 		return nil, fmt.Errorf("failed to render template: %w", err)
+	default:
 	}
 
 	return files, nil
