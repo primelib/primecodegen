@@ -25,19 +25,21 @@ import org.jetbrains.annotations.ApiStatus
 {{- if .Model.Deprecated }}
 @Deprecated
 {{- end }}
+{{- if .Model.IsTypeAlias }}
+typealias {{ .Model.Name }} = {{ .Model.Parent.Declaration }}
+{{- else }}
 @Serializable
 data class {{ .Model.Name }}(
     {{- range $i, $p := .Model.Properties }}
-    {{- if not (contains $p.Type.Declaration "Any") }}
     {{- if $p.Description }}
     /**
      * {{ $p.Description | escapeJavadoc | commentMultiLine "     * " }}
      */
     {{- end }}
     @SerialName("{{ $p.FieldName }}")
-    val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if not $p.Nullable }}? = null{{ end }},
-    {{- end }}
+    val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if $p.Nullable }}? = null{{ end }},
     {{- end }}
 ){{ if .Model.Parent.Declaration }} : {{ .Model.Parent.Declaration }}(){{ end }} {
 
 }
+{{- end }}
