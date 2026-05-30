@@ -83,11 +83,12 @@ func (g *JavaGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		IgnoreFileCategories: nil,
 		Properties:           map[string]string{},
 		TemplateFunctions: texttemplate.FuncMap{
-			"toClassName":     g.ToClassName,
-			"toFunctionName":  g.ToFunctionName,
-			"toPropertyName":  g.ToPropertyName,
-			"toParameterName": g.ToParameterName,
-			"isPrimitiveType": g.IsPrimitiveType,
+			"toClassName":           g.ToClassName,
+			"toFunctionName":        g.ToFunctionName,
+			"toPropertyName":        g.ToPropertyName,
+			"toParameterName":       g.ToParameterName,
+			"isPrimitiveType":       g.IsPrimitiveType,
+			"statusCodeToClassName": g.StatusCodeToClassName,
 		},
 	}, opts)
 	if err != nil {
@@ -457,6 +458,41 @@ func (g *JavaGenerator) BoxType(codeType string, box bool) string {
 	}
 
 	return codeType
+}
+
+func (g *JavaGenerator) StatusCodeToClassName(code string) string {
+	switch code {
+	case "200":
+		return "OkResponse"
+	case "201":
+		return "CreatedResponse"
+	case "204":
+		return "NoContentResponse"
+	case "400":
+		return "BadRequestResponse"
+	case "404":
+		return "NotFoundResponse"
+	case "default":
+		return "DefaultResponse"
+	default:
+		sanitized := strings.Map(func(r rune) rune {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				return r
+			}
+			return '_'
+		}, code)
+
+		sanitized = strings.Trim(sanitized, "_")
+		if sanitized == "" {
+			sanitized = "Unknown"
+		}
+
+		if sanitized[0] >= '0' && sanitized[0] <= '9' {
+			return "Status" + sanitized + "Response"
+		}
+
+		return "Status" + util.ToPascalCase(sanitized) + "Response"
+	}
 }
 
 func NewGenerator() *JavaGenerator {
