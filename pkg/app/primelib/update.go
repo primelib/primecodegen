@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/cidverse/go-vcsapp/pkg/platform/api"
 	"github.com/primelib/primecodegen/pkg/app/appconf"
@@ -147,6 +148,7 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 		combined := append([]sharedpatch.SpecPatch{specPatch},
 			openapipatch.ResolvePatchSets(spec.PatchSets)...,
 		)
+		combined = append(combined, autoCodeSamplesPatches(conf)...)
 		spec.Patches = append(combined, spec.Patches...)
 
 		// patches - TODO: rework patch pre-processing?
@@ -164,6 +166,87 @@ func Update(dir string, conf appconf.Configuration, repository api.Repository) e
 	}
 
 	return nil
+}
+
+func autoCodeSamplesPatches(conf appconf.Configuration) []sharedpatch.SpecPatch {
+	if !conf.Presets.LLMs.Enabled {
+		return nil
+	}
+
+	outputBase := strings.TrimSpace(conf.Output)
+	multi := conf.MultiLanguage()
+
+	patches := make([]sharedpatch.SpecPatch, 0)
+	seen := make(map[string]bool)
+	appendPatch := func(language string, outputName string) {
+		language = strings.TrimSpace(strings.ToLower(language))
+		if language == "" {
+			return
+		}
+
+		dir := outputBase
+		if multi {
+			dir = filepath.Join(dir, outputName)
+		}
+		if strings.TrimSpace(dir) == "" {
+			dir = "."
+		}
+
+		key := language + "::" + dir
+		if seen[key] {
+			return
+		}
+		seen[key] = true
+
+		patches = append(patches, sharedpatch.SpecPatch{
+			Type: "builtin",
+			ID:   "generate-code-samples-refs",
+			Config: map[string]interface{}{
+				"dir":        filepath.ToSlash(dir),
+				"language":   language,
+				"ref-prefix": "snippets",
+				"strict":     false,
+			},
+		})
+	}
+
+	if conf.Presets.Java.Enabled {
+		appendPatch("java", "java")
+	}
+	if conf.Presets.Kotlin.Enabled {
+		appendPatch("kotlin", "kotlin")
+	}
+	if conf.Presets.Go.Enabled {
+		appendPatch("go", "go")
+	}
+	if conf.Presets.Python.Enabled {
+		appendPatch("python", "python")
+	}
+	if conf.Presets.CSharp.Enabled {
+		appendPatch("csharp", "csharp")
+	}
+	if conf.Presets.Typescript.Enabled {
+		appendPatch("typescript", "typescript")
+	}
+
+	for _, g := range conf.Generators {
+		if !g.Enabled || g.Type != appconf.GeneratorTypePrimeCodeGen {
+			continue
+		}
+
+		templateLanguage, ok := g.Config["templateLanguage"].(string)
+		if !ok || strings.TrimSpace(templateLanguage) == "" {
+			continue
+		}
+
+		outputName := g.Name
+		if strings.TrimSpace(outputName) == "" {
+			outputName = strings.ToLower(strings.TrimSpace(templateLanguage))
+		}
+		appendPatch(templateLanguage, outputName)
+	}
+
+	return patches
 }
 
 func processPatches(patchesList []sharedpatch.SpecPatch) ([]string, []string, error) {

@@ -99,6 +99,9 @@ var TemplateFunctions = template.FuncMap{
 	"slug": func(input string) string {
 		return util.ToSlug(input)
 	},
+	"operationSlug": func(method string, rawPath string) string {
+		return util.OpenAPIOperationSlug(method, rawPath)
+	},
 	"commentSingleLine": func(input string) string {
 		return util.CommentSingleLine(input)
 	},

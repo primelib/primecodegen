@@ -77,6 +77,14 @@ var Template = templateapi.Config{
 			Type:            templateapi.TypeOperationEach,
 			Kind:            templateapi.KindAPI,
 		},
+		{
+			SourceTemplate:  "operation_example.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "snippets",
+			TargetFileName:  "{{ operationSlug .Operation.Method .Operation.Path }}.java",
+			Type:            templateapi.TypeOperationEach,
+			Kind:            templateapi.KindCodeExample,
+		},
 		// core - model
 		{
 			SourceTemplate:  "model.gohtml",

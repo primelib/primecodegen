@@ -59,6 +59,7 @@ var EmbeddedPatchers = []BuiltInPatcher{
 	GenerateTagFromDocTitlePatch,
 	GenerateOperationIdsPatch,
 	GenerateMissingOperationIdsPatch,
+	GenerateCodeSamplesRefsPatch,
 	// - refactoring / modifications
 	SetEndpointPatch,
 	AddIdempotencyKeyPatch,
