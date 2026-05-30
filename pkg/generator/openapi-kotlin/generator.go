@@ -82,11 +82,12 @@ func (g *KotlinGenerator) Generate(opts openapigenerator.GenerateOpts) error {
 		IgnoreFileCategories: nil,
 		Properties:           map[string]string{},
 		TemplateFunctions: texttemplate.FuncMap{
-			"toClassName":     g.ToClassName,
-			"toFunctionName":  g.ToFunctionName,
-			"toPropertyName":  g.ToPropertyName,
-			"toParameterName": g.ToParameterName,
-			"isPrimitiveType": g.IsPrimitiveType,
+			"toClassName":           g.ToClassName,
+			"toFunctionName":        g.ToFunctionName,
+			"toPropertyName":        g.ToPropertyName,
+			"toParameterName":       g.ToParameterName,
+			"isPrimitiveType":       g.IsPrimitiveType,
+			"statusCodeToClassName": g.StatusCodeToClassName,
 		},
 	}, opts)
 	if err != nil {
@@ -457,6 +458,41 @@ func (g *KotlinGenerator) PostProcessing(files map[string]templateapi.RenderedFi
 	}
 
 	return nil
+}
+
+func (g *KotlinGenerator) StatusCodeToClassName(code string) string {
+	switch code {
+	case "200":
+		return "Ok"
+	case "201":
+		return "Created"
+	case "204":
+		return "NoContent"
+	case "400":
+		return "BadRequest"
+	case "404":
+		return "NotFound"
+	case "default":
+		return "Default"
+	default:
+		sanitized := strings.Map(func(r rune) rune {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				return r
+			}
+			return '_'
+		}, code)
+
+		sanitized = strings.Trim(sanitized, "_")
+		if sanitized == "" {
+			sanitized = "Unknown"
+		}
+
+		if sanitized[0] >= '0' && sanitized[0] <= '9' {
+			return "Status" + sanitized
+		}
+
+		return "Status" + util.ToPascalCase(sanitized)
+	}
 }
 
 func NewGenerator() *KotlinGenerator {

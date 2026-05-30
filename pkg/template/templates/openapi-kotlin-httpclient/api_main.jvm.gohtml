@@ -119,7 +119,8 @@ class Jvm{{ .Metadata.Name }}Api(
                 {{- end }}
                 extraHeaders = request.extraHeaders,
                 extraQueryParams = request.extraQueryParams,
-                overrideAuthMethods = request.overrideAuthMethods
+                overrideAuthMethods = request.overrideAuthMethods,
+                failOnError = request.failOnError
             )
         }
     }

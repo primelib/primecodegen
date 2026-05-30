@@ -31,6 +31,43 @@ class {{ .Metadata.Name }}Api(
     private val httpClient: HttpClient,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 ) : AutoCloseable {
+    class ApiResponseException(
+        val statusCode: Int,
+        val responseBody: String?,
+        val responseHeaders: Map<String, List<String>>
+    ) : RuntimeException("Request failed with status $statusCode")
+
+    private fun matchesStatusCode(statusCode: Int, codeKey: String): Boolean {
+        if (codeKey.isBlank() || codeKey.equals("default", ignoreCase = true)) {
+            return true
+        }
+
+        if (codeKey.length == 3 && codeKey.all { it.isDigit() }) {
+            return statusCode == codeKey.toInt()
+        }
+
+        if (codeKey.length == 3
+            && codeKey[0].isDigit()
+            && (codeKey[1].isDigit() || codeKey[1] == 'X' || codeKey[1] == 'x')
+            && (codeKey[2].isDigit() || codeKey[2] == 'X' || codeKey[2] == 'x')
+        ) {
+            val status = statusCode.toString()
+            if (status.length != 3) {
+                return false
+            }
+
+            for (i in 0..2) {
+                val c = codeKey[i]
+                if (c != 'X' && c != 'x' && c != status[i]) {
+                    return false
+                }
+            }
+            return true
+        }
+
+        return false
+    }
+
 {{- range $service := .Common.Services }}
     val {{ $service.Name | toPropertyName }} by lazy { {{ $service.Type }}Api(spec, httpClient) }
 {{- end }}
@@ -67,6 +104,7 @@ class {{ .Metadata.Name }}Api(
         extraHeaders: Map<String, String> = emptyMap(),
         extraQueryParams: Map<String, String> = emptyMap(),
         overrideAuthMethods: List<AuthMethod>? = null,
+        failOnError: Boolean = true,
     ): {{ $op.Name }}Response {
         val url = URLBuilder(spec.baseUrl).apply {
             {{- if $op.PathSegments }}
@@ -118,36 +156,53 @@ class {{ .Metadata.Name }}Api(
                 {{- end }}
             }
 
-            when (response.status) {
-                {{- if index $op.ReturnTypeByCode "200" }}
-                HttpStatusCode.OK -> {{ $op.Name }}Response.Ok(response.body())
-                {{- end }}
-                {{- if index $op.ReturnTypeByCode "201" }}
-                HttpStatusCode.Created -> {{ $op.Name }}Response.Created(response.body())
-                {{- end }}
-                {{- if index $op.ReturnTypeByCode "204" }}
-                HttpStatusCode.NoContent -> {{ $op.Name }}Response.NoContent
-                {{- end }}
-                {{- if index $op.ReturnTypeByCode "400" }}
-                HttpStatusCode.BadRequest -> {{ $op.Name }}Response.BadRequest(response.body())
-                {{- end }}
-                {{- if index $op.ReturnTypeByCode "404" }}
-                HttpStatusCode.NotFound -> {{ $op.Name }}Response.NotFound(response.body())
-                {{- end }}
-                else -> {
-                    val text = response.bodyAsText()
-                    {{ $op.Name }}Response.Unknown(
-                        status = response.status.value,
-                        rawBody = text
-                    )
-                }
+            val statusCode = response.status.value
+            val responseHeaders = response.headers.entries().associate { (key, values) -> key to values.toList() }
+
+            if (statusCode >= 400 && failOnError) {
+                throw ApiResponseException(statusCode, response.bodyAsText(), responseHeaders)
             }
+
+            {{- range $code, $type := $op.ReturnTypeByCode }}
+            {{- if ne $code "default" }}
+            if (matchesStatusCode(statusCode, "{{ $code }}")) {
+                return {{ $op.Name }}Response.{{ statusCodeToClassName $code }}(
+                    {{- if ne $type.QualifiedType "Unit" }}
+                    data = response.body(),
+                    {{- end }}
+                    status = statusCode,
+                    rawBody = null,
+                    headers = responseHeaders
+                )
+            }
+            {{- end }}
+            {{- end }}
+
+            {{- if index $op.ReturnTypeByCode "default" }}
+            return {{ $op.Name }}Response.{{ statusCodeToClassName "default" }}(
+                {{- if ne (index $op.ReturnTypeByCode "default").QualifiedType "Unit" }}
+                data = response.body(),
+                {{- end }}
+                status = statusCode,
+                rawBody = null,
+                headers = responseHeaders
+            )
+            {{- else }}
+            {{ $op.Name }}Response.Unknown(
+                status = statusCode,
+                rawBody = response.bodyAsText(),
+                headers = responseHeaders
+            )
+            {{- end }}
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
 
+            if (e is ApiResponseException) throw e
+
             {{ $op.Name }}Response.Unknown(
                 status = HttpStatusCode.InternalServerError.value,
-                rawBody = e.message
+                rawBody = e.message,
+                headers = emptyMap()
             )
         }
     }
