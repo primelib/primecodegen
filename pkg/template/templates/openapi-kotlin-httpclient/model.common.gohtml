@@ -5,7 +5,13 @@ package {{ .Package }};
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+{{- if and .Model.OneOf .Model.DiscriminatorProperty }}
+import kotlinx.serialization.ExperimentalSerializationApi
+{{- end }}
 import kotlinx.serialization.json.JsonElement
+{{- if and .Model.OneOf .Model.DiscriminatorProperty }}
+import kotlinx.serialization.json.JsonClassDiscriminator
+{{- end }}
 
 import kotlin.time.Instant
 
@@ -28,8 +34,19 @@ import org.jetbrains.annotations.ApiStatus
 {{- if .Model.IsTypeAlias }}
 typealias {{ .Model.Name }} = {{ .Model.Parent.Declaration }}
 {{- else }}
+{{- if .Model.DiscriminatorValue }}
+@SerialName("{{ .Model.DiscriminatorValue | escapeStringValue }}")
+{{- end }}
 @Serializable
+{{- if and .Model.OneOf .Model.DiscriminatorProperty }}
+@OptIn(ExperimentalSerializationApi::class)
+@JsonClassDiscriminator("{{ .Model.DiscriminatorProperty | escapeStringValue }}")
+{{- end }}
+{{- if .Model.OneOf }}
+open class {{ .Model.Name }}(
+{{- else }}
 data class {{ .Model.Name }}(
+{{- end }}
     {{- range $i, $p := .Model.Properties }}
     {{- if $p.Description }}
     /**
@@ -37,7 +54,11 @@ data class {{ .Model.Name }}(
      */
     {{- end }}
     @SerialName("{{ $p.FieldName }}")
+    {{- if $.Model.OneOf }}
+    open val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if $p.Nullable }}? = null{{ end }},
+    {{- else }}
     val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if $p.Nullable }}? = null{{ end }},
+    {{- end }}
     {{- end }}
 ){{ if .Model.Parent.Declaration }} : {{ .Model.Parent.Declaration }}(){{ end }} {
 
