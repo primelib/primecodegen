@@ -98,11 +98,12 @@ func FixInvalidMaxValue(doc *libopenapi.DocumentModel[v3.Document], config map[s
 var FixOperationTagsPatch = BuiltInPatcher{
 	Type:                "builtin",
 	ID:                  "fix-operation-tags",
-	Description:         "Ensures all operations have at least one tag, and that tags are documented in the document",
+	Description:         "Ensures operation tags are documented in the document without forcing default tags",
 	PatchV3DocumentFunc: FixOperationTags,
 }
 
-// FixOperationTags ensures all operations have tags, and that tags are documented in the document
+// FixOperationTags ensures operation tags are documented in the document.
+// Operations without tags are intentionally left untagged.
 func FixOperationTags(doc *libopenapi.DocumentModel[v3.Document], config map[string]interface{}) error {
 	documentedTags := make(map[string]bool)
 	for _, tag := range doc.Model.Tags {
@@ -112,17 +113,16 @@ func FixOperationTags(doc *libopenapi.DocumentModel[v3.Document], config map[str
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
 			if len(op.Value.Tags) == 0 {
-				// add default tag, if missing
-				logging.Trace("operation is missing tags, adding default tag", "path", strings.ToUpper(op.Key)+" "+path.Key)
-				op.Value.Tags = append(op.Value.Tags, "default")
-			} else {
-				// ensure all tags are documented
-				for _, tag := range op.Value.Tags {
-					if _, ok := documentedTags[tag]; !ok {
-						logging.Trace("tag is not documented, adding to document", "path", strings.ToUpper(op.Key)+" "+path.Key, "tag", tag)
-						doc.Model.Tags = append(doc.Model.Tags, &base.Tag{Name: tag})
-						documentedTags[tag] = true
-					}
+				logging.Trace("operation is missing tags, leaving operation untagged", "path", strings.ToUpper(op.Key)+" "+path.Key)
+				continue
+			}
+
+			// ensure all tags are documented
+			for _, tag := range op.Value.Tags {
+				if _, ok := documentedTags[tag]; !ok {
+					logging.Trace("tag is not documented, adding to document", "path", strings.ToUpper(op.Key)+" "+path.Key, "tag", tag)
+					doc.Model.Tags = append(doc.Model.Tags, &base.Tag{Name: tag})
+					documentedTags[tag] = true
 				}
 			}
 		}
