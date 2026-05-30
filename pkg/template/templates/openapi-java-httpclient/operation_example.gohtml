@@ -1,0 +1,51 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.OperationEachTemplate*/ -}}
+
+import {{ $.Common.Packages.Root }}.{{ .Metadata.Name }}Factory;
+import {{ $.Common.Packages.Client }}.Abstract{{ .Metadata.Name }}ApiClient.ApiResponseException;
+import {{ $.Common.Packages.Operations }}.{{ .Operation.Name }}OperationSpec;
+import {{ $.Common.Packages.Responses }}.{{ .Operation.Name }}Response;
+
+public class {{ .Operation.Name }}Example {
+    public void execute() {
+        // Maven coordinates: {{ .Metadata.ArtifactGroupId }}:{{ .Metadata.ArtifactId }}:<version>
+        var factory = {{ .Metadata.Name }}Factory.create();
+
+        try {
+            var response = factory
+                .{{ .Operation.Tag | toPropertyName }}Api()
+                .{{ .Operation.Name | toFunctionName }}(new {{ .Operation.Name }}OperationSpec(spec -> {
+{{- if .Operation.MutableParameters }}
+                    // operation parameters (all available mutable fields)
+{{- range $param := .Operation.MutableParameters }}
+                    // spec.{{ $param.Name }}(/* {{ $param.Type.Declaration }} */); // {{ $param.Name }}: {{ if $param.Required }}required{{ else }}optional{{ end }}{{ if $param.StaticValue }}, default={{ $param.StaticValue }}{{ end }}{{ if $param.Description }} - {{ $param.Description | commentSingleLine }}{{ end }}
+{{- end }}
+{{- else }}
+                    // no operation-specific parameters
+{{- end }}
+
+                    // optional request behavior controls
+                    // spec.failOnError(true); // default=true: true => throws ApiResponseException for error status codes (4xx/5xx)
+                    // spec.extraHeader("X-Request-Id", "demo-request-id");
+                    // spec.extraQueryParam("debug", "true");
+                    // spec.overrideAuthMethod(...);
+                }));
+
+            // With failOnError(false), use sealed interface + records for exhaustive response handling.
+            // With failOnError(true) (default), 4xx/5xx usually throw before this switch.
+            switch (response) {
+{{- range $code, $type := .Operation.ReturnTypeByCode }}
+                case {{ $.Operation.Name }}Response.{{ statusCodeToClassName $code }} r -> {
+                    // handle {{ $code }}
+                    // r.data() contains typed payload
+                }
+{{- end }}
+                case {{ .Operation.Name }}Response.Unknown r -> {
+                    // handle status codes not modeled in the OpenAPI document
+                }
+            }
+        } catch (ApiResponseException ex) {
+            // Triggered when failOnError=true and the API returns an error status.
+            // ex.getStatusCode(), ex.getResponseBody()
+        }
+    }
+}

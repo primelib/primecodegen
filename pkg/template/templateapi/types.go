@@ -76,5 +76,6 @@ const (
 	KindAPI           Kind = "api"
 	KindModel         Kind = "model"
 	KindDocumentation Kind = "documentation"
+	KindCodeExample   Kind = "code-example"
 	KindBuildSystem   Kind = "buildsystem"
 )
