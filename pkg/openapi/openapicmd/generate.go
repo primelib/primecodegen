@@ -41,6 +41,7 @@ func GenerateCmd() *cobra.Command {
 			generatorId, _ := cmd.Flags().GetString("generator")
 			templateId, _ := cmd.Flags().GetString("template")
 			patches, _ := cmd.Flags().GetStringArray("patches")
+			tplProps, _ := cmd.Flags().GetStringArray("tpl-prop")
 			in = util.ResolvePath(in)
 			out = util.ResolvePath(out)
 			if in == "" {
@@ -60,13 +61,20 @@ func GenerateCmd() *cobra.Command {
 			metadataLicenseName, _ := cmd.Flags().GetString("md-license-name")
 			metadataLicenseUrl, _ := cmd.Flags().GetString("md-license-url")
 
+			parsedTplProps, err := openapigenerator.ParseTemplateProperties(tplProps)
+			if err != nil {
+				slog.Error("invalid template properties", "err", err)
+				os.Exit(1)
+			}
+
 			// generate
-			err := Generate(in, patches, generatorId, templateId, out, openapigenerator.GenerateOpts{
-				ArtifactGroupId: metadataGroupId,
-				ArtifactId:      metadataArtifactId,
-				RepositoryUrl:   metadataRepositoryUrl,
-				LicenseName:     metadataLicenseName,
-				LicenseUrl:      metadataLicenseUrl,
+			err = Generate(in, patches, generatorId, templateId, out, openapigenerator.GenerateOpts{
+				ArtifactGroupId:    metadataGroupId,
+				ArtifactId:         metadataArtifactId,
+				RepositoryUrl:      metadataRepositoryUrl,
+				LicenseName:        metadataLicenseName,
+				LicenseUrl:         metadataLicenseUrl,
+				TemplateProperties: parsedTplProps,
 			})
 			if err != nil {
 				slog.Error("failed to generate code", "err", err)
@@ -85,6 +93,7 @@ func GenerateCmd() *cobra.Command {
 	cmd.Flags().String("md-repository-url", "", "Repository URL (without protocol or .git suffix)")
 	cmd.Flags().String("md-license-name", "", "License Name")
 	cmd.Flags().String("md-license-url", "", "License URL")
+	cmd.Flags().StringArray("tpl-prop", []string{}, "Template property override in the form key=value (repeatable, allowed keys depend on template)")
 
 	return cmd
 }
@@ -122,19 +131,27 @@ func Generate(inputSpec string, patches []string, generatorId string, templateId
 		return errors.Join(util.ErrNoGeneratorWithId, err)
 	}
 	generatorOpts := openapigenerator.GenerateOpts{
-		DryRun:           false,
-		Doc:              v3doc,
-		OutputDir:        outputDir,
-		TemplateId:       templateId,
-		ArtifactGroupId:  opts.ArtifactGroupId,
-		ArtifactId:       opts.ArtifactId,
-		RepositoryUrl:    opts.RepositoryUrl,
-		LicenseName:      opts.LicenseName,
-		LicenseUrl:       opts.LicenseUrl,
-		Provider:         opts.Provider,
-		GeneratorNames:   opts.GeneratorNames,
-		GeneratorOutputs: opts.GeneratorOutputs,
+		DryRun:             false,
+		Doc:                v3doc,
+		OutputDir:          outputDir,
+		TemplateId:         templateId,
+		TemplateProperties: opts.TemplateProperties,
+		ArtifactGroupId:    opts.ArtifactGroupId,
+		ArtifactId:         opts.ArtifactId,
+		RepositoryUrl:      opts.RepositoryUrl,
+		LicenseName:        opts.LicenseName,
+		LicenseUrl:         opts.LicenseUrl,
+		Provider:           opts.Provider,
+		GeneratorNames:     opts.GeneratorNames,
+		GeneratorOutputs:   opts.GeneratorOutputs,
 	}
+
+	resolvedTemplateProperties, err := openapigenerator.ResolveTemplateProperties(fmt.Sprintf("openapi-%s-%s", gen.Id(), templateId), generatorOpts.TemplateProperties)
+	if err != nil {
+		return err
+	}
+	generatorOpts.TemplateProperties = resolvedTemplateProperties
+
 	slog.Info("running generator", "generator-id", gen.Id(), "template", templateId, "dry-run", generatorOpts.DryRun, "output-dir", generatorOpts.OutputDir)
 	err = gen.Generate(generatorOpts)
 	if err != nil {

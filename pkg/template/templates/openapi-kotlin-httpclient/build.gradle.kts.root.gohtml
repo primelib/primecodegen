@@ -6,9 +6,9 @@ plugins {
 }
 
 subprojects {
-    apply(plugin = "me.philippheuer.configuration")
+    apply(plugin = libs.plugins.configuration.get().pluginId)
 
-    projectConfiguration {
+    {{ index .Common.GeneratorProperties "gradle.projectConfiguration.blockName" }} {
         type.set(me.philippheuer.projectcfg.domain.ProjectType.LIBRARY)
         javaVersion.set(JavaVersion.VERSION_17)
 {{- if .Metadata.ArtifactGroupId }}

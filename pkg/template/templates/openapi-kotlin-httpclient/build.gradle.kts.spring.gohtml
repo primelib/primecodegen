@@ -9,7 +9,7 @@ plugins {
     alias(libs.plugins.kotlin.spring)
 }
 
-projectConfiguration {
+{{ index .Common.GeneratorProperties "gradle.projectConfiguration.blockName" }} {
     language.set(me.philippheuer.projectcfg.domain.ProjectLanguage.KOTLIN)
     type.set(me.philippheuer.projectcfg.domain.ProjectType.LIBRARY)
 {{- if .Metadata.ArtifactId }}

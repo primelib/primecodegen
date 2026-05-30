@@ -3,8 +3,12 @@
 
 pluginManagement {
     repositories {
+{{- if index .Common.GeneratorProperties "gradle.pluginManagement.repositoryUrl" }}
+        maven(url = "{{ index .Common.GeneratorProperties "gradle.pluginManagement.repositoryUrl" }}")
+{{- else }}
         gradlePluginPortal()
         mavenCentral()
+{{- end }}
     }
 }
 

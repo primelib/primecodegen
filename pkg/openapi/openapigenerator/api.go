@@ -64,19 +64,20 @@ const (
 )
 
 type GenerateOpts struct {
-	DryRun           bool
-	Doc              *libopenapi.DocumentModel[v3.Document]
-	OutputDir        string
-	TemplateId       string
-	PackageConfig    CommonPackages
-	ArtifactGroupId  string
-	ArtifactId       string
-	RepositoryUrl    string
-	LicenseName      string
-	LicenseUrl       string
-	Provider         appconf.ProviderConf
-	GeneratorNames   []string
-	GeneratorOutputs []string
+	DryRun             bool
+	Doc                *libopenapi.DocumentModel[v3.Document]
+	OutputDir          string
+	TemplateId         string
+	TemplateProperties map[string]string
+	PackageConfig      CommonPackages
+	ArtifactGroupId    string
+	ArtifactId         string
+	RepositoryUrl      string
+	LicenseName        string
+	LicenseUrl         string
+	Provider           appconf.ProviderConf
+	GeneratorNames     []string
+	GeneratorOutputs   []string
 }
 
 type TemplateDataOpts struct {
