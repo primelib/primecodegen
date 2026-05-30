@@ -5,6 +5,8 @@ package {{ .Package }};
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -47,7 +49,28 @@ import javax.annotation.processing.Generated;
 {{- if not .Model.Parent }}
 @Builder
 {{- end }}
-@JsonTypeName("{{.Model.Name}}")
+{{- if .Model.OneOf }}
+{{- if .Model.DiscriminatorProperty }}
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "{{ .Model.DiscriminatorProperty | escapeStringValue }}",
+    visible = true
+)
+{{- else }}
+@JsonTypeInfo(use = JsonTypeInfo.Id.DEDUCTION)
+{{- end }}
+@JsonSubTypes({
+{{- range $i, $subType := .Model.OneOf }}
+{{- if $.Model.DiscriminatorProperty }}
+    @JsonSubTypes.Type(value = {{ $subType.Name | toClassName }}.class, name = "{{ if $subType.DiscriminatorValue }}{{ $subType.DiscriminatorValue | escapeStringValue }}{{ else }}{{ $subType.Name | escapeStringValue }}{{ end }}"){{ if notLast $.Model.OneOf $i }},{{ end }}
+{{- else }}
+    @JsonSubTypes.Type(value = {{ $subType.Name | toClassName }}.class){{ if notLast $.Model.OneOf $i }},{{ end }}
+{{- end }}
+{{- end }}
+})
+{{- end }}
+@JsonTypeName("{{ if .Model.DiscriminatorValue }}{{ .Model.DiscriminatorValue | escapeStringValue }}{{ else }}{{ .Model.Name | escapeStringValue }}{{ end }}")
 {{- if .Model.Properties }}
 @JsonPropertyOrder({
 {{- range $i, $prop := .Model.Properties }}
