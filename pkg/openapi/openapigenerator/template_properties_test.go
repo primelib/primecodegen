@@ -33,20 +33,35 @@ func TestResolveTemplatePropertiesDefaults(t *testing.T) {
 	assert.Equal(t, "0.20.1", resolved["gradle.configurationPlugin.version"])
 	assert.Equal(t, "projectConfiguration", resolved["gradle.projectConfiguration.blockName"])
 	assert.Equal(t, "", resolved["gradle.pluginManagement.repositoryUrl"])
+	assert.Equal(t, "true", resolved["gradle.pomMetadata.enabled"])
 }
 
 func TestResolveTemplatePropertiesEnvAndCliPrecedence(t *testing.T) {
 	t.Setenv("PRIMECODEGEN_TPL_OPENAPI_JAVA_HTTPCLIENT_GRADLE_CONFIGURATIONPLUGIN_ID", "com.env.configuration")
 	t.Setenv("PRIMECODEGEN_TPL_OPENAPI_JAVA_HTTPCLIENT_GRADLE_PLUGINMANAGEMENT_REPOSITORYURL", "https://env.example/maven")
+	t.Setenv("PRIMECODEGEN_TPL_OPENAPI_JAVA_HTTPCLIENT_GRADLE_POMMETADATA_ENABLED", "false")
 
 	resolved, err := ResolveTemplateProperties("openapi-java-httpclient", map[string]string{
 		"gradle.configurationPlugin.id":         "com.cli.configuration",
 		"gradle.pluginManagement.repositoryUrl": "https://cli.example/maven",
+		"gradle.pomMetadata.enabled":            "TRUE",
 	})
 	require.NoError(t, err)
 
 	assert.Equal(t, "com.cli.configuration", resolved["gradle.configurationPlugin.id"])
 	assert.Equal(t, "https://cli.example/maven", resolved["gradle.pluginManagement.repositoryUrl"])
+	assert.Equal(t, "true", resolved["gradle.pomMetadata.enabled"])
+}
+
+func TestResolveTemplatePropertiesBooleanValidation(t *testing.T) {
+	t.Setenv("PRIMECODEGEN_TPL_OPENAPI_JAVA_HTTPCLIENT_GRADLE_POMMETADATA_ENABLED", "not-bool")
+	_, err := ResolveTemplateProperties("openapi-java-httpclient", map[string]string{})
+	assert.ErrorContains(t, err, "invalid boolean value")
+
+	_, err = ResolveTemplateProperties("openapi-java-httpclient", map[string]string{
+		"gradle.pomMetadata.enabled": "invalid",
+	})
+	assert.ErrorContains(t, err, "invalid boolean value")
 }
 
 func TestResolveTemplatePropertiesUnknownKey(t *testing.T) {

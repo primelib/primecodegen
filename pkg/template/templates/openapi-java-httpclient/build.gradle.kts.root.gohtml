@@ -5,8 +5,10 @@ plugins {
     alias(libs.plugins.configuration)
 }
 
+val configurationPluginId = libs.plugins.configuration.get().pluginId
+
 subprojects {
-    apply(plugin = libs.plugins.configuration.get().pluginId)
+    apply(plugin = configurationPluginId)
 
     {{ index .Common.GeneratorProperties "gradle.projectConfiguration.blockName" }} {
         type.set(me.philippheuer.projectcfg.domain.ProjectType.LIBRARY)
@@ -22,6 +24,7 @@ subprojects {
 {{- end }}
         javadocLint.set(listOf("none"))
 
+{{- if eq (index .Common.GeneratorProperties "gradle.pomMetadata.enabled") "true" }}
         pom = { pom ->
 {{- if .Metadata.RepositoryUrl }}
             pom.url.set("https://{{ .Metadata.RepositoryUrl }}")
@@ -56,5 +59,6 @@ subprojects {
             }
 {{- end }}
         }
+{{- end }}
     }
 }
