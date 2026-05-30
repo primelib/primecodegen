@@ -367,28 +367,71 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
         }
     }
 
-    protected <T> T execute(Request request, TypeReference<T> typeReference) {
+    protected ResponseInfo executeRaw(Request request) {
         try (Response response = httpClient.newCall(request).execute()) {
-            int statusCode = response.code();
-            String body = response.body().string();
-
-            if (statusCode < 200 || statusCode >= 300) {
-                throw new ApiResponseException(statusCode, body);
+            String body = "";
+            if (response.body() != null) {
+                body = response.body().string();
             }
-
-            if (typeReference == null) {
-                return null;
-            }
-
-            if (body.isBlank()) {
-                return null;
-            }
-
-            return jsonMapper.readValue(body, typeReference);
+            return new ResponseInfo(response.code(), body, response.headers().toMultimap());
         } catch (IOException e) {
             throw new ApiClientException("HTTP request failed", e);
         }
     }
+
+    protected <T> T deserializeBody(String body, TypeReference<T> typeReference) {
+        if (typeReference == null) {
+            return null;
+        }
+        if (body == null || body.isBlank()) {
+            return null;
+        }
+
+        try {
+            return jsonMapper.readValue(body, typeReference);
+        } catch (JacksonException e) {
+            throw new ApiClientException("Failed to deserialize response body", e);
+        }
+    }
+
+    protected boolean isErrorStatus(int statusCode) {
+        return statusCode >= 400;
+    }
+
+    protected boolean matchesStatusCode(int statusCode, String codeKey) {
+        if (codeKey == null || codeKey.isBlank() || "default".equalsIgnoreCase(codeKey)) {
+            return true;
+        }
+
+        if (codeKey.length() == 3
+            && Character.isDigit(codeKey.charAt(0))
+            && Character.isDigit(codeKey.charAt(1))
+            && Character.isDigit(codeKey.charAt(2))) {
+            return statusCode == Integer.parseInt(codeKey);
+        }
+
+        if (codeKey.length() == 3
+            && Character.isDigit(codeKey.charAt(0))
+            && (Character.isDigit(codeKey.charAt(1)) || codeKey.charAt(1) == 'X' || codeKey.charAt(1) == 'x')
+            && (Character.isDigit(codeKey.charAt(2)) || codeKey.charAt(2) == 'X' || codeKey.charAt(2) == 'x')) {
+            String status = String.valueOf(statusCode);
+            if (status.length() != 3) {
+                return false;
+            }
+
+            for (int i = 0; i < 3; i++) {
+                char c = codeKey.charAt(i);
+                if (c != 'X' && c != 'x' && c != status.charAt(i)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    protected record ResponseInfo(int statusCode, String body, Map<String, List<String>> headers) {}
 
     protected String urlEncode(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");

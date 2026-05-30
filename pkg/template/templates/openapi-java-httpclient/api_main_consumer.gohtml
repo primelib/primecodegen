@@ -9,6 +9,10 @@ import {{ $.Common.Packages.Root }}.{{ .Metadata.Name }}FactorySpec;
 import {{ $.Common.Packages.Operations }}.{{.Name}}OperationSpec;
 {{- end }}
 
+{{- range .Common.Operations }}
+import {{ $.Common.Packages.Responses }}.{{.Name}}Response;
+{{- end }}
+
 {{- range .Common.Models }}
 import {{ $.Common.Packages.Models }}.{{.Name}};
 {{- end }}
@@ -82,7 +86,7 @@ public class {{ .Metadata.Name }}Api extends Abstract{{ .Metadata.Name }}ApiClie
     {{- if $op.Deprecated }}
     @Deprecated
     {{- end }}
-    public {{ $op.ReturnType.QualifiedType }} {{ $op.Name | toFunctionName }}(Consumer<{{$op.Name}}OperationSpec> spec) {
+    public {{ $op.Name }}Response {{ $op.Name | toFunctionName }}(Consumer<{{$op.Name}}OperationSpec> spec) {
         {{$op.Name}}OperationSpec r = new {{$op.Name}}OperationSpec(spec);
 
         StringBuilder pathBuilder = new StringBuilder();
@@ -138,10 +142,39 @@ public class {{ .Metadata.Name }}Api extends Abstract{{ .Metadata.Name }}ApiClie
         requestBuilder.method("{{ $op.Method | upperCase }}", bodyForMethodWithoutPayload("{{ $op.Method | upperCase }}"));
         {{- end }}
 
-        {{- if eq $op.ReturnType.QualifiedType "void" }}
-        execute(requestBuilder.build(), null);
+        ResponseInfo info = executeRaw(requestBuilder.build());
+
+        {{- range $code, $type := $op.ReturnTypeByCode }}
+        {{- if ne $code "default" }}
+        if (matchesStatusCode(info.statusCode(), "{{ $code }}")) {
+            if (isErrorStatus(info.statusCode()) && r.failOnError()) {
+                throw new ApiResponseException(info.statusCode(), info.body());
+            }
+            return new {{ $op.Name }}Response.{{ statusCodeToClassName $code }}(
+                deserializeBody(info.body(), new TypeReference<{{ $type.QualifiedType }}>() {}),
+                info.statusCode(),
+                info.body(),
+                info.headers()
+            );
+        }
+        {{- end }}
+        {{- end }}
+
+        {{- if index $op.ReturnTypeByCode "default" }}
+        if (isErrorStatus(info.statusCode()) && r.failOnError()) {
+            throw new ApiResponseException(info.statusCode(), info.body());
+        }
+        return new {{ $op.Name }}Response.{{ statusCodeToClassName "default" }}(
+            deserializeBody(info.body(), new TypeReference<{{ (index $op.ReturnTypeByCode "default").QualifiedType }}>() {}),
+            info.statusCode(),
+            info.body(),
+            info.headers()
+        );
         {{- else }}
-        return execute(requestBuilder.build(), new TypeReference<{{ $op.ReturnType.QualifiedType }}>() {});
+        if (isErrorStatus(info.statusCode()) && r.failOnError()) {
+            throw new ApiResponseException(info.statusCode(), info.body());
+        }
+        return new {{ $op.Name }}Response.Unknown(info.statusCode(), info.body(), info.headers());
         {{- end }}
     }
 
