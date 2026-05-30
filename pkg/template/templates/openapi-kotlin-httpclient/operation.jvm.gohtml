@@ -78,6 +78,15 @@ class {{ .Operation.Name }}OperationSpec {
     var extraQueryParams: MutableMap<String, String> = mutableMapOf()
         private set
 
+    /** Throws an exception if the response has a status code of 4xx or 5xx */
+    var failOnError: Boolean = true
+        private set
+
+    /** Sets failOnError behavior for this request */
+    fun failOnError(value: Boolean): {{ .Operation.Name }}OperationSpec = apply {
+        this.failOnError = value
+    }
+
     /** Sets the extra query parameters map (overwrites existing) */
     fun extraQueryParams(params: Map<String, String>): {{ .Operation.Name }}OperationSpec = apply {
         this.extraQueryParams = params.toMutableMap()
