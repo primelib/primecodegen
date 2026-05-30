@@ -25,6 +25,9 @@ import org.jetbrains.annotations.ApiStatus
 {{- if .Model.Deprecated }}
 @Deprecated("{{ .Model.DeprecatedReason | escapeJavadoc }}")
 {{- end }}
+{{- if .Model.IsTypeAlias }}
+typealias {{ .Model.Name }} = {{ .Model.Parent.Declaration }}
+{{- else }}
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class {{ .Model.Name }}(
@@ -35,8 +38,9 @@ data class {{ .Model.Name }}(
      */
     {{- end }}
     @JsonProperty("{{ $p.FieldName }}")
-    val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if not $p.Nullable }}? = null{{ end }},
+    val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if $p.Nullable }}? = null{{ end }},
     {{- end }}
 ){{ if .Model.Parent.Declaration }} : {{ .Model.Parent.Declaration }}(){{ end }} {
 
 }
+{{- end }}

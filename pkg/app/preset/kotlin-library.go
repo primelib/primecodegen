@@ -32,7 +32,7 @@ func (n *KotlinLibraryGenerator) Generate(opts generator.GenerateOptions) error 
 		APISpec:    n.APISpec,
 		Args:       []string{},
 		Config: generator.PrimeCodeGenGeneratorConfig{
-			TemplateLanguage: "kotlin",
+			TemplateLanguage: "kotlin-multiplatform",
 			TemplateType:     "httpclient",
 			Patches:          []string{},
 			GroupId:          groupId,

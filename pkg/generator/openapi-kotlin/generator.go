@@ -236,8 +236,8 @@ func (g *KotlinGenerator) ToCodeType(schema *base.Schema, schemaType openapigene
 			// Kotlin multiplatform binary → ByteArray
 			return openapigenerator.CodeType{Name: "ByteArray"}, nil
 		case "date", "date-time":
-			// Kotlinx.datetime.Instant (multiplatform)
-			return openapigenerator.CodeType{Name: "Instant", ImportPath: "kotlinx.datetime"}, nil
+			// kotlin.time.Instant (multiplatform stdlib)
+			return openapigenerator.CodeType{Name: "Instant", ImportPath: "kotlin.time"}, nil
 		case "uuid":
 			// Kotlin UUID — may need expect/actual; using String by default for KMP safety
 			return openapigenerator.CodeType{Name: "String"}, nil
@@ -276,6 +276,9 @@ func (g *KotlinGenerator) ToCodeType(schema *base.Schema, schemaType openapigene
 		}
 
 	case slices.Contains(schema.Type, "array"):
+		if schema.Items == nil || schema.Items.A == nil {
+			return openapigenerator.DefaultCodeType, fmt.Errorf("array schema missing items definition")
+		}
 		arrayType, err := g.ToCodeType(schema.Items.A.Schema(), schemaType, true)
 		if err != nil {
 			return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled array type. schema: %s, format: %s", schema.Type, schema.Format), err)
