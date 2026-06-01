@@ -85,6 +85,7 @@ type PresetConf struct {
 	Python        PythonLanguageOptions     `yaml:"python"`
 	CSharp        CSharpLanguageOptions     `yaml:"csharp"`
 	Typescript    TypescriptLanguageOptions `yaml:"typescript"`
+	KrakenD       KrakenDOptions            `yaml:"krakend"`
 	PrintingPress PrintingPressOptions      `yaml:"printingpress"`
 	LLMs          LLMsOptions               `yaml:"llms"`
 }
@@ -109,6 +110,9 @@ func (c PresetConf) EnabledCount() int {
 		enabledCount++
 	}
 	if c.Typescript.Enabled {
+		enabledCount++
+	}
+	if c.KrakenD.Enabled {
 		enabledCount++
 	}
 
@@ -178,6 +182,11 @@ type TypescriptLanguageOptions struct {
 
 	NpmOrg  string `yaml:"npmOrg"`
 	NpmName string `yaml:"npmName"`
+}
+
+type KrakenDOptions struct {
+	Enabled     bool     `yaml:"enabled"`
+	IgnoreFiles []string `yaml:"ignoreFiles"`
 }
 
 type PrintingPressOptions struct {

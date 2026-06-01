@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/primelib/primecodegen/pkg/generator/krakend"
 	openapi_default "github.com/primelib/primecodegen/pkg/generator/openapi-default"
 	"github.com/primelib/primecodegen/pkg/patch/sharedpatch"
 
@@ -26,6 +27,7 @@ var generators = []openapigenerator.CodeGenerator{
 	openapi_java.NewGenerator(),
 	openapi_kotlin.NewGenerator(),
 	openapi_kotlin_multiplatform.NewGenerator(),
+	krakend.NewGenerator(),
 }
 
 func GenerateCmd() *cobra.Command {

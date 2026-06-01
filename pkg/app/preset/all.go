@@ -60,6 +60,13 @@ func Generators(specFile string, conf appconf.Configuration) []generator.Generat
 		Provider:    conf.Provider,
 		Opts:        conf.Presets.Typescript,
 	})
+	generators = addGeneratorIfEnabled(generators, conf.Presets.KrakenD.Enabled, &KrakenDGenerator{
+		APISpec:     specFile,
+		Repository:  conf.Repository,
+		Maintainers: conf.Maintainers,
+		Provider:    conf.Provider,
+		Opts:        conf.Presets.KrakenD,
+	})
 
 	generators = addGeneratorIfEnabled(generators, conf.Presets.PrintingPress.Enabled, &PrintingPressGenerator{
 		APISpec:     specFile,
