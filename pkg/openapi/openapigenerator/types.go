@@ -167,6 +167,7 @@ type Operation struct {
 	Tags                     []string                            `yaml:"tags,omitempty"`
 	ReturnType               CodeType                            `yaml:"returnType,omitempty"`
 	ReturnTypeByCode         map[string]*CodeType                `yaml:"returnTypeByCode,omitempty"`
+	ReturnTypeSuccessCode    string                              `yaml:"returnTypeSuccessCode,omitempty"` // ReturnTypeSuccessCode is the status code that indicates a successful response (e.g. "200", "204", etc.)
 	Deprecated               bool                                `yaml:"deprecated,omitempty"`
 	DeprecatedReason         string                              `yaml:"deprecatedReason,omitempty"`
 	Parameters               []Parameter                         `yaml:"parameters,omitempty"`          // Parameters holds all parameters, including static ones that can not be overridden

@@ -8,12 +8,10 @@ import {{ $.Common.Packages.Responses }}.{{ .Operation.Name }}Response;
 public class {{ .Operation.Name }}Example {
     public void execute() {
         // Maven coordinates: {{ .Metadata.ArtifactGroupId }}:{{ .Metadata.ArtifactId }}:<version>
-        var factory = {{ .Metadata.Name }}Factory.create();
+        var client = {{ .Metadata.Name }}Factory.create();
 
         try {
-            var response = factory
-                .{{ .Operation.Tag | toPropertyName }}Api()
-                .{{ .Operation.Name | toFunctionName }}(new {{ .Operation.Name }}OperationSpec(spec -> {
+            var response = client.{{ .Operation.Tag | toPropertyName }}Api().{{ .Operation.Name | toFunctionName }}(new {{ .Operation.Name }}OperationSpec(spec -> {
 {{- if .Operation.MutableParameters }}
                     // operation parameters (all available mutable fields)
 {{- range $param := .Operation.MutableParameters }}
@@ -30,19 +28,22 @@ public class {{ .Operation.Name }}Example {
                     // spec.overrideAuthMethod(...);
                 }));
 
-            // With failOnError(false), use sealed interface + records for exhaustive response handling.
-            // With failOnError(true) (default), 4xx/5xx usually throw before this switch.
+            // Direct data access (failOnError = true)
+            var data = response.data();
+
+            /*
+            // Pattern matching (failOnError = false)
             switch (response) {
-{{- range $code, $type := .Operation.ReturnTypeByCode }}
+            {{- range $code, $type := .Operation.ReturnTypeByCode }}
                 case {{ $.Operation.Name }}Response.{{ statusCodeToClassName $code }} r -> {
-                    // handle {{ $code }}
-                    // r.data() contains typed payload
+                    // handle {{ $code }}, r.data() contains typed payload
                 }
-{{- end }}
+            {{- end }}
                 case {{ .Operation.Name }}Response.Unknown r -> {
-                    // handle status codes not modeled in the OpenAPI document
+                    // handle unexpected codes
                 }
             }
+            */
         } catch (ApiResponseException ex) {
             // Triggered when failOnError=true and the API returns an error status.
             // ex.getStatusCode(), ex.getResponseBody()

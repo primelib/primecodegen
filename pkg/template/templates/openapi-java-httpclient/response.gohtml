@@ -55,4 +55,53 @@ public sealed interface {{ .Operation.Name }}Response {
         @Nullable String rawBody,
         @NonNull Map<String, List<String>> headers
     ) implements {{ .Operation.Name }}Response {}
+
+{{- range $code, $type := .Operation.ReturnTypeByCode }}
+    {{- $className := statusCodeToClassName $code }}
+
+    /**
+    * Tries to cast the response to {@link {{ $className }}}.
+    * @return The casted {@link {{ $className }}} response.
+    * @throws IllegalStateException If the actual response status code does not match.
+    */
+    default {{ $className }} as{{ $className }}() {
+        if (this instanceof {{ $className }} target) {
+            return target;
+        }
+        throw new IllegalStateException("Expected response type '{{ $className }}' (code {{ $code }}), but got '" + this.getClass().getSimpleName() + "' (code " + statusCode() + "). Body: " + rawBody());
+    }
+{{- end }}
+
+    /**
+     * Tries to cast the response to {@link Unknown}.
+     * @return The casted {@link Unknown} response.
+     * @throws IllegalStateException If the actual response status code does not match.
+     */
+    default Unknown asUnknown() {
+        if (this instanceof Unknown target) {
+            return target;
+        }
+        throw new IllegalStateException("Expected response type 'Unknown', but got '" + this.getClass().getSimpleName() + "' (code " + statusCode() + "). Body: " + rawBody());
+    }
+
+{{- $successCode := .Operation.ReturnTypeSuccessCode }}
+{{- range $code, $type := .Operation.ReturnTypeByCode }}
+{{- if eq $code $successCode }}
+{{- $successClassName := statusCodeToClassName $code }}
+    /**
+     * Extracts the payload data directly if the response represents a successful status code ({{ $code }}).
+     * <p>
+     * If the response is not a success status code, an {@link IllegalStateException} is thrown.
+     *
+     * @return The response data payload of type {@link {{ $type.QualifiedType }}}.
+     * @throws IllegalStateException If the response status code is not {{ $code }}.
+     */
+    default {{ $type.QualifiedType }} data() {
+        if (this instanceof {{ $successClassName }} target) {
+            return target.data();
+        }
+        throw new IllegalStateException("Expected a successful response type '{{ $successClassName }}' (code {{ $code }}), but got '" + this.getClass().getSimpleName() + "' (code " + statusCode() + "). Body: " + rawBody());
+    }
+{{- end }}
+{{- end }}
 }

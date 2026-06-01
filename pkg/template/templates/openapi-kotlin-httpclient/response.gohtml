@@ -48,4 +48,47 @@ sealed interface {{ .Operation.Name }}Response {
         override val rawBody: String? = null,
         override val headers: Map<String, List<String>> = emptyMap()
     ) : {{ .Operation.Name }}Response
+
+{{- range $code, $type := .Operation.ReturnTypeByCode }}
+    {{- $className := statusCodeToClassName $code }}
+    /**
+    * Tries to cast the response to [{{ $.Operation.Name }}Response.{{ $className }}].
+    * @throws IllegalStateException If the actual response status code does not match.
+    */
+    fun {{ $.Operation.Name }}Response.as{{ $className }}(): {{ $.Operation.Name }}Response.{{ $className }} {
+        if (this is {{ $.Operation.Name }}Response.{{ $className }}) return this
+        throw IllegalStateException("Expected response type '{{ $className }}' (code $status), but got '${this::class.simpleName}' instead. Body: $rawBody")
+    }
+{{- end }}
+
+    /**
+     * Tries to cast the response to [Unknown].
+     * @throws IllegalStateException If the actual response status code does not match.
+     */
+    fun asUnknown(): Unknown {
+        if (this is Unknown) return this
+        throw IllegalStateException("Expected response type 'Unknown', but got '${this::class.simpleName}' (code ${this.status}) instead. Body: ${this.rawBody}")
+    }
+
+{{- $successCode := .Operation.ReturnTypeSuccessCode }}
+{{- range $code, $type := .Operation.ReturnTypeByCode }}
+{{- if eq $code $successCode }}
+{{- $successClassName := statusCodeToClassName $code }}
+    /**
+     * Extracts the payload data directly if the response represents a successful status code ({{ $code }}).
+     *
+     * @throws IllegalStateException If the response status code is not {{ $code }}.
+     */
+    fun data(): {{ if eq $type.QualifiedType "Unit" }}Unit{{ else }}{{ $type.QualifiedType }}{{ end }} {
+        if (this is {{ $successClassName }}) {
+            {{- if eq $type.QualifiedType "Unit" }}
+            return Unit
+            {{- else }}
+            return this.data
+            {{- end }}
+        }
+        throw IllegalStateException("Expected a successful response type '{{ $successClassName }}' (code {{ $code }}), but got '${this::class.simpleName}' (code $status). Body: $rawBody")
+    }
+{{- end }}
+{{- end }}
 }

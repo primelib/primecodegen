@@ -337,6 +337,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					processedResponseType := gen.PostProcessType(responseType)
 					operation.ReturnType = processedResponseType
 					operation.ReturnTypeByCode[resp.Key] = &processedResponseType
+					operation.ReturnTypeSuccessCode = resp.Key
 
 					// accept header as static parameter
 					mediaType := respContent.Key() // e.g. "application/json"
