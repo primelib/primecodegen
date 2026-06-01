@@ -49,7 +49,14 @@ func (n *PrintingPressGenerator) Generate(opts GenerateOptions) error {
 	}
 
 	// Generate docs using the CLI
-	return n.generateDocs(opts)
+	err := n.generateDocs(opts)
+	if err != nil {
+		return err
+	}
+
+	// TODO: scan generated files and replace the local file openapi.yaml reference with a relative link to ths spec in the root dir (llms doc files)
+
+	return nil
 }
 
 func (n *PrintingPressGenerator) generateDocs(opts GenerateOptions) error {
