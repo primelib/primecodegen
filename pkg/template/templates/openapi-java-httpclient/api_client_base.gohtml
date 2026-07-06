@@ -94,7 +94,17 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
             queryParams.remove(key);
             return;
         }
-        List<String> values = new ArrayList<>();
+
+        if (value instanceof List<?> listValues) {
+            List<String> values = new ArrayList<>(listValues.size());
+            for (Object v : listValues) {
+                values.add(String.valueOf(v));
+            }
+            queryParams.put(key, values);
+            return;
+        }
+
+        List<String> values = new ArrayList<>(1);
         values.add(String.valueOf(value));
         queryParams.put(key, values);
     }
