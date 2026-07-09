@@ -42,7 +42,7 @@ public sealed interface {{ .Operation.Name }}Response {
 {{ $op := .Operation }}
 {{- range $code, $type := .Operation.ReturnTypeByCode }}
     record {{ statusCodeToClassName $code }}(
-        {{ $type.QualifiedType }} data,
+        {{ $type.QualifiedType }} body,
         int statusCode,
         @Nullable String rawBody,
         @NonNull Map<String, List<String>> headers
@@ -98,7 +98,7 @@ public sealed interface {{ .Operation.Name }}Response {
      */
     default {{ $type.QualifiedType }} data() {
         if (this instanceof {{ $successClassName }} target) {
-            return target.data();
+            return target.body();
         }
         throw new IllegalStateException("Expected a successful response type '{{ $successClassName }}' (code {{ $code }}), but got '" + this.getClass().getSimpleName() + "' (code " + statusCode() + "). Body: " + rawBody());
     }
