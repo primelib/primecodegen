@@ -318,58 +318,60 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 
 			// response type
 			operation.ReturnTypeByCode = make(map[string]*CodeType)
-			for resp := op.Value.Responses.Codes.Oldest(); resp != nil; resp = resp.Next() {
-				if resp.Value.Content == nil {
-					continue
-				}
-				if resp.Value.Content.First() == nil {
-					continue
-				}
-
-				if resp.Key == "200" || resp.Key == "201" {
-					respContent := resp.Value.Content.First()
-
-					// return type
-					responseType, err := gen.ToCodeType(respContent.Value().Schema.Schema(), CodeTypeSchemaResponse, false)
-					if err != nil {
-						return operations, fmt.Errorf("error converting type of [%s:%s:responseType:%s]: %w", path.Key, op.Key, resp.Key, err)
+			if op.Value.Responses != nil && op.Value.Responses.Codes != nil {
+				for resp := op.Value.Responses.Codes.Oldest(); resp != nil; resp = resp.Next() {
+					if resp.Value.Content == nil {
+						continue
 					}
-					processedResponseType := gen.PostProcessType(responseType)
-					operation.ReturnType = processedResponseType
-					operation.ReturnTypeByCode[resp.Key] = &processedResponseType
-					operation.ReturnTypeSuccessCode = resp.Key
+					if resp.Value.Content.First() == nil {
+						continue
+					}
 
-					// accept header as static parameter
-					mediaType := respContent.Key() // e.g. "application/json"
-					if mediaType != "" {
-						acceptType, err := gen.ToCodeType(&base.Schema{Type: []string{"string"}, Format: ""}, CodeTypeSchemaParameter, true)
+					if resp.Key == "200" || resp.Key == "201" {
+						respContent := resp.Value.Content.First()
+
+						// return type
+						responseType, err := gen.ToCodeType(respContent.Value().Schema.Schema(), CodeTypeSchemaResponse, false)
 						if err != nil {
-							return operations, fmt.Errorf("error converting type of [%s:%s:acceptHeader]: %w", path.Key, op.Key, err)
+							return operations, fmt.Errorf("error converting type of [%s:%s:responseType:%s]: %w", path.Key, op.Key, resp.Key, err)
 						}
+						processedResponseType := gen.PostProcessType(responseType)
+						operation.ReturnType = processedResponseType
+						operation.ReturnTypeByCode[resp.Key] = &processedResponseType
+						operation.ReturnTypeSuccessCode = resp.Key
 
-						headerParam := Parameter{
-							Name:        gen.ToParameterName("Accept"),
-							FieldName:   "Accept",
-							In:          "header",
-							Type:        acceptType,
-							Required:    true,
-							StaticValue: mediaType,
-						}
+						// accept header as static parameter
+						mediaType := respContent.Key() // e.g. "application/json"
+						if mediaType != "" {
+							acceptType, err := gen.ToCodeType(&base.Schema{Type: []string{"string"}, Format: ""}, CodeTypeSchemaParameter, true)
+							if err != nil {
+								return operations, fmt.Errorf("error converting type of [%s:%s:acceptHeader]: %w", path.Key, op.Key, err)
+							}
 
-						if !slices.Contains(addedParameters, gen.ToParameterName(headerParam.Name)) {
-							operation.AddParameter(headerParam)
+							headerParam := Parameter{
+								Name:        gen.ToParameterName("Accept"),
+								FieldName:   "Accept",
+								In:          "header",
+								Type:        acceptType,
+								Required:    true,
+								StaticValue: mediaType,
+							}
+
+							if !slices.Contains(addedParameters, gen.ToParameterName(headerParam.Name)) {
+								operation.AddParameter(headerParam)
+							}
 						}
+					} else {
+						respContent := resp.Value.Content.First()
+
+						// return type
+						responseType, err := gen.ToCodeType(respContent.Value().Schema.Schema(), CodeTypeSchemaResponse, false)
+						if err != nil {
+							return operations, fmt.Errorf("error converting type of [%s:%s:responseType:%s]: %w", path.Key, op.Key, resp.Key, err)
+						}
+						processedResponseType := gen.PostProcessType(responseType)
+						operation.ReturnTypeByCode[resp.Key] = &processedResponseType
 					}
-				} else {
-					respContent := resp.Value.Content.First()
-
-					// return type
-					responseType, err := gen.ToCodeType(respContent.Value().Schema.Schema(), CodeTypeSchemaResponse, false)
-					if err != nil {
-						return operations, fmt.Errorf("error converting type of [%s:%s:responseType:%s]: %w", path.Key, op.Key, resp.Key, err)
-					}
-					processedResponseType := gen.PostProcessType(responseType)
-					operation.ReturnTypeByCode[resp.Key] = &processedResponseType
 				}
 			}
 

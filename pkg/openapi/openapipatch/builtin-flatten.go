@@ -110,7 +110,7 @@ func flattenInlineRequestBodies(doc *libopenapi.DocumentModel[v3.Document]) erro
 func flattenInlineResponses(doc *libopenapi.DocumentModel[v3.Document]) error {
 	for path := doc.Model.Paths.PathItems.Oldest(); path != nil; path = path.Next() {
 		for op := path.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
-			if op.Value.Responses.Codes == nil {
+			if op.Value.Responses == nil || op.Value.Responses.Codes == nil {
 				continue
 			}
 			if op.Value.OperationId == "" {
@@ -354,10 +354,14 @@ func flattenCallbacks(doc *libopenapi.DocumentModel[v3.Document]) error {
 				continue
 			}
 
+			if op.Value.RequestBody == nil {
+				continue
+			}
+
 			for callback := op.Value.Callbacks.Oldest(); callback != nil; callback = callback.Next() {
 				for ce := callback.Value.Expression.Oldest(); ce != nil; ce = ce.Next() {
 					for cop := ce.Value.GetOperations().Oldest(); cop != nil; cop = cop.Next() {
-						if cop.Value.Responses.Codes == nil {
+						if cop.Value.Responses == nil || cop.Value.Responses.Codes == nil {
 							continue
 						}
 
@@ -382,7 +386,11 @@ func flattenWebhooks(doc *libopenapi.DocumentModel[v3.Document]) error {
 
 	for webhook := doc.Model.Webhooks.Oldest(); webhook != nil; webhook = webhook.Next() {
 		for op := webhook.Value.GetOperations().Oldest(); op != nil; op = op.Next() {
-			if op.Value.Responses.Codes == nil {
+			if op.Value.Responses == nil || op.Value.Responses.Codes == nil {
+				continue
+			}
+
+			if op.Value.RequestBody == nil {
 				continue
 			}
 
