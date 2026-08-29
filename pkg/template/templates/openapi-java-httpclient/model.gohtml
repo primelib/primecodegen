@@ -200,11 +200,15 @@ public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Pa
         {{ .Model.Name }} that = ({{ .Model.Name }}) o;
         return
             {{- if .Model.Parent.Declaration }}
-            super.equals(o) &&
+            super.equals(o){{ if .Model.Properties }} &&
+            {{- end }}
             {{- end }}
             {{- range $i, $p := .Model.Properties }}
             Objects.equals(this.{{$p.Name}}, that.{{$p.Name}}){{ if notLast $.Model.Properties $i }} &&
             {{- end }}
+            {{- end }}
+            {{- if not (or .Model.Parent.Declaration .Model.Properties) }}
+            true
             {{- end }};
     }
 
@@ -212,7 +216,7 @@ public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Pa
     public int hashCode() {
         return Objects.hash(
             {{- if .Model.Parent.Declaration }}
-            super.hashCode(),
+            super.hashCode(){{ if .Model.Properties }},{{ end }}
             {{- end }}
             {{- range $i, $p := .Model.Properties }}
             this.{{$p.Name}}{{ if notLast $.Model.Properties $i }}, {{ end }}
@@ -222,13 +226,15 @@ public class {{.Model.Name}}{{if .Model.Parent.Declaration}} extends {{.Model.Pa
 
     @Override
     public String toString() {
-        return "{{ .Model.Name }}{" +
+        return "{{ .Model.Name }}{"
             {{- if .Model.Parent.Declaration }}
-            "super=" + super.toString() + ", " +
+            + "super=" + super.toString(){{ if .Model.Properties }} + ", "
+            {{- end }}
             {{- end }}
             {{- range $i, $p := .Model.Properties }}
-            "{{ $p.Name }}=" + {{if $p.Type.IsArray}}Arrays.deepToString(this.{{$p.Name}}){{else}}{{$p.Name}}{{end}}{{ if notLast $.Model.Properties $i }} + ", " + {{ end }}
-            {{- end }} +
-            "}";
+            + "{{ $p.Name }}=" + {{if $p.Type.IsArray}}Arrays.deepToString(this.{{$p.Name}}){{else}}{{$p.Name}}{{end}}{{ if notLast $.Model.Properties $i }} + ", "
+            {{- end }}
+            {{- end }}
+            + "}";
     }
 }
