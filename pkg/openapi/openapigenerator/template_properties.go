@@ -27,7 +27,7 @@ var templatePropertyRegistry = map[string][]TemplatePropertyDef{
 		{
 			Key:          "gradle.configurationPlugin.version",
 			Description:  "Gradle configuration plugin version in libs.versions.toml",
-			DefaultValue: "0.20.1",
+			DefaultValue: "0.20.5",
 			EnvVar:       "PRIMECODEGEN_TPL_OPENAPI_JAVA_HTTPCLIENT_GRADLE_CONFIGURATIONPLUGIN_VERSION",
 		},
 		{
@@ -60,7 +60,7 @@ var templatePropertyRegistry = map[string][]TemplatePropertyDef{
 		{
 			Key:          "gradle.configurationPlugin.version",
 			Description:  "Gradle configuration plugin version in libs.versions.toml",
-			DefaultValue: "0.20.1",
+			DefaultValue: "0.20.5",
 			EnvVar:       "PRIMECODEGEN_TPL_OPENAPI_KOTLIN_HTTPCLIENT_GRADLE_CONFIGURATIONPLUGIN_VERSION",
 		},
 		{
