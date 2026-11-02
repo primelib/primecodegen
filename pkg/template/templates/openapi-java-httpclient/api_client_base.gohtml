@@ -10,19 +10,22 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.dataformat.xml.XmlMapper;
-import tools.jackson.dataformat.yaml.YamlMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import okio.BufferedSink;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -36,6 +39,7 @@ import java.util.stream.Collectors;
 abstract class Abstract{{ .Metadata.Name }}ApiClient {
     private static final MediaType DEFAULT_JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
     private static final MediaType DEFAULT_XML_MEDIA_TYPE = MediaType.get("application/xml; charset=utf-8");
+    private static final MediaType DEFAULT_YAML_MEDIA_TYPE = MediaType.get("application/yaml; charset=utf-8");
     private static final MediaType DEFAULT_FORM_MEDIA_TYPE = MediaType.get("application/x-www-form-urlencoded; charset=utf-8");
     private static final MediaType DEFAULT_TEXT_MEDIA_TYPE = MediaType.get("text/plain; charset=utf-8");
     private static final MediaType DEFAULT_BINARY_MEDIA_TYPE = MediaType.get("application/octet-stream");
@@ -54,12 +58,14 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
     protected final OkHttpClient httpClient;
     protected final JsonMapper jsonMapper;
     protected final XmlMapper xmlMapper;
+    protected final YAMLMapper yamlMapper;
 
-    protected Abstract{{ .Metadata.Name }}ApiClient({{ .Metadata.Name }}FactorySpec<?> spec, OkHttpClient httpClient, JsonMapper jsonMapper, XmlMapper xmlMapper) {
+    protected Abstract{{ .Metadata.Name }}ApiClient({{ .Metadata.Name }}FactorySpec<?> spec, OkHttpClient httpClient, JsonMapper jsonMapper, XmlMapper xmlMapper, YAMLMapper yamlMapper) {
         this.spec = spec;
         this.httpClient = httpClient;
         this.jsonMapper = jsonMapper;
         this.xmlMapper = xmlMapper;
+        this.yamlMapper = yamlMapper;
     }
 
     protected Map<String, List<String>> newQueryParams() {
@@ -285,6 +291,9 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
         if (isXmlContentType(normalizedContentType)) {
             return RequestBody.create(serializeXmlBody(value), mediaTypeOrDefault(contentType, DEFAULT_XML_MEDIA_TYPE));
         }
+        if (isYamlContentType(normalizedContentType)) {
+            return RequestBody.create(serializeYamlBody(value), mediaTypeOrDefault(contentType, DEFAULT_YAML_MEDIA_TYPE));
+        }
         if (normalizedContentType.contains("x-www-form-urlencoded")) {
             return RequestBody.create(serializeFormBody(value), mediaTypeOrDefault(contentType, DEFAULT_FORM_MEDIA_TYPE));
         }
@@ -305,6 +314,14 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
 
     private boolean isJsonContentType(String contentType) {
         return contentType.equals("application/json") || contentType.contains("+json");
+    }
+
+    private boolean isYamlContentType(String contentType) {
+        return contentType.equals("application/yaml")
+        || contentType.equals("application/x-yaml")
+        || contentType.equals("text/yaml")
+        || contentType.equals("text/x-yaml")
+        || contentType.contains("+yaml");
     }
 
     private boolean isXmlContentType(String contentType) {
@@ -369,6 +386,14 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
         );
     }
 
+    private String serializeYamlBody(Object value) {
+        try {
+            return yamlMapper.writeValueAsString(value);
+        } catch (JacksonException e) {
+            throw new ApiClientException("Failed to serialize request body", e);
+        }
+    }
+
     private String serializeXmlBody(Object value) {
         try {
             return xmlMapper.writeValueAsString(value);
@@ -379,25 +404,48 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
 
     protected ResponseInfo executeRaw(Request request) {
         try (Response response = httpClient.newCall(request).execute()) {
-            String body = "";
-            if (response.body() != null) {
-                body = response.body().string();
-            }
-            return new ResponseInfo(response.code(), body, response.headers().toMultimap());
+            ResponseBody responseBody = response.body();
+            byte[] bodyBytes = responseBody.bytes();
+            MediaType contentType = responseBody.contentType();
+            return new ResponseInfo(response.code(), bodyBytes, contentType, response.headers().toMultimap());
         } catch (IOException e) {
             throw new ApiClientException("HTTP request failed", e);
         }
     }
 
-    protected <T> T deserializeBody(String body, TypeReference<T> typeReference) {
+    @SuppressWarnings("unchecked")
+    protected <T> T deserializeBody(ResponseInfo info, TypeReference<T> typeReference) {
         if (typeReference == null) {
             return null;
         }
-        if (body == null || body.isBlank()) {
+
+        Type targetType = typeReference.getType();
+        if (targetType == byte[].class) {
+            return (T) info.bodyBytes();
+        }
+        if (info.bodyBytes().length == 0) {
+            return null;
+        }
+
+        String normalizedContentType = info.contentType() == null
+            ? ""
+            : (info.contentType().type() + "/" + info.contentType().subtype()).toLowerCase(Locale.ROOT);
+        if (targetType == String.class && !isJsonContentType(normalizedContentType)) {
+            return (T) info.body();
+        }
+
+        String body = info.body();
+        if (body.isBlank()) {
             return null;
         }
 
         try {
+            if (isXmlContentType(normalizedContentType)) {
+                return xmlMapper.readValue(body, typeReference);
+            }
+            if (isYamlContentType(normalizedContentType)) {
+                return yamlMapper.readValue(body, typeReference);
+            }
             return jsonMapper.readValue(body, typeReference);
         } catch (JacksonException e) {
             throw new ApiClientException("Failed to deserialize response body", e);
@@ -441,34 +489,17 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
         return false;
     }
 
-    protected record ResponseInfo(int statusCode, String body, Map<String, List<String>> headers) {}
+    protected record ResponseInfo(int statusCode, byte[] bodyBytes, MediaType contentType, Map<String, List<String>> headers) {
+        /**
+         * @return the response body decoded using the charset of the content type (defaults to UTF-8)
+         */
+        public String body() {
+            Charset charset = contentType == null ? StandardCharsets.UTF_8 : contentType.charset(StandardCharsets.UTF_8);
+            return new String(bodyBytes, charset);
+        }
+    }
 
     protected String urlEncode(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
-    }
-
-    public static class ApiClientException extends RuntimeException {
-        public ApiClientException(String message, Throwable cause) {
-            super(message, cause);
-        }
-    }
-
-    public static class ApiResponseException extends RuntimeException {
-        private final int statusCode;
-        private final String responseBody;
-
-        public ApiResponseException(int statusCode, String responseBody) {
-            super("Request failed with status " + statusCode);
-            this.statusCode = statusCode;
-            this.responseBody = responseBody;
-        }
-
-        public int getStatusCode() {
-            return statusCode;
-        }
-
-        public String getResponseBody() {
-            return responseBody;
-        }
     }
 }

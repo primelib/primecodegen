@@ -1,0 +1,56 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Client }};
+
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
+import java.util.List;
+import java.util.Map;
+import javax.annotation.processing.Generated;
+
+/**
+ * Thrown when the API responds with an error status code (4xx/5xx) and failOnError is enabled.
+ */
+@Generated(value = "io.github.primelib.primecodegen")
+public class ApiResponseException extends RuntimeException {
+    private final int statusCode;
+    private final String responseBody;
+    private final Map<String, List<String>> responseHeaders;
+
+    public ApiResponseException(int statusCode, @Nullable String responseBody, @Nullable Map<String, List<String>> responseHeaders) {
+        super("Request failed with status " + statusCode);
+        this.statusCode = statusCode;
+        this.responseBody = responseBody;
+        this.responseHeaders = responseHeaders == null ? Map.of() : responseHeaders;
+    }
+
+    public int getStatusCode() {
+        return statusCode;
+    }
+
+    @Nullable
+    public String getResponseBody() {
+        return responseBody;
+    }
+
+    @NonNull
+    public Map<String, List<String>> getResponseHeaders() {
+        return responseHeaders;
+    }
+
+    /**
+     * @return the first value of the given response header (case-insensitive), or null if not present
+     */
+    @Nullable
+    public String getResponseHeader(String name) {
+        return responseHeaders.entrySet().stream()
+            .filter(e -> e.getKey().equalsIgnoreCase(name))
+            .map(Map.Entry::getValue)
+            .filter(values -> values != null && !values.isEmpty())
+            .map(values -> values.get(0))
+            .findFirst()
+            .orElse(null);
+    }
+}

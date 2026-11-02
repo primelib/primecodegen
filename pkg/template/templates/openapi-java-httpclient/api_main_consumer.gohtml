@@ -20,7 +20,7 @@ import {{ $.Common.Packages.Models }}.{{.Name}};
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.dataformat.xml.XmlMapper;
-import tools.jackson.dataformat.yaml.YamlMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -41,10 +41,10 @@ public class {{ .Metadata.Name }}Api extends Abstract{{ .Metadata.Name }}ApiClie
     public final {{ $service.Type }}Api {{ $service.Name | toPropertyName }};
 {{- end }}
 
-    public {{ .Metadata.Name }}Api({{ .Metadata.Name }}FactorySpec<?> spec, OkHttpClient httpClient, JsonMapper jsonMapper, XmlMapper xmlMapper) {
-        super(spec, httpClient, jsonMapper, xmlMapper);
+    public {{ .Metadata.Name }}Api({{ .Metadata.Name }}FactorySpec<?> spec, OkHttpClient httpClient, JsonMapper jsonMapper, XmlMapper xmlMapper, YAMLMapper yamlMapper) {
+        super(spec, httpClient, jsonMapper, xmlMapper, yamlMapper);
 {{- range $service := .Common.Services }}
-        this.{{ $service.Name | toPropertyName }} = new {{ $service.Type }}Api(spec, httpClient, jsonMapper, xmlMapper);
+        this.{{ $service.Name | toPropertyName }} = new {{ $service.Type }}Api(spec, httpClient, jsonMapper, xmlMapper, yamlMapper);
 {{- end }}
     }
 
@@ -148,10 +148,10 @@ public class {{ .Metadata.Name }}Api extends Abstract{{ .Metadata.Name }}ApiClie
         {{- if ne $code "default" }}
         if (matchesStatusCode(info.statusCode(), "{{ $code }}")) {
             if (isErrorStatus(info.statusCode()) && r.failOnError()) {
-                throw new ApiResponseException(info.statusCode(), info.body());
+                throw new ApiResponseException(info.statusCode(), info.body(), info.headers());
             }
             return new {{ $op.Name }}Response.{{ statusCodeToClassName $code }}(
-                deserializeBody(info.body(), new TypeReference<{{ $type.QualifiedType }}>() {}),
+                deserializeBody(info, new TypeReference<{{ $type.QualifiedType }}>() {}),
                 info.statusCode(),
                 info.body(),
                 info.headers()
@@ -162,17 +162,17 @@ public class {{ .Metadata.Name }}Api extends Abstract{{ .Metadata.Name }}ApiClie
 
         {{- if index $op.ReturnTypeByCode "default" }}
         if (isErrorStatus(info.statusCode()) && r.failOnError()) {
-            throw new ApiResponseException(info.statusCode(), info.body());
+            throw new ApiResponseException(info.statusCode(), info.body(), info.headers());
         }
         return new {{ $op.Name }}Response.{{ statusCodeToClassName "default" }}(
-            deserializeBody(info.body(), new TypeReference<{{ (index $op.ReturnTypeByCode "default").QualifiedType }}>() {}),
+            deserializeBody(info, new TypeReference<{{ (index $op.ReturnTypeByCode "default").QualifiedType }}>() {}),
             info.statusCode(),
             info.body(),
             info.headers()
         );
         {{- else }}
         if (isErrorStatus(info.statusCode()) && r.failOnError()) {
-            throw new ApiResponseException(info.statusCode(), info.body());
+            throw new ApiResponseException(info.statusCode(), info.body(), info.headers());
         }
         return new {{ $op.Name }}Response.Unknown(info.statusCode(), info.body(), info.headers());
         {{- end }}

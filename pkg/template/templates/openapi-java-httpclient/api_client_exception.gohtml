@@ -1,0 +1,16 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Client }};
+
+import javax.annotation.processing.Generated;
+
+/**
+ * Thrown when a request could not be performed, e.g. due to I/O or (de)serialization errors.
+ */
+@Generated(value = "io.github.primelib.primecodegen")
+public class ApiClientException extends RuntimeException {
+    public ApiClientException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}

@@ -1,7 +1,7 @@
 {{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.OperationEachTemplate*/ -}}
 
 import {{ $.Common.Packages.Root }}.{{ .Metadata.Name }}Factory;
-import {{ $.Common.Packages.Client }}.Abstract{{ .Metadata.Name }}ApiClient.ApiResponseException;
+import {{ $.Common.Packages.Client }}.ApiResponseException;
 import {{ $.Common.Packages.Operations }}.{{ .Operation.Name }}OperationSpec;
 import {{ $.Common.Packages.Responses }}.{{ .Operation.Name }}Response;
 
@@ -46,7 +46,7 @@ public class {{ .Operation.Name }}Example {
             */
         } catch (ApiResponseException ex) {
             // Triggered when failOnError=true and the API returns an error status.
-            // ex.getStatusCode(), ex.getResponseBody()
+            // ex.getStatusCode(), ex.getResponseBody(), ex.getResponseHeaders()
         }
     }
 }

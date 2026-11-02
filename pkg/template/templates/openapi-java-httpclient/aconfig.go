@@ -42,6 +42,22 @@ var Template = templateapi.Config{
 			Type:            templateapi.TypeAPIOnce,
 			Kind:            templateapi.KindAPI,
 		},
+		{
+			SourceTemplate:  "api_client_exception.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+			TargetFileName:  "ApiClientException.java",
+			Type:            templateapi.TypeAPIOnce,
+			Kind:            templateapi.KindAPI,
+		},
+		{
+			SourceTemplate:  "api_response_exception.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "core/src/main/java/{{ .Common.Packages.Client | toFilePath }}",
+			TargetFileName:  "ApiResponseException.java",
+			Type:            templateapi.TypeAPIOnce,
+			Kind:            templateapi.KindAPI,
+		},
 		// core - api
 		{
 			SourceTemplate:  "api_main_consumer.gohtml",

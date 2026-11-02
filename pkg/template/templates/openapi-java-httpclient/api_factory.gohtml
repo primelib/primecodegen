@@ -15,7 +15,7 @@ import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.dataformat.xml.XmlMapper;
-import tools.jackson.dataformat.yaml.YamlMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -45,13 +45,14 @@ public final class {{ .Metadata.Name }}Factory {
         OkHttpClient httpClient = buildHttpClient(config);
         JsonMapper jsonMapper = buildObjectMapper();
         XmlMapper xmlMapper = buildXmlMapper();
+        YAMLMapper yamlMapper = buildYamlMapper();
 
         if (config.getApi() == {{ .Metadata.Name }}Api.class) {
-            return (T) new {{ .Metadata.Name }}Api(config, httpClient, jsonMapper, xmlMapper);
+            return (T) new {{ .Metadata.Name }}Api(config, httpClient, jsonMapper, xmlMapper, yamlMapper);
         }
 {{- range $service := .Common.Services }}
         if (config.getApi() == {{ $service.Type }}Api.class) {
-            return (T) new {{ $service.Type }}Api(config, httpClient, jsonMapper, xmlMapper);
+            return (T) new {{ $service.Type }}Api(config, httpClient, jsonMapper, xmlMapper, yamlMapper);
         }
 {{- end }}
 
@@ -130,6 +131,15 @@ public final class {{ .Metadata.Name }}Factory {
 
     private static XmlMapper buildXmlMapper() {
         return XmlMapper.builder()
+            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
+            .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+            .build();
+    }
+
+    private static YAMLMapper buildYamlMapper() {
+        return YAMLMapper.builder()
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
