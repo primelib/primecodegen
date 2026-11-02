@@ -2,16 +2,16 @@
 {{- template "header-hash" }}
 
 [versions]
-ktor-version = "3.4.2"
+ktor-version = "3.6.1"
 ktor-metrics-micrometer-version = "1.6.8"
-kotlin-version = "2.3.21"
+kotlin-version = "2.4.21"
 kotlinx-coroutines-version = "1.11.0"
-spring-boot-version = "4.0.6"
-opentelemetry-version = "1.62.0"
-opentelemetry-ktor-version = "2.28.1-alpha"
-micrometer-version = "1.16.5"
-slf4j-version = "2.0.18"
-jspecify-version = "1.0.0"
+spring-boot-version = "4.1.2"
+opentelemetry-version = "1.67.0"
+opentelemetry-ktor-version = "2.33.1-alpha"
+micrometer-version = "1.17.2"
+slf4j-version = "2.0.20"
+jspecify-version = "1.0.1"
 jetbrains-annotations-version = "26.1.0"
 
 [libraries]
@@ -23,8 +23,8 @@ spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter" 
 spring-boot-autoconfiguration-processor = { module = "org.springframework.boot:spring-boot-autoconfigure-processor", version.ref = "spring-boot-version" }
 spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor", version.ref = "spring-boot-version" }
 primecodegenlib-java-bom = { module = "io.github.primelib.primecodegenlib.java:bom", version = "0.0.6" }
-okhttp = { module = "com.squareup.okhttp3:okhttp", version = "5.1.0" }
-junixsocket = { module = "com.kohlschutter.junixsocket:junixsocket-core", version = "2.10.1" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version = "5.5.1" }
+junixsocket = { module = "com.kohlschutter.junixsocket:junixsocket-core", version = "2.11.1" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor-version" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor-version" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor-version" }
