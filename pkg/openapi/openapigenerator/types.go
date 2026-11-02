@@ -309,6 +309,7 @@ type Property struct {
 	Type            CodeType                                `yaml:"type,omitempty"`
 	IsPrimitiveType bool                                    `yaml:"isPrimitiveType,omitempty"`
 	Nullable        bool                                    `yaml:"nullable,omitempty"`
+	Required        bool                                    `yaml:"required,omitempty"` // Required is true if the property is listed in the required properties of the schema
 	AllowedValues   map[string]openapidocument.AllowedValue `yaml:"allowedValues,omitempty"`
 	Items           []Property                              `yaml:"items,omitempty"`
 }

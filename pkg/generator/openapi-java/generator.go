@@ -223,6 +223,9 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 		return openapigenerator.DefaultCodeType, fmt.Errorf("schema is nil")
 	}
 	isNullable := openapiutil.IsSchemaNullable(schema)
+	// primitives can only be used if a value is always present, otherwise the boxed type is required to represent absence.
+	// parameters are always boxed, operation specs are builders that rely on null checks to validate required parameters.
+	boxed := isNullable || !required || schemaType == openapigenerator.CodeTypeSchemaParameter
 
 	// multiple types
 	if util.CountExcluding(schema.Type, "null") > 1 {
@@ -234,7 +237,7 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 	case len(schema.Type) == 0 && len(schema.OneOf) > 0:
 		codeTypes := make([]openapigenerator.CodeType, 0, len(schema.OneOf))
 		for _, oneOfSchema := range schema.OneOf {
-			codeType, err := g.ToCodeType(oneOfSchema.Schema(), schemaType, true)
+			codeType, err := g.ToCodeType(oneOfSchema.Schema(), schemaType, required)
 			if err != nil {
 				return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled oneOf type. schema: %s, format: %s", schema.Type, schema.Format), err)
 			}
@@ -251,8 +254,11 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 		case "uri":
 			return openapigenerator.CodeType{Name: "String"}, nil
 		case "binary", "byte":
-			return openapigenerator.CodeType{TypeArgs: []openapigenerator.CodeType{openapigenerator.NewSimpleCodeType(g.BoxType("byte", isNullable), schema)}, IsArray: true}, nil
-		case "date", "date-time":
+			// always a primitive byte[], jackson (base64) and okhttp (raw bytes) only support the unboxed type
+			return openapigenerator.CodeType{TypeArgs: []openapigenerator.CodeType{{Name: "byte", IsNullable: false}}, IsArray: true}, nil
+		case "date":
+			return openapigenerator.CodeType{Name: "LocalDate", ImportPath: "java.time"}, nil
+		case "date-time":
 			return openapigenerator.CodeType{Name: "Instant", ImportPath: "java.time"}, nil
 		case "uuid":
 			return openapigenerator.CodeType{Name: "UUID", ImportPath: "java.util"}, nil
@@ -260,55 +266,64 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 			return openapigenerator.CodeType{Name: "String"}, nil
 		}
 	case slices.Contains(schema.Type, "boolean"):
-		return openapigenerator.NewSimpleCodeType(g.BoxType("boolean", isNullable), schema), nil
+		return g.primitiveCodeType("boolean", boxed, isNullable), nil
 	case slices.Contains(schema.Type, "integer"):
 		switch schema.Format {
 		case "int16":
-			return openapigenerator.NewSimpleCodeType(g.BoxType("short", isNullable), schema), nil
+			return g.primitiveCodeType("short", boxed, isNullable), nil
 		case "int32":
-			return openapigenerator.NewSimpleCodeType(g.BoxType("int", isNullable), schema), nil
+			return g.primitiveCodeType("int", boxed, isNullable), nil
 		case "int64":
-			return openapigenerator.NewSimpleCodeType(g.BoxType("long", isNullable), schema), nil
+			return g.primitiveCodeType("long", boxed, isNullable), nil
 		case "uint16":
-			return openapigenerator.NewSimpleCodeType(g.BoxType("int", isNullable), schema), nil
+			return g.primitiveCodeType("int", boxed, isNullable), nil
 		case "uint32":
-			return openapigenerator.NewSimpleCodeType(g.BoxType("long", isNullable), schema), nil
+			return g.primitiveCodeType("long", boxed, isNullable), nil
 		case "uint64":
 			return openapigenerator.CodeType{Name: "BigInteger", ImportPath: "java.math"}, nil
 		default:
-			return openapigenerator.NewSimpleCodeType(g.BoxType("long", isNullable), schema), nil
+			return g.primitiveCodeType("long", boxed, isNullable), nil
 		}
 	case slices.Contains(schema.Type, "number"):
 		switch schema.Format {
 		case "float":
-			return openapigenerator.NewSimpleCodeType(g.BoxType("float", isNullable), schema), nil
+			return g.primitiveCodeType("float", boxed, isNullable), nil
 		case "double":
-			return openapigenerator.NewSimpleCodeType(g.BoxType("double", isNullable), schema), nil
+			return g.primitiveCodeType("double", boxed, isNullable), nil
 		default:
-			return openapigenerator.NewSimpleCodeType(g.BoxType("double", isNullable), schema), nil
+			return g.primitiveCodeType("double", boxed, isNullable), nil
 		}
 	case slices.Contains(schema.Type, "array"):
 		if schema.Items == nil || schema.Items.A == nil {
 			return openapigenerator.DefaultCodeType, fmt.Errorf("array schema missing items definition")
 		}
-		arrayType, err := g.ToCodeType(schema.Items.A.Schema(), schemaType, true)
+		// type arguments of generic types are always boxed
+		arrayType, err := g.ToCodeType(schema.Items.A.Schema(), schemaType, false)
 		if err != nil {
 			return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled array type. schema: %s, format: %s", schema.Type, schema.Format), err)
 		}
 		return openapigenerator.NewListCodeType(arrayType, schema), nil // NewArrayCodeType
 	case slices.Contains(schema.Type, "object") || schema.Type == nil:
+		// typed properties take precedence, additional/pattern properties alongside them are not representable in the model class
+		if schema.Properties != nil {
+			if schema.Title == "" {
+				return openapigenerator.DefaultCodeType, fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
+			}
+			return openapigenerator.CodeType{Name: g.ToClassName(schema.Title)}, nil // TODO: import path
+		}
+
 		if schema.PatternProperties != nil {
 			pp := schema.PatternProperties.First()
 			ppSchema := pp.Value().Schema()
 
-			additionalPropertyType, err := g.ToCodeType(ppSchema, schemaType, true)
+			additionalPropertyType, err := g.ToCodeType(ppSchema, schemaType, false)
 			if err != nil {
 				return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled pattern properties type. schema: %s, format: %s", schema.Type, schema.Format), err)
 			}
 
 			return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), additionalPropertyType, schema), nil
 		} else if schema.AdditionalProperties != nil && schema.AdditionalProperties.IsA() {
-			additionalPropertyType, err := g.ToCodeType(schema.AdditionalProperties.A.Schema(), schemaType, true)
+			additionalPropertyType, err := g.ToCodeType(schema.AdditionalProperties.A.Schema(), schemaType, false)
 			if err != nil {
 				return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled additional properties type. schema: %s, format: %s", schema.Type, schema.Format), err)
 				//return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), openapigenerator.NewSimpleCodeType("Object", schema), schema), nil
@@ -317,19 +332,17 @@ func (g *JavaGenerator) ToCodeType(schema *base.Schema, schemaType openapigenera
 			return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), additionalPropertyType, schema), nil
 		} else if schema.AdditionalProperties != nil && schema.AdditionalProperties.IsB() && schema.AdditionalProperties.B {
 			return openapigenerator.NewMapCodeType(openapigenerator.NewSimpleCodeType("String", schema), openapigenerator.NewSimpleCodeType("Object", schema), schema), nil
-		} else if schema.AdditionalProperties != nil && schema.AdditionalProperties.IsB() && schema.AdditionalProperties.B == false && schema.Properties == nil {
-			return openapigenerator.CodeType{Name: "Object"}, nil
-		} else if schema.AdditionalProperties == nil && schema.Properties == nil {
-			return openapigenerator.CodeType{Name: "Object"}, nil
-		} else {
-			if schema.Title == "" {
-				return openapigenerator.DefaultCodeType, fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
-			}
-			return openapigenerator.CodeType{Name: g.ToClassName(schema.Title)}, nil // TODO: import path
 		}
+
+		return openapigenerator.CodeType{Name: "Object"}, nil
 	default:
 		return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
 	}
+}
+
+// primitiveCodeType returns the primitive type, or its boxed variant if the value can be absent
+func (g *JavaGenerator) primitiveCodeType(name string, boxed bool, nullable bool) openapigenerator.CodeType {
+	return openapigenerator.CodeType{Name: g.BoxType(name, boxed), IsNullable: nullable}
 }
 
 func (g *JavaGenerator) PostProcessType(codeType openapigenerator.CodeType) openapigenerator.CodeType {
@@ -379,20 +392,21 @@ func (g *JavaGenerator) PostProcessType(codeType openapigenerator.CodeType) open
 	// FullyQualifiedName
 	switch {
 	case codeType.IsArray:
+		// qualified variants must use the qualified type arguments, so they can be used without imports
 		codeType.Declaration = codeType.TypeArgs[0].Declaration + "[]"
-		codeType.QualifiedDeclaration = qualifier + codeType.TypeArgs[0].QualifiedDeclaration + "[]"
+		codeType.QualifiedDeclaration = codeType.TypeArgs[0].QualifiedDeclaration + "[]"
 		codeType.Type = codeType.TypeArgs[0].Type + "[]"
-		codeType.QualifiedType = qualifier + codeType.TypeArgs[0].Type + "[]"
+		codeType.QualifiedType = codeType.TypeArgs[0].QualifiedType + "[]"
 	case codeType.IsList:
 		codeType.Declaration = "List<" + codeType.TypeArgs[0].Declaration + ">"
-		codeType.QualifiedDeclaration = "List<" + qualifier + codeType.TypeArgs[0].QualifiedDeclaration + ">"
+		codeType.QualifiedDeclaration = "List<" + codeType.TypeArgs[0].QualifiedDeclaration + ">"
 		codeType.Type = "List<" + codeType.TypeArgs[0].Type + ">"
-		codeType.QualifiedType = "List<" + qualifier + codeType.TypeArgs[0].Type + ">"
+		codeType.QualifiedType = "List<" + codeType.TypeArgs[0].QualifiedType + ">"
 	case codeType.IsMap:
 		codeType.Declaration = "Map<" + codeType.TypeArgs[0].Declaration + ", " + codeType.TypeArgs[1].Declaration + ">"
-		codeType.QualifiedDeclaration = "Map<" + codeType.TypeArgs[0].QualifiedDeclaration + ", " + qualifier + codeType.TypeArgs[1].QualifiedDeclaration + ">"
+		codeType.QualifiedDeclaration = "Map<" + codeType.TypeArgs[0].QualifiedDeclaration + ", " + codeType.TypeArgs[1].QualifiedDeclaration + ">"
 		codeType.Type = "Map<" + codeType.TypeArgs[0].Type + ", " + codeType.TypeArgs[1].Type + ">"
-		codeType.QualifiedType = "Map<" + codeType.TypeArgs[0].Type + ", " + qualifier + codeType.TypeArgs[1].QualifiedType + ">"
+		codeType.QualifiedType = "Map<" + codeType.TypeArgs[0].QualifiedType + ", " + codeType.TypeArgs[1].QualifiedType + ">"
 	default:
 		codeType.Declaration = g.BoxType(codeType.Name, codeType.IsNullable)
 		codeType.QualifiedDeclaration = qualifier + g.BoxType(codeType.Name, codeType.IsNullable)

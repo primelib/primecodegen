@@ -68,9 +68,9 @@ data class {{ .Model.Name }}(
     {{- end }}
     @JsonProperty("{{ $p.FieldName }}")
     {{- if $.Model.OneOf }}
-    open val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if $p.Nullable }}? = null{{ end }},
+    open val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if or $p.Nullable (not $p.Required) }}? = null{{ end }},
     {{- else }}
-    val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if $p.Nullable }}? = null{{ end }},
+    val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if or $p.Nullable (not $p.Required) }}? = null{{ end }},
     {{- end }}
     {{- end }}
 ){{ if .Model.Parent.Declaration }} : {{ .Model.Parent.Declaration }}(){{ end }} {

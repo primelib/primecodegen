@@ -14,6 +14,9 @@ import kotlinx.serialization.json.JsonClassDiscriminator
 {{- end }}
 
 import kotlin.time.Instant
+import kotlinx.datetime.LocalDate
+
+import {{ $.Common.Packages.Root }}.serialization.Base64ByteArraySerializer
 
 import org.jetbrains.annotations.ApiStatus
 
@@ -48,16 +51,23 @@ open class {{ .Model.Name }}(
 data class {{ .Model.Name }}(
 {{- end }}
     {{- range $i, $p := .Model.Properties }}
+    {{- $decl := $p.Type.Declaration }}
+    {{- if eq $decl "List<ByteArray>" }}
+    {{- $decl = "List<@Serializable(with = Base64ByteArraySerializer::class) ByteArray>" }}
+    {{- end }}
     {{- if $p.Description }}
     /**
      * {{ $p.Description | escapeJavadoc | commentMultiLine "     * " }}
      */
     {{- end }}
     @SerialName("{{ $p.FieldName }}")
+    {{- if eq $p.Type.Declaration "ByteArray" }}
+    @Serializable(with = Base64ByteArraySerializer::class)
+    {{- end }}
     {{- if $.Model.OneOf }}
-    open val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if $p.Nullable }}? = null{{ end }},
+    open val {{ $p.Name }}: {{ $decl }}{{ if or $p.Nullable (not $p.Required) }}? = null{{ end }},
     {{- else }}
-    val {{ $p.Name }}: {{ $p.Type.Declaration }}{{ if $p.Nullable }}? = null{{ end }},
+    val {{ $p.Name }}: {{ $decl }}{{ if or $p.Nullable (not $p.Required) }}? = null{{ end }},
     {{- end }}
     {{- end }}
 ){{ if .Model.Parent.Declaration }} : {{ .Model.Parent.Declaration }}(){{ end }} {

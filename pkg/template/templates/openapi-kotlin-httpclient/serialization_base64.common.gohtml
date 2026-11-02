@@ -1,0 +1,27 @@
+{{- /*gotype: github.com/primelib/primecodegen/pkg/openapi/openapigenerator.APIOnceTemplate*/ -}}
+{{- template "header-singleline" }}
+
+package {{ .Common.Packages.Root }}.serialization
+
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlin.io.encoding.Base64
+
+/**
+ * Serializes ByteArray as a base64 string (OpenAPI `format: byte`), instead of the kotlinx default (array of numbers).
+ */
+object Base64ByteArraySerializer : KSerializer<ByteArray> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Base64ByteArray", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: ByteArray) {
+        encoder.encodeString(Base64.encode(value))
+    }
+
+    override fun deserialize(decoder: Decoder): ByteArray {
+        return Base64.decode(decoder.decodeString())
+    }
+}

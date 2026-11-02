@@ -8,13 +8,25 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
+// HaveSameCodeTypeName checks if all code types are structurally the same type (name, container kind and type arguments)
 func HaveSameCodeTypeName(codeTypes []CodeType) bool {
 	if len(codeTypes) == 0 {
 		return false
 	}
-	firstName := codeTypes[0].Name
 	for _, ct := range codeTypes {
-		if ct.Name != firstName {
+		if !isSameCodeType(ct, codeTypes[0]) {
+			return false
+		}
+	}
+	return true
+}
+
+func isSameCodeType(a CodeType, b CodeType) bool {
+	if a.Name != b.Name || a.IsArray != b.IsArray || a.IsList != b.IsList || a.IsMap != b.IsMap || len(a.TypeArgs) != len(b.TypeArgs) {
+		return false
+	}
+	for i := range a.TypeArgs {
+		if !isSameCodeType(a.TypeArgs[i], b.TypeArgs[i]) {
 			return false
 		}
 	}

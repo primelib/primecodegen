@@ -25,12 +25,14 @@ kotlin {
             api(libs.ktor.client.content.negotiation)
             api(libs.ktor.serialization.kotlinx.json)
             api(libs.ktor.serialization.kotlinx.xml)
+            api(libs.kaml)
 
             // logging and tracing
             api(libs.ktor.client.logging)
 
             // kotlin
             api(libs.kotlinx.coroutines.core)
+            api(libs.kotlinx.datetime)
 
             // annotations
             api(libs.jetbrains.annotations)

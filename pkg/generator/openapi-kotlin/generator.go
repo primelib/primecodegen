@@ -222,12 +222,27 @@ func (g *KotlinGenerator) ToCodeType(schema *base.Schema, schemaType openapigene
 		return openapigenerator.DefaultCodeType, fmt.Errorf("schema is nil")
 	}
 
-	// multiple types (e.g., ["string", "null"])
+	// multiple types (e.g., ["string", "integer"])
 	if util.CountExcluding(schema.Type, "null") > 1 {
-		return openapigenerator.CodeType{Name: "Any"}, nil
+		return jsonElementCodeType(), nil
 	}
 
 	switch {
+	// oneOf must be checked before the object case, which also matches schemas without a type
+	case len(schema.Type) == 0 && len(schema.OneOf) > 0:
+		codeTypes := make([]openapigenerator.CodeType, 0, len(schema.OneOf))
+		for _, oneOfSchema := range schema.OneOf {
+			codeType, err := g.ToCodeType(oneOfSchema.Schema(), schemaType, true)
+			if err != nil {
+				return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled oneOf type. schema: %s, format: %s", schema.Type, schema.Format), err)
+			}
+			codeTypes = append(codeTypes, codeType)
+		}
+		if openapigenerator.HaveSameCodeTypeName(codeTypes) {
+			return codeTypes[0], nil
+		}
+		return jsonElementCodeType(), nil
+
 	case slices.Contains(schema.Type, "string"):
 		switch schema.Format {
 		case "uri":
@@ -235,7 +250,10 @@ func (g *KotlinGenerator) ToCodeType(schema *base.Schema, schemaType openapigene
 		case "binary", "byte":
 			// Kotlin multiplatform binary → ByteArray
 			return openapigenerator.CodeType{Name: "ByteArray"}, nil
-		case "date", "date-time":
+		case "date":
+			// kotlinx.datetime.LocalDate (date without time, e.g. 2024-01-15)
+			return openapigenerator.CodeType{Name: "LocalDate", ImportPath: "kotlinx.datetime"}, nil
+		case "date-time":
 			// kotlin.time.Instant (multiplatform stdlib)
 			return openapigenerator.CodeType{Name: "Instant", ImportPath: "kotlin.time"}, nil
 		case "uuid":
@@ -260,7 +278,8 @@ func (g *KotlinGenerator) ToCodeType(schema *base.Schema, schemaType openapigene
 			// Kotlin does not have unsigned 32-bit/64-bit types cross-platform yet in KMP serialization
 			return openapigenerator.NewSimpleCodeType("Long", schema), nil
 		case "uint64":
-			return openapigenerator.NewSimpleCodeType("Long", schema), nil
+			// values above Long.MAX_VALUE do not fit into Long
+			return openapigenerator.NewSimpleCodeType("ULong", schema), nil
 		default:
 			return openapigenerator.NewSimpleCodeType("Long", schema), nil
 		}
@@ -287,6 +306,14 @@ func (g *KotlinGenerator) ToCodeType(schema *base.Schema, schemaType openapigene
 		return openapigenerator.NewListCodeType(arrayType, schema), nil
 
 	case slices.Contains(schema.Type, "object") || schema.Type == nil:
+		// typed properties take precedence, additional/pattern properties alongside them are not representable in the model class
+		if schema.Properties != nil {
+			if schema.Title == "" {
+				return openapigenerator.DefaultCodeType, fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
+			}
+			return openapigenerator.CodeType{Name: g.ToClassName(schema.Title)}, nil
+		}
+
 		// handle map-like (additionalProperties) schemas
 		if schema.PatternProperties != nil {
 			pp := schema.PatternProperties.First()
@@ -316,35 +343,22 @@ func (g *KotlinGenerator) ToCodeType(schema *base.Schema, schemaType openapigene
 		} else if schema.AdditionalProperties != nil && schema.AdditionalProperties.IsB() && schema.AdditionalProperties.B {
 			return openapigenerator.NewMapCodeType(
 				openapigenerator.NewSimpleCodeType("String", schema),
-				openapigenerator.NewSimpleCodeType("Any", schema),
+				jsonElementCodeType(),
 				schema,
 			), nil
-		} else if schema.AdditionalProperties == nil && schema.Properties == nil {
-			return openapigenerator.CodeType{Name: "Any"}, nil
-		} else {
-			if schema.Title == "" {
-				return openapigenerator.DefaultCodeType, fmt.Errorf("schema does not have a title. schema: %s", schema.Type)
-			}
-			return openapigenerator.CodeType{Name: g.ToClassName(schema.Title)}, nil
 		}
 
-	case len(schema.Type) == 0 && len(schema.OneOf) > 0:
-		codeTypes := make([]openapigenerator.CodeType, 0, len(schema.OneOf))
-		for _, oneOfSchema := range schema.OneOf {
-			codeType, err := g.ToCodeType(oneOfSchema.Schema(), schemaType, true)
-			if err != nil {
-				return openapigenerator.DefaultCodeType, errors.Join(fmt.Errorf("unhandled oneOf type. schema: %s, format: %s", schema.Type, schema.Format), err)
-			}
-			codeTypes = append(codeTypes, codeType)
-		}
-		if openapigenerator.HaveSameCodeTypeName(codeTypes) {
-			return codeTypes[0], nil
-		}
-		return openapigenerator.CodeType{Name: "Any"}, nil
+		// free-form object, kotlinx.serialization can not serialize Any
+		return jsonElementCodeType(), nil
 
 	default:
 		return openapigenerator.DefaultCodeType, fmt.Errorf("unhandled type. schema: %s, format: %s", schema.Type, schema.Format)
 	}
+}
+
+// jsonElementCodeType is used for free-form values, kotlinx.serialization has no serializer for Any
+func jsonElementCodeType() openapigenerator.CodeType {
+	return openapigenerator.CodeType{Name: "JsonElement", ImportPath: "kotlinx.serialization.json"}
 }
 
 func (g *KotlinGenerator) PostProcessType(codeType openapigenerator.CodeType) openapigenerator.CodeType {
@@ -394,20 +408,21 @@ func (g *KotlinGenerator) PostProcessType(codeType openapigenerator.CodeType) op
 	// FullyQualifiedName
 	switch {
 	case codeType.IsArray:
+		// qualified variants must use the qualified type arguments, so they can be used without imports
 		codeType.Declaration = codeType.TypeArgs[0].Declaration + "[]"
-		codeType.QualifiedDeclaration = qualifier + codeType.TypeArgs[0].QualifiedDeclaration + "[]"
+		codeType.QualifiedDeclaration = codeType.TypeArgs[0].QualifiedDeclaration + "[]"
 		codeType.Type = codeType.TypeArgs[0].Type + "[]"
-		codeType.QualifiedType = qualifier + codeType.TypeArgs[0].Type + "[]"
+		codeType.QualifiedType = codeType.TypeArgs[0].QualifiedType + "[]"
 	case codeType.IsList:
 		codeType.Declaration = "List<" + codeType.TypeArgs[0].Declaration + ">"
-		codeType.QualifiedDeclaration = "List<" + qualifier + codeType.TypeArgs[0].QualifiedDeclaration + ">"
+		codeType.QualifiedDeclaration = "List<" + codeType.TypeArgs[0].QualifiedDeclaration + ">"
 		codeType.Type = "List<" + codeType.TypeArgs[0].Type + ">"
-		codeType.QualifiedType = "List<" + qualifier + codeType.TypeArgs[0].Type + ">"
+		codeType.QualifiedType = "List<" + codeType.TypeArgs[0].QualifiedType + ">"
 	case codeType.IsMap:
 		codeType.Declaration = "Map<" + codeType.TypeArgs[0].Declaration + ", " + codeType.TypeArgs[1].Declaration + ">"
-		codeType.QualifiedDeclaration = "Map<" + codeType.TypeArgs[0].QualifiedDeclaration + ", " + qualifier + codeType.TypeArgs[1].QualifiedDeclaration + ">"
+		codeType.QualifiedDeclaration = "Map<" + codeType.TypeArgs[0].QualifiedDeclaration + ", " + codeType.TypeArgs[1].QualifiedDeclaration + ">"
 		codeType.Type = "Map<" + codeType.TypeArgs[0].Type + ", " + codeType.TypeArgs[1].Type + ">"
-		codeType.QualifiedType = "Map<" + codeType.TypeArgs[0].Type + ", " + qualifier + codeType.TypeArgs[1].QualifiedType + ">"
+		codeType.QualifiedType = "Map<" + codeType.TypeArgs[0].QualifiedType + ", " + codeType.TypeArgs[1].QualifiedType + ">"
 	default:
 		codeType.Declaration = codeType.Name
 		codeType.QualifiedDeclaration = qualifier + codeType.Name

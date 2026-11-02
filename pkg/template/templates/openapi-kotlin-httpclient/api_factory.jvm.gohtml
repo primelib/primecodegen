@@ -25,6 +25,10 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.serialization.kotlinx.xml.*
+import io.ktor.serialization.kotlinx.KotlinxSerializationConverter
+
+import com.charleskorn.kaml.Yaml
+import com.charleskorn.kaml.YamlConfiguration
 
 import io.opentelemetry.instrumentation.ktor.v3_0.KtorClientTelemetry
 
@@ -62,6 +66,12 @@ fun <T : Any> buildClient(api: KClass<T>, spec: Jvm{{ .Metadata.Name }}FactorySp
                 ignoreUnknownKeys = true
             })
             xml()
+
+            // yaml (kaml), unknown properties are ignored like for json
+            val yamlConverter = KotlinxSerializationConverter(Yaml(configuration = YamlConfiguration(strictMode = false)))
+            register(ContentType("application", "yaml"), yamlConverter)
+            register(ContentType("application", "x-yaml"), yamlConverter)
+            register(ContentType("text", "yaml"), yamlConverter)
         }
 
         // retry policy

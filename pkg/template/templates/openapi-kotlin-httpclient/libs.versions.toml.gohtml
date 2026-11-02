@@ -6,12 +6,14 @@ ktor-version = "3.6.1"
 ktor-metrics-micrometer-version = "1.6.8"
 kotlin-version = "2.4.21"
 kotlinx-coroutines-version = "1.11.0"
+kotlinx-datetime-version = "0.8.0"
 spring-boot-version = "4.1.2"
 opentelemetry-version = "1.67.0"
 opentelemetry-ktor-version = "2.33.1-alpha"
 micrometer-version = "1.17.2"
 slf4j-version = "2.0.20"
 jspecify-version = "1.0.1"
+kaml-version = "0.104.0"
 jetbrains-annotations-version = "26.1.0"
 
 [libraries]
@@ -37,7 +39,9 @@ opentelemetry-ktor = { module = "io.opentelemetry.instrumentation:opentelemetry-
 opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry-version" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor-version" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin-version" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime-version" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines-version" }
+kaml = { module = "com.charleskorn.kaml:kaml", version.ref = "kaml-version" }
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify-version" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations-version" }
 

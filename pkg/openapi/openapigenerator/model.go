@@ -478,6 +478,7 @@ func BuildComponentModels(opts ModelOpts) ([]Model, error) {
 						Type:            pType,
 						IsPrimitiveType: gen.IsPrimitiveType(pType.Name),
 						Nullable:        openapiutil.IsSchemaNullable(pSchema),
+						Required:        slices.Contains(s.Required, p.Key),
 						AllowedValues:   allowedValues,
 					})
 					add.Imports = append(add.Imports, gen.TypeToImport(pType))

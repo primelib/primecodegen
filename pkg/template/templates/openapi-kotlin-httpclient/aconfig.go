@@ -69,6 +69,23 @@ var Template = templateapi.Config{
 			Type:            templateapi.TypeOperationEach,
 			Kind:            templateapi.KindAPI,
 		},
+		// core - exceptions & serialization - common
+		{
+			SourceTemplate:  "api_exceptions.common.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "core/src/commonMain/kotlin/{{ .Common.Packages.Client | toFilePath }}",
+			TargetFileName:  "ApiExceptions.kt",
+			Type:            templateapi.TypeAPIOnce,
+			Kind:            templateapi.KindAPI,
+		},
+		{
+			SourceTemplate:  "serialization_base64.common.gohtml",
+			Snippets:        templateapi.DefaultSnippets,
+			TargetDirectory: "core/src/commonMain/kotlin/{{ .Common.Packages.Root | toFilePath }}/serialization",
+			TargetFileName:  "Base64ByteArraySerializer.kt",
+			Type:            templateapi.TypeAPIOnce,
+			Kind:            templateapi.KindAPI,
+		},
 		// core - service api - common
 		{
 			SourceTemplate:  "api_service.common.gohtml",
