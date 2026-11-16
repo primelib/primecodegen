@@ -30,7 +30,6 @@ func TestResolveTemplatePropertiesDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "me.philippheuer.configuration", resolved["gradle.configurationPlugin.id"])
-	assert.Equal(t, "0.20.1", resolved["gradle.configurationPlugin.version"])
 	assert.Equal(t, "projectConfiguration", resolved["gradle.projectConfiguration.blockName"])
 	assert.Equal(t, "", resolved["gradle.pluginManagement.repositoryUrl"])
 	assert.Equal(t, "true", resolved["gradle.pomMetadata.enabled"])

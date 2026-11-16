@@ -7,10 +7,10 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/pb33f/go-yaml"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/primelib/primecodegen/pkg/util"
-	"go.yaml.in/yaml/v4"
 )
 
 func MergeSchemaProxy(baseSP *base.SchemaProxy, overwriteSP *base.SchemaProxy) (*base.Schema, error) {

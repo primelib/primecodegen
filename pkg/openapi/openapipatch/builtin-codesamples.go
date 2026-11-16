@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pb33f/go-yaml"
 	"github.com/pb33f/libopenapi"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/primelib/primecodegen/pkg/util"
-	"go.yaml.in/yaml/v4"
 )
 
 var GenerateCodeSamplesRefsPatch = BuiltInPatcher{

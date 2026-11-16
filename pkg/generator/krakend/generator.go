@@ -6,19 +6,17 @@ import (
 	"log/slog"
 	"os"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/cidverse/cidverseutils/filesystem"
-	"github.com/cidverse/go-ptr"
 	"github.com/pb33f/libopenapi/datamodel/high/base"
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
 	"github.com/primelib/primecodegen/pkg/template/templateapi"
 )
 
 type Generator struct {
-	reservedWords  []string
 	primitiveTypes []string
-	boxedTypes     map[string]string
 	typeToImport   map[string]string
 }
 
@@ -63,7 +61,13 @@ func (g *Generator) Generate(opts openapigenerator.GenerateOpts) error {
 		return fmt.Errorf("failed to build template data in %s: %w", g.Id(), err)
 	}
 
-	// generate config
+	// generator config
+	conf, err := parseConfig(opts.TemplateProperties)
+	if err != nil {
+		return fmt.Errorf("invalid %s generator config: %w", g.Id(), err)
+	}
+
+	// resolve backend per environment
 	environmentEndpoints := resolveEnvironmentEndpoints(templateData.Endpoints)
 	if len(environmentEndpoints) == 0 {
 		return fmt.Errorf("no environment endpoint found in OpenAPI servers (expected one of: %s)", strings.Join(environmentOrder, ", "))
@@ -72,30 +76,37 @@ func (g *Generator) Generate(opts openapigenerator.GenerateOpts) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse %s extension from root: %w", krakendExtensionKey, err)
 	}
+	endpointPrefix, _ := rootExtension["endpoint_prefix"].(string)
+	rootAuth, _ := toMap(rootExtension["auth"])
+	rootClientCredentials, _ := toMap(rootExtension["client_credentials"])
+	operationMeta := buildOperationMeta(opts.Doc)
 
 	// write config files
 	_ = os.MkdirAll(opts.OutputDir, 0755)
 
-	generatedFiles := 0
+	var generatedEnvironments []string
 	for _, environment := range environmentOrder {
 		resolvedEndpoint, ok := environmentEndpoints[environment]
-		if !ok {
+		if !ok || !slices.Contains(conf.Environments, environment) {
 			continue
 		}
 
-		conf := generateKrakenConfig(templateData, GenerateKrakenConfigOpts{
-			EchoEndpoint:           true,
-			DebugEndpoint:          true,
-			PrometheusExporterPort: ptr.Ptr(9090),
-			OTELExporterPort:       nil, // ptr.Ptr(4317)
-			BackendHost:            resolvedEndpoint.Host,
-			BackendBasePath:        resolvedEndpoint.BasePath,
-			Environment:            environment,
-			APIName:                templateData.DisplayName,
-			CircuitBreaker:         false,
+		krakendConf, genErr := generateKrakenConfig(templateData, GenerateKrakenConfigOpts{
+			Config:            conf,
+			Environment:       environment,
+			APIName:           templateData.DisplayName,
+			BackendHost:       resolvedEndpoint.Host,
+			BackendBasePath:   resolvedEndpoint.BasePath,
+			EndpointPrefix:    endpointPrefix,
+			Auth:              rootAuth,
+			ClientCredentials: rootClientCredentials,
+			Operations:        operationMeta,
 		})
+		if genErr != nil {
+			return fmt.Errorf("failed to generate %s config: %w", environment, genErr)
+		}
 
-		configMap, mapErr := configToMap(conf)
+		configMap, mapErr := configToMap(krakendConf)
 		if mapErr != nil {
 			return fmt.Errorf("failed to convert %s config to generic map: %w", environment, mapErr)
 		}
@@ -113,18 +124,11 @@ func (g *Generator) Generate(opts openapigenerator.GenerateOpts) error {
 		if err != nil {
 			return fmt.Errorf("failed to write %s: %w", filename, err)
 		}
-		generatedFiles++
+		generatedEnvironments = append(generatedEnvironments, environment)
 	}
 
-	if generatedFiles == 0 {
-		return fmt.Errorf("no recognized environment endpoint found in OpenAPI servers (expected one of: %s)", strings.Join(environmentOrder, ", "))
-	}
-
-	generatedEnvironments := make([]string, 0, len(environmentEndpoints))
-	for _, environment := range environmentOrder {
-		if _, ok := environmentEndpoints[environment]; ok {
-			generatedEnvironments = append(generatedEnvironments, environment)
-		}
+	if len(generatedEnvironments) == 0 {
+		return fmt.Errorf("none of the configured environments (%s) has a matching server in the OpenAPI spec", strings.Join(conf.Environments, ", "))
 	}
 	slog.Info("generated KrakenD configs", "environments", strings.Join(generatedEnvironments, ","), "output-dir", opts.OutputDir)
 
@@ -132,6 +136,7 @@ func (g *Generator) Generate(opts openapigenerator.GenerateOpts) error {
 }
 
 func (g *Generator) TemplateData(opts openapigenerator.TemplateDataOpts) (openapigenerator.DocumentModel, error) {
+	ensureSpecName(opts.Doc)
 	templateData, err := openapigenerator.BuildTemplateData(opts.Doc, g, opts.PackageConfig)
 	if err != nil {
 		return templateData, err

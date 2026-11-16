@@ -16,6 +16,12 @@ import (
 )
 
 func BuildTemplateData(doc *libopenapi.DocumentModel[v3.Document], generator CodeGenerator, packageConfig CommonPackages) (DocumentModel, error) {
+	if doc == nil || doc.Model.Info == nil {
+		return DocumentModel{}, fmt.Errorf("document is missing required info section")
+	}
+	if doc.Model.Info.Extensions == nil {
+		return DocumentModel{}, fmt.Errorf("document is missing required x-name extension in info section")
+	}
 	specNameNode, _ := doc.Model.Info.Extensions.Get("x-name")
 	if specNameNode == nil {
 		return DocumentModel{}, fmt.Errorf("document is missing required x-name extension in info section")

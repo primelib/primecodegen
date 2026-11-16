@@ -187,6 +187,8 @@ type TypescriptLanguageOptions struct {
 type KrakenDOptions struct {
 	Enabled     bool     `yaml:"enabled"`
 	IgnoreFiles []string `yaml:"ignoreFiles"`
+	// Properties configure the generator, see `-g krakend -t config --tpl-prop` for the supported keys
+	Properties map[string]string `yaml:"properties"`
 }
 
 type PrintingPressOptions struct {

@@ -3,8 +3,8 @@ package openapigenerator
 import (
 	"strings"
 
+	"github.com/pb33f/go-yaml"
 	"github.com/pb33f/libopenapi/orderedmap"
-	"go.yaml.in/yaml/v4"
 
 	"github.com/primelib/primecodegen/pkg/openapi/openapidocument"
 )

@@ -11,7 +11,7 @@ type KrakenDConfig struct {
 	IdleTimeout         string      `json:"idle_timeout,omitempty"`
 	ReadHeaderTimeout   string      `json:"read_header_timeout,omitempty"`
 	Port                int         `json:"port,omitempty"`
-	CacheTTL            string      `json:"cache_ttl"`
+	CacheTTL            string      `json:"cache_ttl,omitempty"`
 	DisableKeepAlives   bool        `json:"disable_keep_alives,omitempty"`
 	DisableCompression  bool        `json:"disable_compression,omitempty"`
 	MaxIdleConns        int         `json:"max_idle_connections,omitempty"`
@@ -26,15 +26,12 @@ type KrakenDConfig struct {
 type ExtraConfig struct {
 	Router        *RouterConfig        `json:"router,omitempty"`
 	CORS          *CORSConfig          `json:"security/cors,omitempty"`
+	SecurityHTTP  *SecurityHTTPConfig  `json:"security/http,omitempty"`
 	BotDetector   *BotDetectorConfig   `json:"security/bot-detector,omitempty"`
-	AuthValidator *AuthValidatorConfig `json:"auth/validator,omitempty"`
 	Logging       *LoggingConfig       `json:"telemetry/logging,omitempty"`
 	Logstash      *LogstashConfig      `json:"telemetry/logstash,omitempty"`
+	GELF          *GELFConfig          `json:"telemetry/gelf,omitempty"`
 	OpenTelemetry *OpenTelemetryConfig `json:"telemetry/opentelemetry,omitempty"`
-}
-
-type AuthValidatorConfig struct {
-	SharedCacheDuration int `json:"shared_cache_duration,omitempty"`
 }
 
 type RouterConfig struct {
@@ -43,6 +40,24 @@ type RouterConfig struct {
 	ForwardedByClientIP bool     `json:"forwarded_by_client_ip,omitempty"`
 	RemoteIPHeaders     []string `json:"remote_ip_headers,omitempty"`
 	TrustedProxies      []string `json:"trusted_proxies,omitempty"`
+}
+
+type SecurityHTTPConfig struct {
+	FrameDeny            bool   `json:"frame_deny,omitempty"`
+	ContentTypeNosniff   bool   `json:"content_type_nosniff,omitempty"`
+	BrowserXSSFilter     bool   `json:"browser_xss_filter,omitempty"`
+	ReferrerPolicy       string `json:"referrer_policy,omitempty"`
+	STSSeconds           int    `json:"sts_seconds,omitempty"`
+	STSIncludeSubdomains bool   `json:"sts_include_subdomains,omitempty"`
+}
+
+type LogstashConfig struct {
+	Enabled bool `json:"enabled"`
+}
+
+type GELFConfig struct {
+	Address   string `json:"address"`
+	EnableTCP bool   `json:"enable_tcp"`
 }
 
 type CORSConfig struct {
@@ -60,18 +75,15 @@ type BotDetectorConfig struct {
 
 type LoggingConfig struct {
 	Level          string `json:"level"`
-	Prefix         string `json:"prefix"`
+	Prefix         string `json:"prefix,omitempty"`
 	Syslog         bool   `json:"syslog"`
 	Stdout         bool   `json:"stdout"`
-	Format         string `json:"format"`
-	SyslogFacility string `json:"syslog_facility"`
-}
-
-type LogstashConfig struct {
-	Enabled bool `json:"enabled"`
+	Format         string `json:"format,omitempty"`
+	SyslogFacility string `json:"syslog_facility,omitempty"`
 }
 
 type OpenTelemetryConfig struct {
+	ServiceName           string      `json:"service_name,omitempty"`
 	TraceSampleRate       float64     `json:"trace_sample_rate"`
 	MetricReportingPeriod int         `json:"metric_reporting_period"`
 	Exporters             OTExporters `json:"exporters"`
@@ -79,8 +91,8 @@ type OpenTelemetryConfig struct {
 }
 
 type OTExporters struct {
-	Prometheus []PrometheusExporter `json:"prometheus"`
-	OTLP       []OTLPExporter       `json:"otlp"`
+	Prometheus []PrometheusExporter `json:"prometheus,omitempty"`
+	OTLP       []OTLPExporter       `json:"otlp,omitempty"`
 }
 
 type PrometheusExporter struct {
@@ -120,17 +132,25 @@ type OTLayerBackend struct {
 }
 
 type OTStageDetails struct {
-	DisableStage       bool     `json:"disable_stage"`
-	RoundTrip          bool     `json:"round_trip"`
-	ReadPayload        bool     `json:"read_payload"`
-	DetailedConnection bool     `json:"detailed_connection"`
-	StaticAttributes   []string `json:"static_attributes"`
+	DisableStage       bool          `json:"disable_stage"`
+	RoundTrip          bool          `json:"round_trip"`
+	ReadPayload        bool          `json:"read_payload"`
+	DetailedConnection bool          `json:"detailed_connection"`
+	StaticAttributes   []OTAttribute `json:"static_attributes,omitempty"`
+}
+
+type OTAttribute struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type Endpoint struct {
 	Endpoint          string                 `json:"endpoint"`
 	Method            string                 `json:"method"`
 	OutputEncoding    string                 `json:"output_encoding"`
+	Timeout           string                 `json:"timeout,omitempty"`
+	CacheTTL          string                 `json:"cache_ttl,omitempty"`
+	ConcurrentCalls   int                    `json:"concurrent_calls,omitempty"`
 	Backend           []Backend              `json:"backend"`
 	InputQueryStrings []string               `json:"input_query_strings,omitempty"`
 	InputHeaders      []string               `json:"input_headers,omitempty"`

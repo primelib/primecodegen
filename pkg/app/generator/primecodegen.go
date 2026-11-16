@@ -16,16 +16,17 @@ type PrimeCodeGenGenerator struct {
 }
 
 type PrimeCodeGenGeneratorConfig struct {
-	TemplateLanguage string                   `json:"templateLanguage" yaml:"templateLanguage"`
-	TemplateType     string                   `json:"templateType" yaml:"templateType"`
-	Patches          []string                 `json:"patches" yaml:"patches"`
-	GroupId          string                   `json:"groupId" yaml:"groupId"`
-	ArtifactId       string                   `json:"artifactId" yaml:"artifactId"`
-	Repository       appconf.RepositoryConf   `json:"repository" yaml:"repository"`
-	Maintainers      []appconf.MaintainerConf `json:"maintainers" yaml:"maintainers"`
-	Provider         appconf.ProviderConf     `json:"provider" yaml:"provider"`
-	GeneratorNames   []string                 `json:"generatorNames" yaml:"generatorNames"`
-	GeneratorOutputs []string                 `json:"generatorOutputs" yaml:"generatorOutputs"`
+	TemplateLanguage   string                   `json:"templateLanguage" yaml:"templateLanguage"`
+	TemplateType       string                   `json:"templateType" yaml:"templateType"`
+	Patches            []string                 `json:"patches" yaml:"patches"`
+	GroupId            string                   `json:"groupId" yaml:"groupId"`
+	ArtifactId         string                   `json:"artifactId" yaml:"artifactId"`
+	Repository         appconf.RepositoryConf   `json:"repository" yaml:"repository"`
+	Maintainers        []appconf.MaintainerConf `json:"maintainers" yaml:"maintainers"`
+	Provider           appconf.ProviderConf     `json:"provider" yaml:"provider"`
+	GeneratorNames     []string                 `json:"generatorNames" yaml:"generatorNames"`
+	GeneratorOutputs   []string                 `json:"generatorOutputs" yaml:"generatorOutputs"`
+	TemplateProperties map[string]string        `json:"templateProperties" yaml:"templateProperties"`
 }
 
 // Name returns the name of the task
@@ -53,13 +54,14 @@ func (n *PrimeCodeGenGenerator) Generate(opts GenerateOptions) error {
 func (n *PrimeCodeGenGenerator) generateCode(opts GenerateOptions) error {
 	// generate
 	return openapicmd.Generate(n.APISpec, n.Config.Patches, n.Config.TemplateLanguage, n.Config.TemplateType, opts.OutputDirectory, openapigenerator.GenerateOpts{
-		ArtifactGroupId:  n.Config.GroupId,
-		ArtifactId:       n.Config.ArtifactId,
-		RepositoryUrl:    n.Config.Repository.URL,
-		LicenseName:      n.Config.Repository.LicenseName,
-		LicenseUrl:       n.Config.Repository.LicenseURL,
-		Provider:         n.Config.Provider,
-		GeneratorNames:   n.Config.GeneratorNames,
-		GeneratorOutputs: n.Config.GeneratorOutputs,
+		ArtifactGroupId:    n.Config.GroupId,
+		ArtifactId:         n.Config.ArtifactId,
+		RepositoryUrl:      n.Config.Repository.URL,
+		LicenseName:        n.Config.Repository.LicenseName,
+		LicenseUrl:         n.Config.Repository.LicenseURL,
+		Provider:           n.Config.Provider,
+		GeneratorNames:     n.Config.GeneratorNames,
+		GeneratorOutputs:   n.Config.GeneratorOutputs,
+		TemplateProperties: n.Config.TemplateProperties,
 	})
 }

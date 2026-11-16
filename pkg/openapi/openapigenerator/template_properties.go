@@ -8,6 +8,9 @@ import (
 	"strings"
 )
 
+// DefaultGradleConfigurationPluginVersion is the default version of the gradle configuration plugin used by the java/kotlin templates.
+const DefaultGradleConfigurationPluginVersion = "0.20.5"
+
 type TemplatePropertyDef struct {
 	Key          string
 	Description  string
@@ -27,7 +30,7 @@ var templatePropertyRegistry = map[string][]TemplatePropertyDef{
 		{
 			Key:          "gradle.configurationPlugin.version",
 			Description:  "Gradle configuration plugin version in libs.versions.toml",
-			DefaultValue: "0.20.5",
+			DefaultValue: DefaultGradleConfigurationPluginVersion,
 			EnvVar:       "PRIMECODEGEN_TPL_OPENAPI_JAVA_HTTPCLIENT_GRADLE_CONFIGURATIONPLUGIN_VERSION",
 		},
 		{
@@ -60,7 +63,7 @@ var templatePropertyRegistry = map[string][]TemplatePropertyDef{
 		{
 			Key:          "gradle.configurationPlugin.version",
 			Description:  "Gradle configuration plugin version in libs.versions.toml",
-			DefaultValue: "0.20.5",
+			DefaultValue: DefaultGradleConfigurationPluginVersion,
 			EnvVar:       "PRIMECODEGEN_TPL_OPENAPI_KOTLIN_HTTPCLIENT_GRADLE_CONFIGURATIONPLUGIN_VERSION",
 		},
 		{
@@ -83,6 +86,12 @@ var templatePropertyRegistry = map[string][]TemplatePropertyDef{
 			Boolean:      true,
 		},
 	},
+}
+
+// RegisterTemplateProperties registers the supported properties for a template id, replacing any existing definitions.
+// Used by generators that consume properties directly instead of passing them to templates.
+func RegisterTemplateProperties(templateId string, defs []TemplatePropertyDef) {
+	templatePropertyRegistry[templateId] = defs
 }
 
 func ParseTemplateProperties(values []string) (map[string]string, error) {

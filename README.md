@@ -41,7 +41,7 @@ The `openapi-merge` command can be used to merge multiple OpenAPI specifications
 
 | Command                                                     | Description                                                                                                                                                                                                                               |
 |-------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `primecodegen openapi-merge --input /in --output-dir /out ` | Merge OpenAPI specifications to be compatible with code generation tool. Provide an empty OpenAPI 3.0 spec to build up a clean info-block. As an alternative use the built-in merge when using `openapi-patch` with multiple input specs. |
+| `primecodegen openapi-merge --input a.yaml --input b.yaml --output merged.yaml` | Merge OpenAPI specifications to be compatible with code generation tool. Provide an empty OpenAPI 3.0 spec via `--empty` to build up a clean info-block. As an alternative use the built-in merge when using `openapi-patch` with multiple input specs. |
 
 ### OpenAPI Patch
 
@@ -49,41 +49,45 @@ The `openapi-patch` command can be used to apply automatic modifications, merge 
 
 | Command                                                                            | Description                                                       |
 |------------------------------------------------------------------------------------|-------------------------------------------------------------------|
-| `primecodegen openapi-patch -i openapi.yaml -o patched.yaml`                       | if no patches are specified, the default ones are applied         |
 | `primecodegen openapi-patch -i openapi.yaml -i openapi.part2.yaml -o patched.yaml` | merge one or more specifications into one                         |
-| `primecodegen openapi-patch -i openapi.yaml -p flattenSchemas -o patched.yaml`     | apply built-in patch with id `flattenSchemas`                     |
+| `primecodegen openapi-patch -i openapi.yaml -p flatten-components -o patched.yaml` | apply built-in patch with id `flatten-components`                 |
 | `primecodegen openapi-patch -i openapi.yaml -p json-patch:noservers.jsonpatch`     | apply a [jsonpatch](https://jsonpatch.com/) to the specification  |
 | `primecodegen openapi-patch -i openapi.yaml -p git-patch:mypatch.patch`            | apply a `git patch` to the specification                          |
 | `primecodegen openapi-patch -i openapi.yaml -p openapi-overlay:overlay.yaml`       | apply a openapi overlay                                           |
 | `primecodegen openapi-patch validate openapi-overlay:dir/overlay.yaml`             | validate patch files (json-patch, git-patch, openapi-overlay, ... |
+| `primecodegen openapi-patch -i a.yaml -i b.yaml --input-patch generate-tag-from-doc-title -o patched.yaml` | apply patches to each input spec before merging |
 | `primecodegen openapi-patch list`                                                  | list all available patches                                        |
 
 **Note**: All the options can be combined, e.g. merging multiple specifications, user-provided patches and built-in patchers.
 
 The following built-in patches are available:
 
-| Patch                             | Default | Description                                                                                                                                                   |
-|-----------------------------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `pruneOperationTags`              | false   | Removes all tags from operations.                                                                                                                             |
-| `pruneOperationTagsExceptFirst`   | false   | Removes all tags from operations except the first one.                                                                                                        |
-| `pruneCommonOperationIdPrefix`    | false   | Removes common operation id prefixes (e. g. all operationIds start with `API_`)                                                                               |
-| `generateOperationIds`            | true    | Generates operationIds for all operations based on the HTTP path and method, overwriting existing ones.                                                       |
-| `flattenSchema`                   | false   | Flattens inline request bodies and response schemas into the components section of the document.                                                              |
-| `missingSchemaTitle`              | true    | Adds a title to all schemas that are missing a title.                                                                                                         |
-| `createOperationTagsFromDocTitle` | false   | Removes all tags and creates one new tag per API spec from the document title, setting it on each operation. This patch will be applied before merging specs. |
-| `inlineAllOfHierarchies`          | false   | Inlines properties of allOf-referenced schemas and removes allOf-references in schemas                                                                        |
+| Patch                                  | Default | Description                                                                                                                  |
+|----------------------------------------|---------|------------------------------------------------------------------------------------------------------------------------------|
+| `prune-operation-tags`                 | false   | Removes all tags from operations.                                                                                            |
+| `prune-operation-tags-keep-first`      | false   | Removes all tags from operations except the first one.                                                                       |
+| `fix-remove-common-operation-id-prefix`| false   | Removes common operation id prefixes (e. g. all operationIds start with `API_`)                                              |
+| `fix-operation-tags`                   | true    | Ensures operation tags are documented in the document without forcing default tags.                                         |
+| `generate-operation-id`                | true    | Generates operationIds for all operations based on the HTTP path and method, overwriting existing ones.                      |
+| `flatten-components`                   | true    | Flattens inline request bodies and response schemas into the components section of the document.                             |
+| `simplify-polymorphic-schemas`         | true    | Merges polymorphic schemas (oneOf, anyOf, allOf) into a single schema.                                                       |
+| `fix-missing-schema-title`             | true    | Adds a title to all schemas that are missing a title.                                                                        |
+| `generate-tag-from-doc-title`          | false   | Removes all tags and creates one new tag per API spec from the document title, setting it on each operation.                 |
+| `simplify-all-of`                      | false   | Merges allOf subschemas into the parent schema.                                                                              |
 
-**Note**: The patches are applied in the order you specify them in. `createOperationTagsFromDocTitle` is an exception to that rule because it is always applied first before specs are possibly merged. If none are specified, the patches flagged as `default` are applied.
+Run `primecodegen openapi-patch list` for the full list of built-in patches.
+
+**Note**: The patches are applied in the order you specify them in. `openapi-patch` applies no patches unless you specify them. Use `--input-patch` for patches that must run on each input spec before merging (e.g. `generate-tag-from-doc-title`). The patches flagged as `default` are used by `openapi-generate` and `openapi-export-template-data` when `--patches` is not set.
 
 ### OpenAPI Template Data
 
-The `openapi-generate-template` command can be used to pre-process the openapi spec and pass the resulting template data to an external code generator.
+The `openapi-export-template-data` command can be used to pre-process the openapi spec and pass the resulting template data to an external code generator.
 The command supports the following options:
 
 | Command                                                                                      | Description                            |
 |----------------------------------------------------------------------------------------------|----------------------------------------|
-| `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client`                  | generate go template data, stdout      |
-| `primecodegen openapi-export-template-data -i openapi.yaml -g go -t client -o template.yaml` | generate go template data, file output |
+| `primecodegen openapi-export-template-data -i openapi.yaml -g go`                            | generate go template data, stdout      |
+| `primecodegen openapi-export-template-data -i openapi.yaml -g go -o template.yaml`           | generate go template data, file output |
 
 ### OpenAPI Code Generator
 
@@ -91,7 +95,7 @@ The `openapi-generate` command can be used to generate code from an OpenAPI spec
 
 | Command                                                                 | Description                                                   |
 |-------------------------------------------------------------------------|---------------------------------------------------------------|
-| `primecodegen openapi-generate -i openapi.yaml -g go -t client -o /out` | run code generation with generator `go` and template `client` |
+| `primecodegen openapi-generate -i openapi.yaml -g go -t httpclient -o /out` | run code generation with generator `go` and template `httpclient` (resolves to template `openapi-go-httpclient`) |
 
 Environment Variables:
 

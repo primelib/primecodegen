@@ -9,7 +9,7 @@ import (
 	"github.com/primelib/primecodegen/pkg/llm"
 	"github.com/primelib/primecodegen/pkg/util"
 	"github.com/speakeasy-api/openapi/overlay"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 func GenerateOpenAPIOverlay(doc *libopenapi.DocumentModel[v3.Document], id string) ([]byte, error) {

@@ -8,7 +8,7 @@ import (
 	"github.com/primelib/primecodegen/pkg/loader"
 	"github.com/primelib/primecodegen/pkg/logging"
 	"github.com/speakeasy-api/openapi/overlay"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 var (

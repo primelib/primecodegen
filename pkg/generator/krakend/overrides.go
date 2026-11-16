@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pb33f/go-yaml"
 	"github.com/pb33f/libopenapi"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
-	"go.yaml.in/yaml/v4"
 )
 
 const krakendExtensionKey = "x-krakend"
@@ -58,32 +58,29 @@ func extensionMap(extensions *orderedmap.Map[string, *yaml.Node], key string) (m
 	return mapValue, nil
 }
 
+// applyKrakenDOverrides merges the x-krakend overrides into the generated config.
+// Precedence (lowest to highest): generated values < root endpoint_defaults/backend_defaults < typed operation keys and namespace shortcuts < raw operation endpoint/backend overrides.
 func applyKrakenDOverrides(config map[string]interface{}, data openapigenerator.DocumentModel, rootExtension map[string]interface{}) error {
-	if len(rootExtension) > 0 {
-		if service, ok := toMap(rootExtension["service"]); ok {
-			deepMergeMap(config, service)
-		}
+	if serviceExtraConfig := namespaceShortcuts(rootExtension, serviceNamespaceShortcuts); len(serviceExtraConfig) > 0 {
+		mergeExtraConfig(config, serviceExtraConfig)
 	}
-
-	endpointDefaults := map[string]interface{}{}
-	backendDefaults := map[string]interface{}{}
-	if len(rootExtension) > 0 {
-		if m, ok := toMap(rootExtension["endpoint_defaults"]); ok {
-			endpointDefaults = m
-		}
-		if m, ok := toMap(rootExtension["backend_defaults"]); ok {
-			backendDefaults = m
-		}
+	if service, ok := toMap(rootExtension["service"]); ok {
+		deepMergeMap(config, service)
 	}
+	endpointDefaults, _ := toMap(rootExtension["endpoint_defaults"])
+	backendDefaults, _ := toMap(rootExtension["backend_defaults"])
 
-	operationsByKey := map[string]openapigenerator.Operation{}
-	for _, op := range data.Operations {
-		operationsByKey[operationKey(op.Method, op.Path)] = op
+	exposed, err := exposedOperations(data.Operations)
+	if err != nil {
+		return err
 	}
 
 	endpointsRaw, ok := config["endpoints"].([]interface{})
 	if !ok {
 		return nil
+	}
+	if len(endpointsRaw) != len(exposed) {
+		return fmt.Errorf("generated %d endpoints for %d operations, %s.service must not override endpoints", len(endpointsRaw), len(exposed), krakendExtensionKey)
 	}
 
 	for i, endpointRaw := range endpointsRaw {
@@ -91,55 +88,40 @@ func applyKrakenDOverrides(config map[string]interface{}, data openapigenerator.
 		if !ok {
 			continue
 		}
+		op, settings := exposed[i].Operation, exposed[i].Settings
 
-		if len(endpointDefaults) > 0 {
-			deepMergeMap(endpointMap, endpointDefaults)
+		opExtension, err := operationKrakenDExtension(op)
+		if err != nil {
+			return err
 		}
 
-		method, _ := endpointMap["method"].(string)
-		path, _ := endpointMap["endpoint"].(string)
-		op, found := operationsByKey[operationKey(method, path)]
-		if found {
-			opExtension, err := operationKrakenDExtension(op)
-			if err != nil {
-				return err
-			}
+		deepMergeMap(endpointMap, endpointDefaults)
+		deepMergeMap(endpointMap, typedEndpointOverrides(settings))
+		mergeExtraConfig(endpointMap, namespaceShortcuts(opExtension, endpointNamespaceShortcuts))
+		if endpointOverride, ok := toMap(opExtension["endpoint"]); ok {
+			deepMergeMap(endpointMap, endpointOverride)
+		}
+		if endpointExtraConfig, ok := toMap(opExtension["endpoint_extra_config"]); ok {
+			mergeExtraConfig(endpointMap, endpointExtraConfig)
+		}
 
-			if endpointOverride, hasEndpointOverride := toMap(opExtension["endpoint"]); hasEndpointOverride {
-				deepMergeMap(endpointMap, endpointOverride)
-			}
-
-			if endpointExtraConfig, hasEndpointExtraConfig := toMap(opExtension["endpoint_extra_config"]); hasEndpointExtraConfig {
-				mergeExtraConfig(endpointMap, endpointExtraConfig)
-			}
-
-			backendsRaw, _ := endpointMap["backend"].([]interface{})
-			if len(backendsRaw) > 0 {
-				backendMap, ok := toMap(backendsRaw[0])
-				if ok {
-					if len(backendDefaults) > 0 {
-						deepMergeMap(backendMap, backendDefaults)
-					}
-					if backendOverride, hasBackendOverride := toMap(opExtension["backend"]); hasBackendOverride {
-						deepMergeMap(backendMap, backendOverride)
-					}
-					if backendExtraConfig, hasBackendExtraConfig := toMap(opExtension["backend_extra_config"]); hasBackendExtraConfig {
-						mergeExtraConfig(backendMap, backendExtraConfig)
-					}
-					backendsRaw[0] = backendMap
+		backendsRaw, _ := endpointMap["backend"].([]interface{})
+		if len(backendsRaw) > 0 {
+			if backendMap, ok := toMap(backendsRaw[0]); ok {
+				deepMergeMap(backendMap, backendDefaults)
+				if settings.BackendEncoding != "" {
+					backendMap["encoding"] = settings.BackendEncoding
 				}
-				endpointMap["backend"] = backendsRaw
-			}
-		} else {
-			backendsRaw, _ := endpointMap["backend"].([]interface{})
-			if len(backendsRaw) > 0 {
-				backendMap, ok := toMap(backendsRaw[0])
-				if ok && len(backendDefaults) > 0 {
-					deepMergeMap(backendMap, backendDefaults)
-					backendsRaw[0] = backendMap
-					endpointMap["backend"] = backendsRaw
+				mergeExtraConfig(backendMap, namespaceShortcuts(opExtension, backendNamespaceShortcuts))
+				if backendOverride, ok := toMap(opExtension["backend"]); ok {
+					deepMergeMap(backendMap, backendOverride)
 				}
+				if backendExtraConfig, ok := toMap(opExtension["backend_extra_config"]); ok {
+					mergeExtraConfig(backendMap, backendExtraConfig)
+				}
+				backendsRaw[0] = backendMap
 			}
+			endpointMap["backend"] = backendsRaw
 		}
 
 		endpointsRaw[i] = endpointMap
@@ -147,6 +129,24 @@ func applyKrakenDOverrides(config map[string]interface{}, data openapigenerator.
 
 	config["endpoints"] = endpointsRaw
 	return nil
+}
+
+// typedEndpointOverrides returns the scalar endpoint settings of the operation, re-applied after the root defaults so they take precedence
+func typedEndpointOverrides(settings operationSettings) map[string]interface{} {
+	out := map[string]interface{}{}
+	if settings.Timeout != "" {
+		out["timeout"] = settings.Timeout
+	}
+	if settings.CacheTTL != "" {
+		out["cache_ttl"] = settings.CacheTTL
+	}
+	if settings.ConcurrentCalls > 0 {
+		out["concurrent_calls"] = settings.ConcurrentCalls
+	}
+	if settings.OutputEncoding != "" {
+		out["output_encoding"] = settings.OutputEncoding
+	}
+	return out
 }
 
 func mergeExtraConfig(target map[string]interface{}, extra map[string]interface{}) {

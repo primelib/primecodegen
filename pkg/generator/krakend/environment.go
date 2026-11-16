@@ -18,34 +18,8 @@ var environmentOrder = []string{EnvironmentDev, EnvironmentStage, EnvironmentPro
 
 var nonAlphaNumRegex = regexp.MustCompile(`[^a-z0-9]+`)
 
-func resolveEnvironmentHosts(endpoints openapigenerator.Endpoints) map[string]string {
-	resolved := map[string]string{}
-
-	for _, ep := range endpoints {
-		normalizedEndpoint, ok := normalizeEndpointURL(ep.URL)
-		if !ok {
-			continue
-		}
-		host := normalizedEndpoint.Host
-		if host == "" {
-			continue
-		}
-
-		environment := detectEnvironment(ep)
-		if environment == "" {
-			continue
-		}
-
-		if _, exists := resolved[environment]; !exists {
-			resolved[environment] = host
-		}
-	}
-
-	return resolved
-}
-
 type ResolvedEndpoint struct {
-	Host        string
+	Host        string // host including the scheme, e.g. https://api.example.com
 	BasePath    string
 	RawURL      string
 	Environment string
@@ -70,7 +44,7 @@ func resolveEnvironmentEndpoints(endpoints openapigenerator.Endpoints) map[strin
 		}
 
 		resolved[environment] = ResolvedEndpoint{
-			Host:        normalized.Host,
+			Host:        normalized.Scheme + "://" + normalized.Host,
 			BasePath:    normalized.BasePath,
 			RawURL:      strings.TrimSpace(ep.URL),
 			Environment: environment,
@@ -81,6 +55,7 @@ func resolveEnvironmentEndpoints(endpoints openapigenerator.Endpoints) map[strin
 }
 
 type normalizedEndpoint struct {
+	Scheme   string
 	Host     string
 	BasePath string
 }
@@ -107,7 +82,12 @@ func normalizeEndpointURL(raw string) (normalizedEndpoint, bool) {
 		basePath = "/" + basePath
 	}
 
-	return normalizedEndpoint{Host: host, BasePath: basePath}, true
+	scheme := strings.ToLower(parsed.Scheme)
+	if scheme == "" {
+		scheme = "https"
+	}
+
+	return normalizedEndpoint{Scheme: scheme, Host: host, BasePath: basePath}, true
 }
 
 func detectEnvironment(endpoint openapigenerator.Endpoint) string {
@@ -123,14 +103,19 @@ func detectEnvironment(endpoint openapigenerator.Endpoint) string {
 		}
 	}
 
-	normalized := strings.ReplaceAll(content, "-", "")
-	normalized = strings.ReplaceAll(normalized, "_", "")
+	// also tokenize without separators to match spellings like pre-production / pre_prod
+	normalized := strings.NewReplacer("-", "", "_", "").Replace(content)
+	for _, token := range nonAlphaNumRegex.Split(normalized, -1) {
+		if token == "preprod" || token == "preproduction" {
+			tokens[token] = true
+		}
+	}
 
 	if tokens["dev"] || tokens["development"] {
 		return EnvironmentDev
 	}
 
-	if tokens["stage"] || tokens["staging"] {
+	if tokens["stage"] || tokens["staging"] || tokens["uat"] || tokens["preprod"] || tokens["preproduction"] {
 		return EnvironmentStage
 	}
 

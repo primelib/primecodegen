@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/pb33f/go-yaml"
 	"github.com/pb33f/libopenapi/orderedmap"
-	"go.yaml.in/yaml/v4"
 )
 
 // HaveSameCodeTypeName checks if all code types are structurally the same type (name, container kind and type arguments)

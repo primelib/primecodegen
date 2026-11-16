@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"os"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // YamlNodeFromFile will load and parse a YAML or JSON file from the given path.

@@ -1,137 +1,224 @@
 package krakend
 
 import (
+	"fmt"
+
 	"github.com/gosimple/slug"
+	"github.com/pb33f/go-yaml"
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/primelib/primecodegen/pkg/openapi/openapigenerator"
-	"go.yaml.in/yaml/v4"
 	"slices"
 	"strconv"
 	"strings"
 )
 
 type GenerateKrakenConfigOpts struct {
-	DebugEndpoint          bool
-	EchoEndpoint           bool
-	PrometheusExporterPort *int
-	OTELExporterPort       *int
-	BackendHost            string
-	BackendBasePath        string
-	Environment            string
-	APIName                string
-	CircuitBreaker         bool
+	Config            Config
+	Environment       string
+	APIName           string
+	BackendHost       string // backend host including the scheme, e.g. https://api.example.com
+	BackendBasePath   string
+	EndpointPrefix    string                   // root x-krakend.endpoint_prefix
+	Auth              map[string]interface{}   // root x-krakend.auth, base auth/validator config for secured operations
+	ClientCredentials map[string]interface{}   // root x-krakend.client_credentials, base auth/client-credentials config for backends
+	Operations        map[string]OperationMeta // keyed by operationKey(method, path)
 }
 
-func generateKrakenConfig(data openapigenerator.DocumentModel, opts GenerateKrakenConfigOpts) KrakenDConfig {
+func generateKrakenConfig(data openapigenerator.DocumentModel, opts GenerateKrakenConfigOpts) (KrakenDConfig, error) {
+	conf := opts.Config
 	config := KrakenDConfig{
 		Schema:            "https://www.krakend.io/schema/krakend.json",
 		Version:           3,
 		Name:              buildGatewayName(opts.APIName),
-		Timeout:           "3000ms",
-		ReadTimeout:       "10s",
-		WriteTimeout:      "10s",
-		IdleTimeout:       "10s",
-		ReadHeaderTimeout: "10s",
-		Port:              8080,
-		CacheTTL:          "300s",
+		Timeout:           conf.Timeout,
+		ReadTimeout:       conf.ReadTimeout,
+		WriteTimeout:      conf.WriteTimeout,
+		IdleTimeout:       conf.IdleTimeout,
+		ReadHeaderTimeout: conf.ReadHeaderTimeout,
+		Port:              conf.Port,
+		CacheTTL:          conf.CacheTTL,
 		OutputEncoding:    "json",
-		DebugEndpoint:     opts.DebugEndpoint,
-		EchoEndpoint:      opts.EchoEndpoint,
+		DebugEndpoint:     slices.Contains(conf.DebugEndpointEnvironments, opts.Environment),
+		EchoEndpoint:      slices.Contains(conf.EchoEndpointEnvironments, opts.Environment),
 		DisableRest:       true,
-		ExtraConfig: ExtraConfig{
-			CORS: &CORSConfig{
-				AllowOrigins:  []string{"*"},
-				ExposeHeaders: []string{"Content-Length"},
-				MaxAge:        "12h",
-				AllowMethods:  []string{"GET", "HEAD", "POST"},
-			},
-			BotDetector: &BotDetectorConfig{
-				EmptyUserAgentIsBot: true,
-				CacheSize:           10000,
-			},
-			AuthValidator: &AuthValidatorConfig{
-				SharedCacheDuration: 3600,
-			},
-		},
-		Endpoints: []Endpoint{},
+		Endpoints:         []Endpoint{},
 	}
 	if opts.Environment != "" {
 		config.Name = config.Name + " (" + opts.Environment + ")"
 	}
+	if conf.CORSEnabled {
+		config.ExtraConfig.CORS = &CORSConfig{
+			AllowOrigins:  conf.CORSAllowOrigins,
+			ExposeHeaders: []string{"Content-Length"},
+			MaxAge:        "12h",
+			AllowMethods:  operationMethods(data.Operations),
+		}
+	}
+	if conf.BotDetectorEnabled {
+		config.ExtraConfig.BotDetector = &BotDetectorConfig{
+			EmptyUserAgentIsBot: true,
+			CacheSize:           10000,
+		}
+	}
+	if conf.HideVersionHeader || len(conf.LoggerSkipPaths) > 0 || len(conf.TrustedProxies) > 0 {
+		config.ExtraConfig.Router = &RouterConfig{
+			HideVersionHeader: conf.HideVersionHeader,
+			LoggerSkipPaths:   conf.LoggerSkipPaths,
+		}
+		if len(conf.TrustedProxies) > 0 {
+			config.ExtraConfig.Router.ForwardedByClientIP = true
+			config.ExtraConfig.Router.RemoteIPHeaders = []string{"X-Forwarded-For"}
+			config.ExtraConfig.Router.TrustedProxies = conf.TrustedProxies
+		}
+	}
+	if conf.SecurityHeadersEnabled {
+		config.ExtraConfig.SecurityHTTP = &SecurityHTTPConfig{
+			FrameDeny:            true,
+			ContentTypeNosniff:   true,
+			BrowserXSSFilter:     true,
+			ReferrerPolicy:       "same-origin",
+			STSSeconds:           conf.STSSeconds,
+			STSIncludeSubdomains: conf.STSSeconds > 0,
+		}
+	}
+	if conf.LoggingLevel != "" {
+		config.ExtraConfig.Logging = &LoggingConfig{
+			Level:  conf.LoggingLevel,
+			Prefix: "[KRAKEND]",
+			Stdout: true,
+			Format: conf.LoggingFormat,
+		}
+		if conf.LoggingFormat == "logstash" {
+			config.ExtraConfig.Logstash = &LogstashConfig{Enabled: true}
+		}
+	}
+	if conf.GELFAddress != "" {
+		config.ExtraConfig.GELF = &GELFConfig{Address: conf.GELFAddress}
+	}
+	config.ExtraConfig.OpenTelemetry = openTelemetryConfig(conf, buildServiceName(opts.APIName))
 
 	// endpoints
-	for _, op := range data.Operations {
-		endpointEncoding, backendEncoding := operationEncodings(op)
-		ep := Endpoint{
-			Endpoint:       op.Path,
-			Method:         strings.ToUpper(op.Method),
-			OutputEncoding: endpointEncoding,
-		}
+	exposed, err := exposedOperations(data.Operations)
+	if err != nil {
+		return config, err
+	}
+	seen := map[string]bool{}
+	for _, e := range exposed {
+		op, settings := e.Operation, e.Settings
+		meta := opts.Operations[operationKey(op.Method, op.Path)]
 		opSlug := slug.Make(op.Path + "-" + op.Method)
 
-		for _, qp := range op.QueryParameters {
-			ep.InputQueryStrings = append(ep.InputQueryStrings, qp.Name)
+		endpointEncoding, backendEncoding := operationEncodings(op)
+		if settings.OutputEncoding != "" {
+			endpointEncoding = settings.OutputEncoding
 		}
-		ep.InputQueryStrings = slices.Compact(ep.InputQueryStrings)
+		if settings.BackendEncoding != "" {
+			backendEncoding = settings.BackendEncoding
+		}
 
-		ep.InputHeaders = append(ep.InputHeaders, "Content-Type", "Accept", "User-Agent")
-		for _, hp := range op.HeaderParameters {
-			ep.InputHeaders = append(ep.InputHeaders, hp.Name)
+		ep := Endpoint{
+			Endpoint:        endpointPath(opts.EndpointPrefix, op, settings),
+			Method:          strings.ToUpper(op.Method),
+			OutputEncoding:  endpointEncoding,
+			Timeout:         settings.Timeout,
+			CacheTTL:        settings.CacheTTL,
+			ConcurrentCalls: settings.ConcurrentCalls,
 		}
-		ep.InputHeaders = slices.Compact(ep.InputHeaders)
-		/*
-			ep.ExtraConfig = map[string]interface{}{
-				"auth/validator": map[string]interface{}{
-					"cache":               true,
-					"jwk_url":             "jwkUri",
-					"issuer":              "issuerUrl", // optional?
-					"alg":                 "RS256",     // optional?
-					"roles_key_is_nested": true,
-					"scopes_key":          "scopesKey",
-					"scopes_matcher":      "any",
-					"roles_key":           "rolesKey.nested.abc",
-					"roles":               []string{"admin", "user"},
-					"scopes":              []string{"scopea", "scopeb"},
-				},
-			}
-		*/
+		key := operationKey(ep.Method, ep.Endpoint)
+		if seen[key] {
+			return config, fmt.Errorf("duplicate gateway endpoint %s (check %s.path and endpoint_prefix)", key, krakendExtensionKey)
+		}
+		seen[key] = true
+
+		// forwarded query strings and headers, krakend drops everything that is not listed
+		for _, qp := range op.QueryParameters {
+			ep.InputQueryStrings = appendUnique(ep.InputQueryStrings, qp.Name)
+		}
+		ep.InputHeaders = appendUnique(ep.InputHeaders, "Content-Type", "Accept", "User-Agent")
+		for _, hp := range op.HeaderParameters {
+			ep.InputHeaders = appendUnique(ep.InputHeaders, hp.Name)
+		}
+		if len(op.CookieParameters) > 0 {
+			ep.InputHeaders = appendUnique(ep.InputHeaders, "Cookie")
+		}
+		if meta.Security != nil {
+			ep.InputHeaders = appendUnique(ep.InputHeaders, meta.Security.ForwardHeaders...)
+			ep.InputQueryStrings = appendUnique(ep.InputQueryStrings, meta.Security.ForwardQueryStrings...)
+		}
+		ep.InputHeaders = mergeInputList(ep.InputHeaders, settings.InputHeaders)
+		ep.InputQueryStrings = mergeInputList(ep.InputQueryStrings, settings.InputQueryStrings)
+
+		// endpoint config
+		endpointExtraConfig := map[string]interface{}{}
+		if validator := authValidatorConfig(opts.Auth, meta.Security, settings.Auth); validator != nil {
+			endpointExtraConfig["auth/validator"] = validator
+		}
+		if settings.RateLimit.resolve(false) {
+			endpointExtraConfig["qos/ratelimit/router"] = settings.RateLimit.apply(map[string]interface{}{
+				"max_rate": 100,
+			})
+		}
+		if settings.Validation.resolve(conf.ValidateRequestBody) && (meta.RequestBodySchema != nil || len(settings.Validation.settings) > 0) {
+			schema := map[string]interface{}{}
+			deepMergeMap(schema, meta.RequestBodySchema)
+			endpointExtraConfig["validation/json-schema"] = settings.Validation.apply(schema)
+		}
+		if len(endpointExtraConfig) > 0 {
+			ep.ExtraConfig = endpointExtraConfig
+		}
 
 		// backend config
-		backendExtraConfig := map[string]interface{}{}
-		circuitBreakerEnabled := opts.CircuitBreaker
+		qosEnabled := conf.CircuitBreakerEnabled
 		if value, exists := operationExtensionBool(op.Extensions, "x-krakend-circuit-breaker-enabled"); exists {
-			circuitBreakerEnabled = value
+			qosEnabled = value
 		}
 
-		if circuitBreakerEnabled {
-			backendExtraConfig["qos/http-cache"] = map[string]interface{}{
+		backendExtraConfig := map[string]interface{}{}
+		if settings.HTTPCache.resolve(qosEnabled) {
+			backendExtraConfig["qos/http-cache"] = settings.HTTPCache.apply(map[string]interface{}{
 				"shared": true,
-			}
-			backendExtraConfig["qos/circuit-breaker"] = map[string]interface{}{
+			})
+		}
+		if settings.CircuitBreaker.resolve(qosEnabled) {
+			backendExtraConfig["qos/circuit-breaker"] = settings.CircuitBreaker.apply(map[string]interface{}{
 				"interval":          60,
 				"name":              "circuit-breaker-" + opSlug,
 				"timeout":           10,
 				"max_errors":        1,
 				"log_status_change": true,
-			}
-			backendExtraConfig["qos/ratelimit/proxy"] = map[string]interface{}{
+			})
+		}
+		if settings.ProxyRateLimit.resolve(qosEnabled) {
+			backendExtraConfig["qos/ratelimit/proxy"] = settings.ProxyRateLimit.apply(map[string]interface{}{
 				"max_rate": 100,
 				"capacity": 100,
 				"every":    "30s",
-			}
+			})
 		}
 
+		if settings.BackendHTTP.resolve(conf.ReturnErrorCode && backendEncoding != "no-op") {
+			backendExtraConfig["backend/http"] = settings.BackendHTTP.apply(map[string]interface{}{
+				"return_error_code": true,
+			})
+		}
+		if clientCredentials := clientCredentialsConfig(opts.ClientCredentials, meta.Security, settings.ClientCredentials); clientCredentials != nil {
+			backendExtraConfig["auth/client-credentials"] = clientCredentials
+		}
+
+		backendHost, backendBasePath := opts.BackendHost, opts.BackendBasePath
+		if resolved, ok := operationBackend(meta.Servers, opts.Environment); ok {
+			backendHost, backendBasePath = resolved.Host, resolved.BasePath
+		}
 		backendURLPattern := op.Path
-		if opts.BackendBasePath != "" {
-			backendURLPattern = strings.TrimSuffix(opts.BackendBasePath, "/") + op.Path
+		if backendBasePath != "" {
+			backendURLPattern = strings.TrimSuffix(backendBasePath, "/") + op.Path
 		}
 
 		ep.Backend = append(ep.Backend, Backend{
 			SD:                  "static",
-			Host:                []string{opts.BackendHost},
+			Host:                []string{backendHost},
 			DisableHostSanitize: false,
-			IsCollection:        false,
-			Target:              "",
+			IsCollection:        endpointEncoding == "json-collection",
 			URLPattern:          backendURLPattern,
 			Encoding:            backendEncoding,
 			Method:              strings.ToUpper(op.Method),
@@ -141,7 +228,7 @@ func generateKrakenConfig(data openapigenerator.DocumentModel, opts GenerateKrak
 		config.Endpoints = append(config.Endpoints, ep)
 	}
 
-	return config
+	return config, nil
 }
 
 func operationExtensionBool(extensions *orderedmap.Map[string, *yaml.Node], key string) (bool, bool) {
@@ -172,9 +259,66 @@ func operationExtensionBool(extensions *orderedmap.Map[string, *yaml.Node], key 
 func buildGatewayName(apiName string) string {
 	apiName = strings.TrimSpace(apiName)
 	if apiName == "" {
-		return "API Client SDK"
+		return "API Gateway"
 	}
-	return apiName + " Client SDK"
+	return apiName + " Gateway"
+}
+
+func buildServiceName(apiName string) string {
+	name := slug.Make(apiName)
+	if name == "" {
+		return "krakend"
+	}
+	return name + "-gateway"
+}
+
+// operationMethods returns the distinct HTTP methods used by the operations, used for the CORS allow list
+func operationMethods(operations []openapigenerator.Operation) []string {
+	var methods []string
+	for _, op := range operations {
+		method := strings.ToUpper(op.Method)
+		if method != "" && !slices.Contains(methods, method) {
+			methods = append(methods, method)
+		}
+	}
+	if len(methods) == 0 {
+		return []string{"GET", "HEAD", "POST"}
+	}
+	slices.Sort(methods)
+	return methods
+}
+
+func openTelemetryConfig(conf Config, serviceName string) *OpenTelemetryConfig {
+	if conf.PrometheusPort == 0 && conf.OTLPHost == "" {
+		return nil
+	}
+
+	otel := &OpenTelemetryConfig{
+		ServiceName:           serviceName,
+		MetricReportingPeriod: 60,
+		Layers: OTLayers{
+			Backend: OTLayerBackend{
+				Metrics: OTStageDetails{RoundTrip: true, ReadPayload: true},
+				Traces:  OTStageDetails{RoundTrip: true, ReadPayload: true},
+			},
+		},
+	}
+	if conf.PrometheusPort > 0 {
+		otel.Exporters.Prometheus = append(otel.Exporters.Prometheus, PrometheusExporter{
+			Name: "prometheus",
+			Port: conf.PrometheusPort,
+		})
+	}
+	if conf.OTLPHost != "" {
+		otel.TraceSampleRate = conf.TraceSampleRate
+		otel.Exporters.OTLP = append(otel.Exporters.OTLP, OTLPExporter{
+			Name: "otlp",
+			Host: conf.OTLPHost,
+			Port: conf.OTLPPort,
+		})
+	}
+
+	return otel
 }
 
 func operationEncodings(op openapigenerator.Operation) (string, string) {
@@ -188,10 +332,8 @@ func operationEncodings(op openapigenerator.Operation) (string, string) {
 		}
 		return "no-op", "no-op"
 	}
-	if strings.Contains(mediaType, "xml") {
-		return "no-op", "xml"
-	}
 
+	// KrakenD requires no-op on both the endpoint and the backend, this includes xml since re-encoding would alter the payload
 	return "no-op", "no-op"
 }
 

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/pb33f/go-yaml"
 	"github.com/pb33f/libopenapi"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
-	"go.yaml.in/yaml/v4"
 )
 
 func RenderV3ModelFormat(doc *libopenapi.DocumentModel[v3.Document], format string) ([]byte, error) {
