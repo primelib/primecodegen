@@ -1,7 +1,7 @@
 {
   "workflows": {
     "Nightly": {
-      "version": "0.12.0",
+      "version": "0.13.0",
       "name": "Nightly",
       "name_slug": "nightly",
       "job_timeout": 20,
@@ -290,14 +290,14 @@
         "pkg:github-action/step-security/harden-runner": {
           "id": "step-security/harden-runner",
           "type": "github-action",
-          "version": "v2.22.4",
-          "hash": "1d88384fd173af6ecb012dfd0264a306b711241a"
+          "version": "v2.23.0",
+          "hash": "aebdcf6156ab6691adf63218240e476564a1ed4c"
         },
         "pkg:github/cidverse/cid": {
           "id": "cidverse/cid",
           "type": "github",
-          "version": "0.12.0",
-          "hash": "11f989eb1e3576b043abce9590a5f1f33053b0674002feb02c0c0d71e842fbb6",
+          "version": "0.13.0",
+          "hash": "617e3bf2dfef293e18a757060fad5777d8c841a81c2ef97eac5969ca51a340f5",
           "gpg-fingerprint": "76A4948E69C62589C7B0AB84E414434DF5371FB6"
         }
       },
@@ -313,7 +313,7 @@
       ]
     },
     "Pull Request": {
-      "version": "0.12.0",
+      "version": "0.13.0",
       "name": "Pull Request",
       "name_slug": "pull-request",
       "job_timeout": 20,
@@ -600,14 +600,14 @@
         "pkg:github-action/step-security/harden-runner": {
           "id": "step-security/harden-runner",
           "type": "github-action",
-          "version": "v2.22.4",
-          "hash": "1d88384fd173af6ecb012dfd0264a306b711241a"
+          "version": "v2.23.0",
+          "hash": "aebdcf6156ab6691adf63218240e476564a1ed4c"
         },
         "pkg:github/cidverse/cid": {
           "id": "cidverse/cid",
           "type": "github",
-          "version": "0.12.0",
-          "hash": "11f989eb1e3576b043abce9590a5f1f33053b0674002feb02c0c0d71e842fbb6",
+          "version": "0.13.0",
+          "hash": "617e3bf2dfef293e18a757060fad5777d8c841a81c2ef97eac5969ca51a340f5",
           "gpg-fingerprint": "76A4948E69C62589C7B0AB84E414434DF5371FB6"
         }
       },
@@ -623,7 +623,7 @@
       ]
     },
     "Release": {
-      "version": "0.12.0",
+      "version": "0.13.0",
       "name": "Release",
       "name_slug": "release",
       "job_timeout": 20,
@@ -657,6 +657,7 @@
           "build",
           "test",
           "scan",
+          "package",
           "publish"
         ],
         "steps": [
@@ -745,6 +746,41 @@
           },
           {
             "id": "2",
+            "name": "syft-sbom [github.com/primelib/primecodegen]",
+            "slug": "syft-sbom-github-com-primelib-primecodegen",
+            "stage": "package",
+            "scope": "module",
+            "action": "builtin://actions/syft-sbom",
+            "module": "gomod-go-mod",
+            "module-dir": ".",
+            "access": {
+              "executables": [
+                {
+                  "name": "syft",
+                  "constraint": "\u003e= 1.0.0"
+                }
+              ],
+              "network": [
+                "proxy.golang.org:443"
+              ]
+            },
+            "inputs": {},
+            "outputs": {
+              "artifacts": [
+                {
+                  "type": "sbom",
+                  "format": "cyclonedx-json"
+                },
+                {
+                  "type": "sbom",
+                  "format": "spdx-json"
+                }
+              ]
+            },
+            "order": 2
+          },
+          {
+            "id": "3",
             "name": "betterleaks-scan",
             "slug": "betterleaks-scan",
             "stage": "scan",
@@ -770,10 +806,10 @@
                 }
               ]
             },
-            "order": 2
+            "order": 3
           },
           {
-            "id": "3",
+            "id": "4",
             "name": "semgrep-scan",
             "slug": "semgrep-scan",
             "stage": "scan",
@@ -811,10 +847,10 @@
                 }
               ]
             },
-            "order": 3
+            "order": 4
           },
           {
-            "id": "4",
+            "id": "5",
             "name": "trivyfs-scan",
             "slug": "trivyfs-scan",
             "stage": "scan",
@@ -843,10 +879,160 @@
                 }
               ]
             },
-            "order": 4
+            "order": 5
           },
           {
-            "id": "5",
+            "id": "6",
+            "name": "checksum-artifacts",
+            "slug": "checksum-artifacts",
+            "stage": "publish",
+            "scope": "project",
+            "action": "builtin://actions/checksum-artifacts",
+            "run-after": [
+              "betterleaks-scan",
+              "go-build-github-com-primelib-primecodegen",
+              "go-test-github-com-primelib-primecodegen",
+              "semgrep-scan",
+              "syft-sbom-github-com-primelib-primecodegen",
+              "trivyfs-scan"
+            ],
+            "run-after-by-name": [
+              "betterleaks-scan",
+              "go-build [github.com/primelib/primecodegen]",
+              "go-test [github.com/primelib/primecodegen]",
+              "semgrep-scan",
+              "syft-sbom [github.com/primelib/primecodegen]",
+              "trivyfs-scan"
+            ],
+            "uses-output-of": [
+              "go-build-github-com-primelib-primecodegen"
+            ],
+            "uses-output-of-by-name": [
+              "go-build [github.com/primelib/primecodegen]"
+            ],
+            "access": {},
+            "inputs": {
+              "artifacts": [
+                {
+                  "type": "binary"
+                }
+              ]
+            },
+            "outputs": {
+              "artifacts": [
+                {
+                  "type": "checksum",
+                  "format": "sha256"
+                }
+              ]
+            },
+            "order": 6
+          },
+          {
+            "id": "7",
+            "name": "sigstore-sign",
+            "slug": "sigstore-sign",
+            "stage": "publish",
+            "scope": "project",
+            "action": "builtin://actions/sigstore-sign",
+            "run-after": [
+              "betterleaks-scan",
+              "go-build-github-com-primelib-primecodegen",
+              "go-test-github-com-primelib-primecodegen",
+              "semgrep-scan",
+              "syft-sbom-github-com-primelib-primecodegen",
+              "trivyfs-scan"
+            ],
+            "run-after-by-name": [
+              "betterleaks-scan",
+              "go-build [github.com/primelib/primecodegen]",
+              "go-test [github.com/primelib/primecodegen]",
+              "semgrep-scan",
+              "syft-sbom [github.com/primelib/primecodegen]",
+              "trivyfs-scan"
+            ],
+            "uses-output-of": [
+              "go-build-github-com-primelib-primecodegen",
+              "syft-sbom-github-com-primelib-primecodegen"
+            ],
+            "uses-output-of-by-name": [
+              "go-build [github.com/primelib/primecodegen]",
+              "syft-sbom [github.com/primelib/primecodegen]"
+            ],
+            "access": {
+              "env": [
+                {
+                  "name": "CID_SIGSTORE_SIGN"
+                },
+                {
+                  "name": "^ACTIONS_ID_TOKEN_REQUEST_URL$",
+                  "pattern": true
+                },
+                {
+                  "name": "^ACTIONS_ID_TOKEN_REQUEST_TOKEN$",
+                  "pattern": true,
+                  "secret": true
+                },
+                {
+                  "name": "^SIGSTORE_ID_TOKEN$",
+                  "pattern": true,
+                  "secret": true
+                },
+                {
+                  "name": "^GITHUB_SERVER_URL$",
+                  "pattern": true
+                },
+                {
+                  "name": "^GITHUB_WORKFLOW_REF$",
+                  "pattern": true
+                },
+                {
+                  "name": "^CI_RUNNER_ID$",
+                  "pattern": true
+                }
+              ],
+              "network": [
+                "*.actions.githubusercontent.com:443",
+                "tuf-repo-cdn.sigstore.dev:443",
+                "fulcio.sigstore.dev:443",
+                "rekor.sigstore.dev:443",
+                "*.rekor.sigstore.dev:443",
+                "timestamp.sigstore.dev:443"
+              ],
+              "idTokens": [
+                {
+                  "name": "SIGSTORE_ID_TOKEN",
+                  "audience": "sigstore"
+                }
+              ]
+            },
+            "inputs": {
+              "artifacts": [
+                {
+                  "type": "binary"
+                },
+                {
+                  "type": "sbom",
+                  "format": "cyclonedx-json"
+                },
+                {
+                  "type": "sbom",
+                  "format": "spdx-json"
+                }
+              ]
+            },
+            "outputs": {
+              "artifacts": [
+                {
+                  "type": "signature",
+                  "format": "sigstore"
+                }
+              ]
+            },
+            "order": 7
+          },
+          {
+            "id": "8",
             "name": "changelog-generate",
             "slug": "changelog-generate",
             "stage": "publish",
@@ -857,6 +1043,7 @@
               "go-build-github-com-primelib-primecodegen",
               "go-test-github-com-primelib-primecodegen",
               "semgrep-scan",
+              "syft-sbom-github-com-primelib-primecodegen",
               "trivyfs-scan"
             ],
             "run-after-by-name": [
@@ -864,6 +1051,7 @@
               "go-build [github.com/primelib/primecodegen]",
               "go-test [github.com/primelib/primecodegen]",
               "semgrep-scan",
+              "syft-sbom [github.com/primelib/primecodegen]",
               "trivyfs-scan"
             ],
             "access": {},
@@ -875,10 +1063,10 @@
                 }
               ]
             },
-            "order": 5
+            "order": 8
           },
           {
-            "id": "6",
+            "id": "9",
             "name": "github-release-publish",
             "slug": "github-release-publish",
             "stage": "publish",
@@ -887,26 +1075,38 @@
             "run-after": [
               "betterleaks-scan",
               "changelog-generate",
+              "checksum-artifacts",
               "go-build-github-com-primelib-primecodegen",
               "go-test-github-com-primelib-primecodegen",
               "semgrep-scan",
+              "sigstore-sign",
+              "syft-sbom-github-com-primelib-primecodegen",
               "trivyfs-scan"
             ],
             "run-after-by-name": [
               "betterleaks-scan",
               "changelog-generate",
+              "checksum-artifacts",
               "go-build [github.com/primelib/primecodegen]",
               "go-test [github.com/primelib/primecodegen]",
               "semgrep-scan",
+              "sigstore-sign",
+              "syft-sbom [github.com/primelib/primecodegen]",
               "trivyfs-scan"
             ],
             "uses-output-of": [
               "changelog-generate",
-              "go-build-github-com-primelib-primecodegen"
+              "checksum-artifacts",
+              "go-build-github-com-primelib-primecodegen",
+              "sigstore-sign",
+              "syft-sbom-github-com-primelib-primecodegen"
             ],
             "uses-output-of-by-name": [
               "changelog-generate",
-              "go-build [github.com/primelib/primecodegen]"
+              "checksum-artifacts",
+              "go-build [github.com/primelib/primecodegen]",
+              "sigstore-sign",
+              "syft-sbom [github.com/primelib/primecodegen]"
             ],
             "access": {
               "env": [
@@ -930,11 +1130,27 @@
                 {
                   "type": "signature",
                   "format": "pgp"
+                },
+                {
+                  "type": "signature",
+                  "format": "sigstore"
+                },
+                {
+                  "type": "checksum",
+                  "format": "sha256"
+                },
+                {
+                  "type": "sbom",
+                  "format": "cyclonedx-json"
+                },
+                {
+                  "type": "sbom",
+                  "format": "spdx-json"
                 }
               ]
             },
             "outputs": {},
-            "order": 6
+            "order": 9
           }
         ]
       },
@@ -965,14 +1181,14 @@
         "pkg:github-action/step-security/harden-runner": {
           "id": "step-security/harden-runner",
           "type": "github-action",
-          "version": "v2.22.4",
-          "hash": "1d88384fd173af6ecb012dfd0264a306b711241a"
+          "version": "v2.23.0",
+          "hash": "aebdcf6156ab6691adf63218240e476564a1ed4c"
         },
         "pkg:github/cidverse/cid": {
           "id": "cidverse/cid",
           "type": "github",
-          "version": "0.12.0",
-          "hash": "11f989eb1e3576b043abce9590a5f1f33053b0674002feb02c0c0d71e842fbb6",
+          "version": "0.13.0",
+          "hash": "617e3bf2dfef293e18a757060fad5777d8c841a81c2ef97eac5969ca51a340f5",
           "gpg-fingerprint": "76A4948E69C62589C7B0AB84E414434DF5371FB6"
         }
       },
@@ -988,7 +1204,7 @@
       ]
     },
     "Main": {
-      "version": "0.12.0",
+      "version": "0.13.0",
       "name": "Main",
       "name_slug": "main",
       "job_timeout": 20,
@@ -1275,14 +1491,14 @@
         "pkg:github-action/step-security/harden-runner": {
           "id": "step-security/harden-runner",
           "type": "github-action",
-          "version": "v2.22.4",
-          "hash": "1d88384fd173af6ecb012dfd0264a306b711241a"
+          "version": "v2.23.0",
+          "hash": "aebdcf6156ab6691adf63218240e476564a1ed4c"
         },
         "pkg:github/cidverse/cid": {
           "id": "cidverse/cid",
           "type": "github",
-          "version": "0.12.0",
-          "hash": "11f989eb1e3576b043abce9590a5f1f33053b0674002feb02c0c0d71e842fbb6",
+          "version": "0.13.0",
+          "hash": "617e3bf2dfef293e18a757060fad5777d8c841a81c2ef97eac5969ca51a340f5",
           "gpg-fingerprint": "76A4948E69C62589C7B0AB84E414434DF5371FB6"
         }
       },
