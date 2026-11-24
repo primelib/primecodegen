@@ -9,7 +9,7 @@ import (
 )
 
 // DefaultGradleConfigurationPluginVersion is the default version of the gradle configuration plugin used by the java/kotlin templates.
-const DefaultGradleConfigurationPluginVersion = "0.20.5"
+const DefaultGradleConfigurationPluginVersion = "0.20.6"
 
 type TemplatePropertyDef struct {
 	Key          string
