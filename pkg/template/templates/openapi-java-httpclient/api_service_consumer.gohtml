@@ -159,7 +159,7 @@ public class {{ .Service.Type }}Api extends Abstract{{ .Metadata.Name }}ApiClien
             return new {{ $op.Name }}Response.{{ statusCodeToClassName $code }}(
                 deserializeBody(info, new TypeReference<{{ $type.QualifiedType }}>() {}),
                 info.statusCode(),
-                info.body(),
+                {{ if eq $type.QualifiedType "byte[]" }}null{{ else }}info.body(){{ end }},
                 info.headers()
             );
         }
@@ -173,7 +173,7 @@ public class {{ .Service.Type }}Api extends Abstract{{ .Metadata.Name }}ApiClien
         return new {{ $op.Name }}Response.{{ statusCodeToClassName "default" }}(
             deserializeBody(info, new TypeReference<{{ (index $op.ReturnTypeByCode "default").QualifiedType }}>() {}),
             info.statusCode(),
-            info.body(),
+            {{ if eq (index $op.ReturnTypeByCode "default").QualifiedType "byte[]" }}null{{ else }}info.body(){{ end }},
             info.headers()
         );
         {{- else }}

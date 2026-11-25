@@ -420,16 +420,19 @@ abstract class Abstract{{ .Metadata.Name }}ApiClient {
         }
 
         Type targetType = typeReference.getType();
+        String normalizedContentType = info.contentType() == null
+            ? ""
+            : (info.contentType().type() + "/" + info.contentType().subtype()).toLowerCase(Locale.ROOT);
         if (targetType == byte[].class) {
-            return (T) info.bodyBytes();
+            // raw payload (files, images, pdf, ...), unless the server sent a base64 encoded json string (format: byte)
+            if (!isJsonContentType(normalizedContentType) || !info.body().stripLeading().startsWith("\"")) {
+                return (T) info.bodyBytes();
+            }
         }
         if (info.bodyBytes().length == 0) {
             return null;
         }
 
-        String normalizedContentType = info.contentType() == null
-            ? ""
-            : (info.contentType().type() + "/" + info.contentType().subtype()).toLowerCase(Locale.ROOT);
         if (targetType == String.class && !isJsonContentType(normalizedContentType)) {
             return (T) info.body();
         }

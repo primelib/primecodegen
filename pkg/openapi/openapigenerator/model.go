@@ -287,7 +287,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 			}
 
 			// request body
-			if rb := op.Value.RequestBody; rb != nil {
+			if rb := op.Value.RequestBody; rb != nil && rb.Content != nil && rb.Content.First() != nil {
 				requestBody := rb.Content.First()
 
 				// content-type header
@@ -308,7 +308,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 				}
 
 				// body type
-				bodyType, err := gen.ToCodeType(requestBody.Value().Schema.Schema(), CodeTypeSchemaResponse, false)
+				bodyType, err := gen.ToCodeType(ContentSchema(requestBody.Key(), requestBody.Value()), CodeTypeSchemaResponse, false)
 				if err != nil {
 					return operations, fmt.Errorf("error converting type of [%s:%s:bodyType]: %w", path.Key, op.Key, err)
 				}
@@ -332,12 +332,15 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 					if resp.Value.Content.First() == nil {
 						continue
 					}
+					if ContentSchema(resp.Value.Content.First().Key(), resp.Value.Content.First().Value()) == nil {
+						continue
+					}
 
 					if resp.Key == "200" || resp.Key == "201" {
 						respContent := resp.Value.Content.First()
 
 						// return type
-						responseType, err := gen.ToCodeType(respContent.Value().Schema.Schema(), CodeTypeSchemaResponse, false)
+						responseType, err := gen.ToCodeType(ContentSchema(respContent.Key(), respContent.Value()), CodeTypeSchemaResponse, false)
 						if err != nil {
 							return operations, fmt.Errorf("error converting type of [%s:%s:responseType:%s]: %w", path.Key, op.Key, resp.Key, err)
 						}
@@ -371,7 +374,7 @@ func BuildOperations(opts OperationOpts) ([]Operation, error) {
 						respContent := resp.Value.Content.First()
 
 						// return type
-						responseType, err := gen.ToCodeType(respContent.Value().Schema.Schema(), CodeTypeSchemaResponse, false)
+						responseType, err := gen.ToCodeType(ContentSchema(respContent.Key(), respContent.Value()), CodeTypeSchemaResponse, false)
 						if err != nil {
 							return operations, fmt.Errorf("error converting type of [%s:%s:responseType:%s]: %w", path.Key, op.Key, resp.Key, err)
 						}

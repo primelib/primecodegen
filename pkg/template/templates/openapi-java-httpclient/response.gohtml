@@ -40,6 +40,77 @@ public sealed interface {{ .Operation.Name }}Response {
 
     @NonNull
     Map<String, List<String>> headers();
+
+    /**
+     * @return the first value of the given response header (case-insensitive), or null if not present
+     */
+    @Nullable
+    default String header(String name) {
+        return headers().entrySet().stream()
+            .filter(e -> e.getKey() != null && e.getKey().equalsIgnoreCase(name))
+            .map(Map.Entry::getValue)
+            .filter(values -> values != null && !values.isEmpty())
+            .map(values -> values.get(0))
+            .findFirst()
+            .orElse(null);
+    }
+
+    /**
+     * @return the media type of the response body without parameters (e.g. "application/pdf"), or null if not present
+     */
+    @Nullable
+    default String contentType() {
+        String value = header("Content-Type");
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.split(";", 2)[0].trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /**
+     * @return the file name suggested by the server in the Content-Disposition header, or null if not present.
+     * Prefers the RFC 6266 / RFC 5987 encoded form (filename*=UTF-8''...) over the plain filename parameter.
+     * The value is not sanitized; strip path separators before using it as a local file name.
+     */
+    @Nullable
+    default String fileName() {
+        String value = header("Content-Disposition");
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        String plain = null;
+        String extended = null;
+        for (String part : value.split(";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")) {
+            int eq = part.indexOf('=');
+            if (eq < 0) {
+                continue;
+            }
+            String key = part.substring(0, eq).trim().toLowerCase(java.util.Locale.ROOT);
+            String val = part.substring(eq + 1).trim();
+            if (key.equals("filename*")) {
+                // charset'language'percent-encoded-value
+                int first = val.indexOf('\'');
+                int second = first < 0 ? -1 : val.indexOf('\'', first + 1);
+                if (second > 0) {
+                    try {
+                        java.nio.charset.Charset charset = java.nio.charset.Charset.forName(val.substring(0, first));
+                        extended = java.net.URLDecoder.decode(val.substring(second + 1).replace("+", "%2B"), charset);
+                    } catch (IllegalArgumentException ignored) {
+                        // unsupported charset or malformed encoding, fall back to the plain filename
+                    }
+                }
+            } else if (key.equals("filename")) {
+                if (val.length() >= 2 && val.startsWith("\"") && val.endsWith("\"")) {
+                    val = val.substring(1, val.length() - 1).replace("\\\"", "\"").replace("\\\\", "\\");
+                }
+                plain = val;
+            }
+        }
+
+        String result = extended != null ? extended : plain;
+        return result == null || result.isBlank() ? null : result;
+    }
 {{ $op := .Operation }}
 {{- range $code, $type := .Operation.ReturnTypeByCode }}
     record {{ statusCodeToClassName $code }}(
